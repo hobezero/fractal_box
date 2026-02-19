@@ -1,0 +1,29 @@
+# Build artifacts, binaries, temporary stuff, etc.
+/bin/
+/.bin/
+/install*/
+/.install*/
+/build*/
+/.build*/
+/cmake-build*/
+/.cmake-build*/
+/CMakeUserPresets.json
+
+# IDEs
+CMakeLists.txt.ini
+CMakeLists.txt.user
+*.autosave
+compile_commands.json
+*creator.user*
+.qtcreator/
+.idea
+.vscode
+.vs
+CMakeSettings.json
+
+# Misc
+**/.renderdoc/
+**/.apitrace/
+**/.comments/
+/.storage/
+/.venv/

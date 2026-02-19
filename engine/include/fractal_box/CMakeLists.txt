@@ -1,0 +1,7 @@
+add_subdirectory(core)
+add_subdirectory(components)
+add_subdirectory(graphics)
+add_subdirectory(runtime)
+add_subdirectory(platform)
+add_subdirectory(resources)
+add_subdirectory(ui)

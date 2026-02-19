@@ -1,0 +1,29 @@
+target_sources(fractal_box_tests PRIVATE
+	assert_tests_lvl_max.cpp
+	assert_tests_lvl_none.cpp
+	bit_manip_tests.cpp
+	collision_tests.cpp
+	components_tests.cpp
+	concepts_tests.cpp
+	functional_tests.cpp
+	hashing_tests.cpp
+	indexed_pool_tests.cpp
+	input_tests.cpp
+	linear_flat_set_tests.cpp
+	math_tests.cpp
+	message_tests.cpp
+	meta_tests.cpp
+	poly_tests.cpp
+	preprocessor_tests.cpp
+	ref_tests.cpp
+	reflection_tests.cpp
+	scope_tests.cpp
+	sparse_set_tests.cpp
+	type_index_tests.cpp
+	type_object_map_tests.cpp
+	utils_tests.cpp
+	world_tests.cpp
+)
+
+add_subdirectory(detail)
+add_subdirectory(test_common)

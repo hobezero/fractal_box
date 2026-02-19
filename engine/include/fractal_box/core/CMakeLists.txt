@@ -1,0 +1,45 @@
+target_sources(fractal_box_engine PRIVATE
+	algorithm.hpp
+	alignment.hpp
+	angle.hpp
+	assert.hpp
+	assert_fmt.hpp
+	assert_levels.hpp
+	bit_manip.hpp
+	byte_utils.hpp
+	chrono_types.hpp
+	color.hpp
+	compare.hpp
+	concepts.hpp
+	control_flow.hpp
+	default_utils.hpp
+	enum_utils.hpp
+	error.hpp
+	functional.hpp
+	in_place_args.hpp
+	init_tags.hpp
+	int_types.hpp
+	iterator_utils.hpp
+	log_levels.hpp
+	logging.hpp
+	math.hpp
+	memory.hpp
+	numerical.hpp
+	out_ptr.hpp
+	platform.hpp
+	poly.hpp
+	preprocessor.hpp
+	random.hpp
+	ref.hpp
+	relocation.hpp
+	scope.hpp
+	shape_math.hpp
+	shapes.hpp
+	string_literal.hpp
+	timeline.hpp
+	type_index.hpp
+)
+
+add_subdirectory(containers)
+add_subdirectory(hashing)
+add_subdirectory(meta)

@@ -1,0 +1,19 @@
+target_sources(asteroids PRIVATE
+	game_consts.cpp
+	game_consts.hpp
+	game_systems.cpp
+	game_systems.hpp
+	game_types.hpp
+	game_ui.cpp
+	game_ui.hpp
+	graphics_systems.cpp
+	graphics_systems.hpp
+	asteroids.cpp
+	asteroids.hpp
+	main.cpp
+	resources.cpp
+	resources.hpp
+	setup_systems.hpp
+	shaders.cpp
+	shaders.hpp
+)
