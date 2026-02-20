@@ -1,6 +1,8 @@
 #ifndef FRACTAL_BOX_RUNTIME_QUERIES_HPP
 #define FRACTAL_BOX_RUNTIME_QUERIES_HPP
 
+#include <array>
+
 #include "fractal_box/core/meta/meta_basics.hpp"
 #include "fractal_box/core/control_flow.hpp"
 #include "fractal_box/runtime/world_types.hpp"
@@ -319,6 +321,15 @@ class UncachedQuery {
 	using Archetype = typename TWorld::Arch;
 	static_assert(detail::validate_query_params<Params...>());
 
+	using ParamList = MpEnumerate<MpList<Params...>>;
+	using RequiredParams = MpFilterProj<ParamList, detail::IsRequiredQueryParam, MpSecond>;
+	using OptionalComponents = MpTransform<MpFilter<MpList<Params...>,
+		detail::IsOptionalQueryParam>, detail::StripQueryParam>;
+	using FilteredOutParams = MpFilterProj<ParamList, detail::IsFilteredOutQueryParam, MpSecond>;
+	using SinkedParams = MpFilterProj<ParamList, detail::IsSinkedQueryParam, MpSecond>;
+	using ReqLocalIdxsArr = std::array<size_t, mp_size<RequiredParams>>;
+	using OptionalLocalIdxsArr = std::array<WithDefault<size_t, npos>, mp_size<OptionalComponents>>;
+
 public:
 	/// @todo TODO: Replace concept requirement with custom static_assert
 	template<c_query_for_each_array_sink<TWorld, Params...> Sink>
@@ -417,10 +428,10 @@ public:
 			}
 
 			if (!is_filtered_out && intersected_count == mp_size<RequiredParams> - 1zu) {
-				size_t comp_local_idxs[mp_size<RequiredParams>];
+				ReqLocalIdxsArr comp_local_idxs;
 				for (auto i = 0zu; i < mp_size<RequiredParams>; ++i)
 					comp_local_idxs[i] = required_cursors[i]->comp_local_idx();
-				// Restore original order
+				// Restore the original order
 				std::swap(comp_local_idxs[0], comp_local_idxs[spine_idx]);
 #if 0
 				FR_LOG_DEBUG("Intersected: {}", spine_arch_idx);
@@ -480,12 +491,6 @@ public:
 private:
 	friend TWorld;
 
-	using ParamList = MpEnumerate<MpList<Params...>>;
-	using RequiredParams = MpFilterProj<ParamList, detail::IsRequiredQueryParam, MpSecond>;
-	using FilteredOutParams = MpFilterProj<ParamList, detail::IsFilteredOutQueryParam, MpSecond>;
-	using SinkedParams = MpFilterProj<ParamList, detail::IsSinkedQueryParam, MpSecond>;
-	using CompLocalIdxsArr = size_t[mp_size<RequiredParams>];
-
 	explicit constexpr
 	UncachedQuery(TWorld& world) noexcept: _world{&world} { }
 
@@ -512,7 +517,10 @@ private:
 	template<class T>
 	FR_FORCE_INLINE
 	auto make_sink_param(
-		const Archetype& arch, EntityTable& table, const CompLocalIdxsArr& required_local_idxs
+		const Archetype& arch,
+		EntityTable& table,
+		const ReqLocalIdxsArr& required_local_idxs,
+		const OptionalLocalIdxsArr& optional_local_idxs
 	) const noexcept {
 		using Param = typename T::Type;
 		using Traits = detail::QueryParamTraits<Param>;
@@ -528,11 +536,13 @@ private:
 		};
 		if constexpr (Traits::kind == detail::QueryParamKind::Required) {
 			static constexpr auto req_idx = mp_find<RequiredParams, T>;
+			static_assert(req_idx != npos);
 			return get_ptr(required_local_idxs[req_idx]);
 		}
 		else if constexpr (Traits::kind == detail::QueryParamKind::Optional) {
-			// TODO: Find local idx once per archetype, not once per table
-			const auto local_idx = arch.find_component_local_idx(ComponentTypeIdx::of<Component>);
+			static constexpr auto opt_idx = mp_find<OptionalComponents, Component>;
+			static_assert(opt_idx != npos);
+			const auto local_idx = optional_local_idxs[opt_idx];
 			if constexpr (Traits::access == Access::None) {
 				return Param{!local_idx.is_default()};
 			}
@@ -551,10 +561,16 @@ private:
 	template<class Sink>
 	FR_FORCE_INLINE
 	auto call_sink(
-		Sink&& sink, ArchetypeIdx arch_idx, const CompLocalIdxsArr& required_local_idxs
+		Sink&& sink, ArchetypeIdx arch_idx, const ReqLocalIdxsArr& required_local_idxs
 	) const -> ControlFlow {
 		const auto& arch = _world->_archetypes[arch_idx];
-		return [&]<class... Ts>(MpList<Ts...>) FR_FORCE_INLINE_L -> ControlFlow {
+		const auto optional_local_idxs = [&]<class... Os>(
+			MpList<Os...>
+		) FR_FORCE_INLINE_L -> OptionalLocalIdxsArr{
+			return {arch.find_component_local_idx(ComponentTypeIdx::of<Os>)...};
+		}(OptionalComponents{});
+
+		return [&]<class... Ps>(MpList<Ps...>) FR_FORCE_INLINE_L -> ControlFlow {
 			for (auto table_idx : arch.table_idxs()) {
 				auto& table = _world->_tables[table_idx];
 				if (table.is_empty())
@@ -563,7 +579,7 @@ private:
 					sink,
 					table.alive_count(),
 					&_world->get_lookback_id_impl(table, 0),
-					make_sink_param<Ts>(arch, table, required_local_idxs)...
+					make_sink_param<Ps>(arch, table, required_local_idxs, optional_local_idxs)...
 				);
 				if (r.is_break_or_return())
 					return r;
