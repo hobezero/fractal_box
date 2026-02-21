@@ -1,5 +1,5 @@
-#ifndef FRACTAL_BOX_COMPONENTS_COLLISION_HPP
-#define FRACTAL_BOX_COMPONENTS_COLLISION_HPP
+#ifndef FRACTAL_BOX_PHYSICS_COLLISION_HPP
+#define FRACTAL_BOX_PHYSICS_COLLISION_HPP
 
 #include <array>
 #include <optional>
@@ -7,14 +7,13 @@
 
 #include <glm/vec2.hpp>
 
-#include "fractal_box/components/transform.hpp"
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/enum_utils.hpp"
 #include "fractal_box/core/meta/meta.hpp"
-#include "fractal_box/core/shape_math.hpp"
-#include "fractal_box/core/shapes.hpp"
-#include "fractal_box/core/shapes.hpp"
+#include "fractal_box/math/shape_math.hpp"
+#include "fractal_box/math/shapes.hpp"
 #include "fractal_box/runtime/world_types.hpp"
+#include "fractal_box/scene/transform.hpp"
 
 namespace fr {
 
@@ -177,7 +176,7 @@ private:
 };
 
 /// @brief Description of the collision event of two entities
-template<class TEntityId>
+template<c_entity_id TEntityId>
 class alignas(8) Collision {
 public:
 	struct Match {

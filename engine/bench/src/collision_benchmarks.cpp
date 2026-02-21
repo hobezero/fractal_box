@@ -7,7 +7,7 @@
 #include <fmt/printf.h>
 
 #include "fractal_box/core/random.hpp"
-#include "fractal_box/components/collision.hpp"
+#include "fractal_box/physics/collision.hpp"
 
 namespace nanobench = ankerl::nanobench;
 

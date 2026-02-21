@@ -1,5 +1,5 @@
-#ifndef FRACTAL_BOX_COMPONENTS_SPRITE_HPP
-#define FRACTAL_BOX_COMPONENTS_SPRITE_HPP
+#ifndef FRACTAL_BOX_GRAPHICS_SPRITE_HPP
+#define FRACTAL_BOX_GRAPHICS_SPRITE_HPP
 
 #include "fractal_box/core/ref.hpp"
 #include "fractal_box/graphics/gl_mesh.hpp"

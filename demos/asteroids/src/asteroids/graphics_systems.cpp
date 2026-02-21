@@ -4,10 +4,10 @@
 #include <SDL2/SDL_opengl.h>
 #include <SDL2/SDL.h>
 
-#include "fractal_box/components/collision.hpp"
-#include "fractal_box/components/sprite.hpp"
 #include "fractal_box/graphics/debug_draw_preset.hpp"
 #include "fractal_box/graphics/gl_common.hpp"
+#include "fractal_box/graphics/sprite.hpp"
+#include "fractal_box/physics/collision.hpp"
 
 namespace aster {
 

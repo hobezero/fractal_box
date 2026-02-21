@@ -9,16 +9,16 @@
 
 #include <glm/vec2.hpp>
 
-#include "fractal_box/components/camera.hpp"
-#include "fractal_box/components/collision.hpp"
 #include "fractal_box/core/angle.hpp"
 #include "fractal_box/core/chrono_types.hpp"
 #include "fractal_box/core/random.hpp"
-#include "fractal_box/core/shapes.hpp"
 #include "fractal_box/core/timeline.hpp"
+#include "fractal_box/math/shapes.hpp"
+#include "fractal_box/physics/collision.hpp"
 #include "fractal_box/platform/input.hpp"
 #include "fractal_box/runtime/core_preset.hpp"
 #include "fractal_box/runtime/world.hpp"
+#include "fractal_box/scene/camera.hpp"
 
 namespace aster {
 

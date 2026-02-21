@@ -2,13 +2,13 @@
 
 #include <glm/geometric.hpp>
 
-#include "fractal_box/components/collision.hpp"
-#include "fractal_box/components/sprite.hpp"
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/functional.hpp"
 #include "fractal_box/core/logging.hpp"
 #include "fractal_box/core/math.hpp"
-#include "fractal_box/core/numerical.hpp"
+#include "fractal_box/graphics/sprite.hpp"
+#include "fractal_box/physics/collision.hpp"
+#include "fractal_box/physics/numerical.hpp"
 #include "fractal_box/platform/input.hpp"
 
 #include "asteroids/game_consts.hpp"

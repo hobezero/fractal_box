@@ -13,4 +13,5 @@ target_sources(fractal_box_engine PRIVATE
 	gl_version.hpp
 	mesh_utils.hpp
 	shader_utils.hpp
+	sprite.hpp
 )

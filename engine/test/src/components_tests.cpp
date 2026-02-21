@@ -2,7 +2,7 @@
 
 #include <glm/gtx/matrix_transform_2d.hpp>
 
-#include "fractal_box/components/transform.hpp"
+#include "fractal_box/scene/transform.hpp"
 
 TEST_CASE("Transform", "[u][engine][components]") {
 	SECTION("type properties") {

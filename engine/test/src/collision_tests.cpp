@@ -1,4 +1,4 @@
-#include "fractal_box/components/collision.hpp"
+#include "fractal_box/physics/collision.hpp"
 
 #include <catch2/catch_test_macros.hpp>
 #include <fmt/format.h>

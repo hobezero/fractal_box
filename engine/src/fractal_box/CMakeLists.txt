@@ -1,5 +1,5 @@
 add_subdirectory(core)
-add_subdirectory(components)
+add_subdirectory(physics)
 add_subdirectory(graphics)
 add_subdirectory(runtime)
 add_subdirectory(platform)

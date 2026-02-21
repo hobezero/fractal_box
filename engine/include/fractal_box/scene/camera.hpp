@@ -1,7 +1,7 @@
-#ifndef FRACTAL_BOX_COMPONENTS_CAMERA_HPP
-#define FRACTAL_BOX_COMPONENTS_CAMERA_HPP
+#ifndef FRACTAL_BOX_SCENE_CAMERA_HPP
+#define FRACTAL_BOX_SCENE_CAMERA_HPP
 
-#include "fractal_box/components/transform.hpp"
+#include "fractal_box/scene/transform.hpp"
 
 namespace fr {
 

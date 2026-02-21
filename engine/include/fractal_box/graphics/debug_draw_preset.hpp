@@ -3,12 +3,12 @@
 
 #include <vector>
 
-#include "fractal_box/components/transform.hpp"
 #include "fractal_box/core/color.hpp"
 #include "fractal_box/core/containers/sparse_set.hpp"
 #include "fractal_box/core/containers/unordered_map.hpp"
-#include "fractal_box/core/shapes.hpp"
+#include "fractal_box/math/shapes.hpp"
 #include "fractal_box/runtime/runtime.hpp"
+#include "fractal_box/scene/transform.hpp"
 
 namespace fr {
 

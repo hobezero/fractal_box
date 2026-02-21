@@ -24,7 +24,6 @@ target_sources(fractal_box_engine PRIVATE
 	logging.hpp
 	math.hpp
 	memory.hpp
-	numerical.hpp
 	out_ptr.hpp
 	platform.hpp
 	poly.hpp
@@ -33,8 +32,6 @@ target_sources(fractal_box_engine PRIVATE
 	ref.hpp
 	relocation.hpp
 	scope.hpp
-	shape_math.hpp
-	shapes.hpp
 	string_literal.hpp
 	timeline.hpp
 	type_index.hpp

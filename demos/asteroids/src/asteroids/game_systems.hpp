@@ -1,7 +1,7 @@
 #ifndef ASTEROIDS_GAME_SYSTEMS_HPP
 #define ASTEROIDS_GAME_SYSTEMS_HPP
 
-#include "fractal_box/components/collision.hpp"
+#include "fractal_box/physics/collision.hpp"
 #include "fractal_box/graphics/debug_draw_preset.hpp"
 #include "fractal_box/platform/sdl_preset.hpp"
 #include "fractal_box/runtime/runtime.hpp"

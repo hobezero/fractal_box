@@ -1,4 +1,4 @@
-#include "fractal_box/components/collision.hpp"
+#include "fractal_box/physics/collision.hpp"
 
 #include <array>
 #include <limits>
