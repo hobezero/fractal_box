@@ -157,10 +157,10 @@ template<class TList>
 inline constexpr auto mp_is_empty = detail::MpIllegal{};
 
 template<template<class...> class TList, class... Ts>
-inline constexpr auto mp_is_empty<TList<Ts...>> = (sizeof...(Ts) == 0);
+inline constexpr auto mp_is_empty<TList<Ts...>> = (sizeof...(Ts) == 0zu);
 
 template<template<auto...> class VList, auto... Vs>
-inline constexpr auto mp_is_empty<VList<Vs...>> = (sizeof...(Vs) == 0);
+inline constexpr auto mp_is_empty<VList<Vs...>> = (sizeof...(Vs) == 0zu);
 
 template<class List>
 using MpIsEmpty = BoolC<mp_is_empty<List>>;
@@ -174,60 +174,61 @@ template<size_t Step>
 struct MpAtImplStep;
 
 template<>
-struct MpAtImplStep<0> {
+struct MpAtImplStep<0zu> {
 	template<size_t, class T0, class... Ts>
 	using Type = T0;
 };
 
 template<>
-struct MpAtImplStep<1> {
+struct MpAtImplStep<1zu> {
 	template<size_t, class T0, class T1, class... Ts>
 	using Type = T1;
 };
 
 template<>
-struct MpAtImplStep<2> {
+struct MpAtImplStep<2zu> {
 	template<size_t, class T0, class T1, class T2, class... Ts>
 	using Type = T2;
 };
 
 template<>
-struct MpAtImplStep<3> {
+struct MpAtImplStep<3zu> {
 	template<size_t, class T0, class T1, class T2, class T3, class... Ts>
 	using Type = T3;
 };
 
 template<>
-struct MpAtImplStep<4> {
+struct MpAtImplStep<4zu> {
 	template<size_t I, class T0, class T1, class T2, class T3, class T4, class... Ts>
 	using Type = T4;
 };
 
 template<>
-struct MpAtImplStep<5> {
+struct MpAtImplStep<5zu> {
 	template<size_t I, class T0, class T1, class T2, class T3, class T4, class T5, class... Ts>
 	using Type = T5;
 };
 
 template<>
-struct MpAtImplStep<6> {
+struct MpAtImplStep<6zu> {
 	template<size_t I, class T0, class T1, class T2, class T3, class T4, class T5, class T6,
 		class... Ts>
 	using Type = T6;
 };
 
 template<>
-struct MpAtImplStep<7> {
+struct MpAtImplStep<7zu> {
 	template<size_t I, class T0, class T1, class T2, class T3, class T4, class T5, class T6,
 		class T7, class... Ts>
 	using Type = T7;
 };
 
 template<>
-struct MpAtImplStep<8> {
+struct MpAtImplStep<8zu> {
 	template<size_t Idx, class T0, class T1, class T2, class T3, class T4, class T5, class T6,
 		class T7, class... Ts>
-	using Type = typename MpAtImplStep<(Idx - 8 > 8 ? 8 : Idx - 8)>::template Type<Idx - 8, Ts...>;
+	using Type = typename MpAtImplStep<(Idx - 8zu > 8zu ? 8zu : Idx - 8zu)>
+		::template Type<Idx - 8zu, Ts...>;
 };
 
 template<class TList>
@@ -236,14 +237,14 @@ struct MpAtImpl;
 template<template<class...> class TList, class... Ts>
 struct MpAtImpl<TList<Ts...>> {
 	template<size_t Idx>
-	using Type = typename MpAtImplStep<(Idx > 8 ? 8 : Idx)>::template Type<Idx, Ts...>;
+	using Type = typename MpAtImplStep<(Idx > 8zu ? 8zu : Idx)>::template Type<Idx, Ts...>;
 };
 
 /// @note Can't replace with just an alias template (not sure why)
 template<class...Ts>
 struct MpPackAtImpl {
 	template<size_t Idx>
-	using Type = typename MpAtImplStep<(Idx > 8 ? 8 : Idx)>::template Type<Idx, Ts...>;
+	using Type = typename MpAtImplStep<(Idx > 8zu ? 8zu : Idx)>::template Type<Idx, Ts...>;
 };
 
 } // namespace detail
@@ -293,7 +294,7 @@ template<template<class...> class TList, class... Ts, class T>
 struct MpFindImpl<TList<Ts...>, T> {
 	static constexpr
 	auto get_value() noexcept -> size_t {
-		auto i = 0uz;
+		auto i = 0zu;
 		const bool found = ((false || ... || (std::is_same_v<Ts, T> ? true : (++i, false))));
 		return found ? i : npos;
 	}
@@ -335,7 +336,7 @@ inline constexpr auto mp_contains_once = detail::MpIllegal{};
 
 template<template<class...> class TList, class... Ts, class T>
 inline constexpr auto mp_contains_once<TList<Ts...>, T>
-	= (0 + ... + (std::is_same_v<T, Ts> ? 1 : 0)) == 1;
+	= (0zu + ... + (std::is_same_v<T, Ts> ? 1zu : 0zu)) == 1zu;
 
 template<class TList, class T>
 using MpContainsOnce = BoolC<mp_contains_once<TList, T>>;
@@ -343,6 +344,19 @@ using MpContainsOnce = BoolC<mp_contains_once<TList, T>>;
 /// @brief Checks whether `TList` contains type `T` exactly once
 template<class TList, class T>
 concept c_mp_contains_once = mp_contains_once<TList, T>;
+
+// mp_pack_contains_once
+// ^^^^^^^^^^^^^^^^^^^^^
+
+template<class T, class... Ts>
+inline constexpr auto mp_pack_contains_once
+	= (0zu + ... + (std::is_same_v<T, Ts> ? 1zu : 0zu)) == 1zu;
+
+template<class T, class... Ts>
+using MpPackContainsOnce = BoolC<mp_pack_contains_once<T, Ts...>>;
+
+template<class T, class... Ts>
+concept c_mp_pack_contains_once = mp_pack_contains_once<T, Ts...>;
 
 // mp_count
 // ^^^^^^^^
@@ -355,6 +369,34 @@ inline constexpr auto mp_count<TList<Ts...>, T> = (0zu + ... + (std::is_same_v<T
 
 template<class TList, class T>
 using MpCount = SizeC<mp_count<TList, T>>;
+
+// mp_is_unique
+// ^^^^^^^^^^^^
+
+template<class TList>
+inline constexpr auto mp_is_unique = detail::MpIllegal{};
+
+template<template<class...> class TList, class... Ts>
+inline constexpr auto mp_is_unique<TList<Ts...>>
+	= (true && ... && mp_pack_contains_once<Ts, Ts...>);
+
+template<class TList>
+using MpIsUnique = BoolC<mp_is_unique<TList>>;
+
+template<class TList>
+concept c_mp_unique = mp_is_unique<TList>;
+
+// mp_pack_is_unique
+// ^^^^^^^^^^^^^^^^^
+
+template<class... Ts>
+inline constexpr auto mp_pack_is_unique = (true && ... && mp_pack_contains_once<Ts, Ts...>);
+
+template<class... Ts>
+using MpPackIsUnique = BoolC<mp_pack_is_unique<Ts...>>;
+
+template<class... Ts>
+concept c_mp_unique_pack = mp_pack_is_unique<Ts...>;
 
 // mp_all_of
 // ^^^^^^^^^

@@ -338,6 +338,40 @@ TEST_CASE("mp_contains_once", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::mp_contains_once<fr::MpList<>, int>);
 }
 
+TEST_CASE("mp_pack_contains_once", "[u][engine][core][meta]") {
+	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<int, int, A, double, B, int, int, B>);
+	STATIC_CHECK(fr::mp_pack_contains_once<A, int, A, double, B, int, int, B>);
+	STATIC_CHECK(fr::mp_pack_contains_once<double, int, A, double, B, int, int, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<B, int, A, double, B, int, int, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<char, int, A, double, B, int, int, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<C, int, A, double, B, int, int, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<List, int, A, double, B, int, int, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<C, int, A, double, B, int, int, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<int, int, A, double, B, int, int, B>);
+}
+
+TEST_CASE("mp_is_unique", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::mp_is_unique<std::tuple<int, double, A>>);
+	STATIC_CHECK(fr::mp_is_unique<std::variant<int, int&, int&&, const int&>>);
+	STATIC_CHECK(fr::mp_is_unique<fr::MpList<int>>);
+	STATIC_CHECK(fr::mp_is_unique<std::tuple<>>);
+
+	STATIC_CHECK_FALSE(fr::mp_is_unique<std::pair<int, int>>);
+	STATIC_CHECK_FALSE(fr::mp_is_unique<fr::MpList<double, A, int, A, B>>);
+	STATIC_CHECK_FALSE(fr::mp_is_unique<std::tuple<A, B, A, B>>);
+}
+
+TEST_CASE("mp_pack_is_unique", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::mp_pack_is_unique<int, double, A>);
+	STATIC_CHECK(fr::mp_pack_is_unique<int, int&, int&&, const int&>);
+	STATIC_CHECK(fr::mp_pack_is_unique<int>);
+	STATIC_CHECK(fr::mp_pack_is_unique<>);
+
+	STATIC_CHECK_FALSE(fr::mp_pack_is_unique<int, int>);
+	STATIC_CHECK_FALSE(fr::mp_pack_is_unique<double, A, int, A, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_is_unique<A, B, A, B>);
+}
+
 TEST_CASE("mp_all_of", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_all_of<fr::MpList<>, std::is_integral>);
 	STATIC_CHECK(fr::mp_all_of<std::tuple<int>, std::is_integral>);
