@@ -1,8 +1,8 @@
 #ifndef FRACTAL_BOX_MATH_SHAPE_MATH_HPP
 #define FRACTAL_BOX_MATH_SHAPE_MATH_HPP
 
-#include "fractal_box/core/math.hpp"
 #include "fractal_box/core/platform.hpp"
+#include "fractal_box/math/math.hpp"
 #include "fractal_box/math/shapes.hpp"
 
 namespace fr {

@@ -5,8 +5,8 @@
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/functional.hpp"
 #include "fractal_box/core/logging.hpp"
-#include "fractal_box/core/math.hpp"
 #include "fractal_box/graphics/sprite.hpp"
+#include "fractal_box/math/math.hpp"
 #include "fractal_box/physics/collision.hpp"
 #include "fractal_box/physics/numerical.hpp"
 #include "fractal_box/platform/input.hpp"
@@ -45,10 +45,12 @@ auto make_ship(
 	const auto smaller_side = std::min(ship_size.x, ship_size.y);
 	const auto ship = world.spawn_with(
 		fr::in_place_args<fr::Transform>( pos, fr::FDeg{90}, ship_size),
-		fr::in_place_args<fr::Sprite>(rsc.tex_spaceship, rsc.mesh_square_solid, consts.ship.z_index),
+		fr::in_place_args<fr::Sprite>(rsc.tex_spaceship, rsc.mesh_square_solid,
+			consts.ship.z_index),
 		fr::in_place_args<Body>(glm::vec2{}, consts.ship.mass),
 		fr::in_place_args<fr::Collider>(collider_player, fr::FCircle{pos, 0.5f * smaller_side}),
-		fr::in_place_args<Gun>(consts.bullet.damage, consts.ship.gun_cooldown, consts.ship.gun_cooldown)
+		fr::in_place_args<Gun>(consts.bullet.damage, consts.ship.gun_cooldown,
+			consts.ship.gun_cooldown)
 	);
 
 	const auto plume_size = 0.7f * glm::vec2{fr::aspect_ratio(glm::vec2{

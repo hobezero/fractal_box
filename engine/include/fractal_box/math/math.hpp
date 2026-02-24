@@ -1,5 +1,5 @@
-#ifndef FRACTAL_BOX_CORE_MATH_HPP
-#define FRACTAL_BOX_CORE_MATH_HPP
+#ifndef FRACTAL_BOX_MATH_MATH_HPP
+#define FRACTAL_BOX_MATH_MATH_HPP
 
 /// @file
 /// @brief Math utility functions

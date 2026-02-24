@@ -352,8 +352,8 @@ TEST_CASE("mp_pack_contains_once", "[u][engine][core][meta]") {
 
 TEST_CASE("mp_is_unique", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_is_unique<std::tuple<int, double, A>>);
-	STATIC_CHECK(fr::mp_is_unique<std::variant<int, int&, int&&, const int&>>);
-	STATIC_CHECK(fr::mp_is_unique<fr::MpList<int>>);
+	STATIC_CHECK(fr::mp_is_unique<fr::MpList<int, int&, int&&, const int&>>);
+	STATIC_CHECK(fr::mp_is_unique<std::variant<int>>);
 	STATIC_CHECK(fr::mp_is_unique<std::tuple<>>);
 
 	STATIC_CHECK_FALSE(fr::mp_is_unique<std::pair<int, int>>);

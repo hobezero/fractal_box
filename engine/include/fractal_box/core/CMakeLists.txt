@@ -22,7 +22,6 @@ target_sources(fractal_box_engine PRIVATE
 	iterator_utils.hpp
 	log_levels.hpp
 	logging.hpp
-	math.hpp
 	memory.hpp
 	out_ptr.hpp
 	platform.hpp

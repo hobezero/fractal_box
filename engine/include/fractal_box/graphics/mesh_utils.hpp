@@ -1,8 +1,8 @@
 #ifndef FRACTAL_BOX_GRAPHICS_MESH_UTILS_HPP
 #define FRACTAL_BOX_GRAPHICS_MESH_UTILS_HPP
 
-#include "fractal_box/core/math.hpp"
 #include "fractal_box/graphics/gl_mesh.hpp"
+#include "fractal_box/math/math.hpp"
 
 namespace fr {
 

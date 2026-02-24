@@ -1,7 +1,7 @@
 #include "fractal_box/runtime/core_preset.hpp"
 
-#include "fractal_box/core/math.hpp"
 #include "fractal_box/core/platform.hpp"
+#include "fractal_box/math/math.hpp"
 
 FR_DIAGNOSTIC_ERROR_MISSING_FIELD_INITIALIZERS
 

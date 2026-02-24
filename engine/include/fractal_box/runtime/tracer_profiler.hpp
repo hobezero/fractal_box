@@ -17,9 +17,9 @@
 #include "fractal_box/core/hashing/hashed_string.hpp"
 #include "fractal_box/core/int_types.hpp"
 #include "fractal_box/core/iterator_utils.hpp"
-#include "fractal_box/core/math.hpp"
 #include "fractal_box/core/platform.hpp"
 #include "fractal_box/core/timeline.hpp"
+#include "fractal_box/math/math.hpp"
 
 namespace fr {
 

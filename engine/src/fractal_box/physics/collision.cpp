@@ -3,8 +3,8 @@
 #include <array>
 #include <limits>
 
-#include "fractal_box/core/math.hpp"
 #include "fractal_box/core/platform.hpp"
+#include "fractal_box/math/math.hpp"
 
 namespace fr {
 

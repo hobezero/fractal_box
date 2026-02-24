@@ -4,7 +4,7 @@
 #include <glm/gtx/matrix_transform_2d.hpp>
 #include <glm/mat3x3.hpp>
 
-#include "fractal_box/core/math.hpp"
+#include "fractal_box/math/math.hpp"
 #include "fractal_box/runtime/world_types.hpp"
 
 namespace fr {
