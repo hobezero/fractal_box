@@ -128,12 +128,12 @@ public:
 	// Constructor from `T` and other types convertible to `T`
 	// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-	template<class U = T>
-	requires (std::constructible_from<T, U&&>
+	template<class U = std::remove_cv_t<T>>
+	requires (std::constructible_from<T, U>
 		&& !detail::is_with_default<std::remove_cvref_t<U>>
 		&& !std::same_as<std::remove_cvref_t<U>, InPlaceInit>)
-	explicit(!std::is_convertible_v<U&&, T>) FR_FORCE_INLINE constexpr
-	WithDefault(U&& value) noexcept(std::is_nothrow_constructible_v<T, U&&>):
+	explicit(!std::is_convertible_v<U, T>) FR_FORCE_INLINE constexpr
+	WithDefault(U&& value) noexcept(std::is_nothrow_constructible_v<T, U>):
 		_value(std::forward<U>(value))
 	{ }
 

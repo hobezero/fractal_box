@@ -85,15 +85,52 @@ inline constexpr auto in_place_as = InPlaceAsInit<T>{};
 namespace detail {
 
 template<class T>
-inline constexpr auto is_in_place_as_init = false;
+inline constexpr auto is_in_place_as_init_impl = false;
 
 template<class T>
-inline constexpr auto is_in_place_as_init<InPlaceAsInit<T>> = true;
+inline constexpr auto is_in_place_as_init_impl<InPlaceAsInit<T>> = true;
 
 } // namespace detail
 
 template<class T>
-concept is_in_place_as_init = detail::is_in_place_as_init<std::remove_cvref_t<T>>;
+inline constexpr auto is_in_place_as_init
+	= detail::is_in_place_as_init_impl<std::remove_cvref_t<T>>;
+
+template<class T>
+concept c_in_place_as_init = is_in_place_as_init<T>;
+
+struct FromErrorInit {
+	explicit
+	FromErrorInit() = default;
+};
+
+inline constexpr auto from_error = FromErrorInit{};
+
+template<class E>
+struct FromErrorAsInit {
+	explicit
+	FromErrorAsInit() = default;
+};
+
+template<class E>
+inline constexpr auto from_error_as = FromErrorAsInit<E>{};
+
+namespace detail {
+
+template<class T>
+inline constexpr auto is_from_error_as_init_impl = false;
+
+template<class T>
+inline constexpr auto is_from_error_as_init_impl<FromErrorAsInit<T>> = true;
+
+} // namespace detail
+
+template<class T>
+inline constexpr auto is_from_error_as_init
+	= detail::is_from_error_as_init_impl<std::remove_cvref_t<T>>;
+
+template<class T>
+concept c_from_error_as_init = is_from_error_as_init<T>;
 
 /// @brief Tag type used to disambiguate a constructor or a factory function that
 /// takes an `std::initializer_list` from other overloads

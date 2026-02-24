@@ -175,7 +175,7 @@ public:
 	/// @todo TODO: Write unit tests
 	template<class Self>
 	constexpr
-	auto get_at(this Self&& self, TypeIndexType type_idx) -> CopyCvRef<V, Self>&& {
+	auto get_at(this Self&& self, TypeIndexType type_idx) -> FwdLike<V, Self> {
 		const auto idx = SizeType{type_idx.value()};
 		FR_PANIC_CHECK(idx < self._objects.size() && self._objects[idx].has_value());
 		return std::forward_like<Self>(*self._objects[idx]);
@@ -183,7 +183,7 @@ public:
 
 	template<class Self>
 	constexpr
-	auto get_at_unchecked(this Self&& self, TypeIndexType type_idx) -> CopyCvRef<V, Self>&& {
+	auto get_at_unchecked(this Self&& self, TypeIndexType type_idx) -> FwdLike<V, Self> {
 		const auto idx = SizeType{type_idx.value()};
 		FR_ASSERT(idx < self._objects.size() && self._objects[idx].has_value());
 		return std::forward_like<Self>(*self._objects[idx]);

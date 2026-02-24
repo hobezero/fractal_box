@@ -25,6 +25,7 @@ add_test(NAME test_poly COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][pol
 add_test(NAME test_preprocessor COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][preprocessor])
 add_test(NAME test_ref COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][ref])
 add_test(NAME test_reflection COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][reflection])
+add_test(NAME test_result COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][result])
 add_test(NAME test_scope COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][scope])
 add_test(NAME test_type_index COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][type_index])
 add_test(NAME test_utils COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][utils])

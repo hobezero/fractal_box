@@ -17,6 +17,7 @@ target_sources(fractal_box_tests PRIVATE
 	preprocessor_tests.cpp
 	ref_tests.cpp
 	reflection_tests.cpp
+	result_tests.cpp
 	scope_tests.cpp
 	sparse_set_tests.cpp
 	type_index_tests.cpp
