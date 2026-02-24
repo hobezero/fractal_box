@@ -100,7 +100,7 @@ add_subdirectory(deps/imgui_backends)
 # -----------
 
 add_subdirectory(engine)
-add_subdirectory(demos)
+add_subdirectory(examples)
 
 # Installation
 # ------------
