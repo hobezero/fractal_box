@@ -405,6 +405,16 @@ TEST_CASE("mp_pack_is_unique", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::mp_pack_is_unique<A, B, A, B>);
 }
 
+TEST_CASE("mp_is_subset", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::mp_is_subset<fr::MpList<>, std::tuple<A, int, char>>);
+	STATIC_CHECK(fr::mp_is_subset<std::tuple<int, double>, fr::MpList<A, int, char, double, B>>);
+	STATIC_CHECK(fr::mp_is_subset<std::tuple<int, double>, std::tuple<int, double>>);
+	STATIC_CHECK(fr::mp_is_subset<std::variant<int, double>, std::tuple<A, int, int, double, A>>);
+
+	STATIC_CHECK_FALSE(fr::mp_is_subset<fr::MpList<int, int, A>, fr::MpList<int, A>>);
+	STATIC_CHECK_FALSE(fr::mp_is_subset<std::tuple<A, C, D>, std::tuple<A, B, D>>);
+}
+
 TEST_CASE("mp_all_of", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_all_of<fr::MpList<>, std::is_integral>);
 	STATIC_CHECK(fr::mp_all_of<std::tuple<int>, std::is_integral>);

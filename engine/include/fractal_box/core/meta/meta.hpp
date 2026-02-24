@@ -419,6 +419,28 @@ using MpPackIsUnique = BoolC<mp_pack_is_unique<Ts...>>;
 template<class... Ts>
 concept c_mp_unique_pack = mp_pack_is_unique<Ts...>;
 
+// mp_is_subset
+// ^^^^^^^^^^^^
+
+template<class SubList, class SuperList>
+inline constexpr auto mp_is_subset = detail::MpIllegal{};
+
+template<
+	template<class...> class SubList,
+	class... SubTypes,
+	template<class...> class SuperList,
+	class... SuperTypes
+>
+inline constexpr auto mp_is_subset<SubList<SubTypes...>, SuperList<SuperTypes...>>
+	= (true && ... && (mp_pack_count<SubTypes, SubTypes...>
+		<= mp_pack_count<SubTypes, SuperTypes...>));
+
+template<class SubList, class SuperList>
+using MpIsSubset = BoolC<mp_is_subset<SubList, SuperList>>;
+
+template<class SubList, class SuperList>
+concept c_mp_subset_of = mp_is_subset<SubList, SuperList>;
+
 // mp_all_of
 // ^^^^^^^^^
 
