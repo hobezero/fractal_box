@@ -382,6 +382,15 @@ inline constexpr auto mp_count<TList<Ts...>, T> = (0zu + ... + (std::is_same_v<T
 template<class TList, class T>
 using MpCount = SizeC<mp_count<TList, T>>;
 
+// mp_pack_count
+// ^^^^^^^^^^^^^
+
+template<class T, class... Ts>
+inline constexpr auto mp_pack_count = (0zu + ... + (std::is_same_v<Ts, T> ? 1zu : 0zu));
+
+template<class T, class... Ts>
+using MpPackCount = SizeC<mp_count<T, Ts...>>;
+
 // mp_is_unique
 // ^^^^^^^^^^^^
 

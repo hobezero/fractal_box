@@ -16,6 +16,7 @@ namespace {
 struct A { };
 union B { };
 struct C { };
+struct D { };
 
 template<class...>
 struct MyTemplate { };
@@ -364,6 +365,22 @@ TEST_CASE("mp_pack_contains_once", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<List, int, A, double, B, int, int, B>);
 	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<C, int, A, double, B, int, int, B>);
 	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<int, int, A, double, B, int, int, B>);
+}
+
+TEST_CASE("mp_count", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::mp_count<fr::MpList<int, A, int, A, A, B>, int> == 2);
+	STATIC_CHECK(fr::mp_count<std::tuple<int, A, int, A, A, B>, A> == 3);
+	STATIC_CHECK(fr::mp_count<std::tuple<int, A, int, A, A, B>, B> == 1);
+	STATIC_CHECK(fr::mp_count<std::tuple<int, A, int, A, A, B>, C> == 0);
+	STATIC_CHECK(fr::mp_count<std::tuple<>, int> == 0);
+}
+
+TEST_CASE("mp_pack_count", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::mp_pack_count<int, int, A, int, A, A, B> == 2);
+	STATIC_CHECK(fr::mp_pack_count<A, int, A, int, A, A, B> == 3);
+	STATIC_CHECK(fr::mp_pack_count<B, int, A, int, A, A, B> == 1);
+	STATIC_CHECK(fr::mp_pack_count<C, int, A, int, A, A, B> == 0);
+	STATIC_CHECK(fr::mp_pack_count<int> == 0);
 }
 
 TEST_CASE("mp_is_unique", "[u][engine][core][meta]") {
