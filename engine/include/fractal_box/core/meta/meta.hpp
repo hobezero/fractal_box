@@ -327,6 +327,18 @@ using MpContains = BoolC<mp_contains<TList, T>>;
 template<class TList, class T>
 concept c_mp_contains = mp_contains<TList, T>;
 
+// mp_pack_contains
+// ^^^^^^^^^^^^^^^^
+
+template<class T, class... Ts>
+inline constexpr auto mp_pack_contains = (false || ... || std::is_same_v<T, Ts>);
+
+template<class T, class... Ts>
+using MpPackContains = BoolC<mp_pack_contains<T, Ts...>>;
+
+template<class T, class... Ts>
+concept c_mp_pack_contains = mp_pack_contains<T, Ts...>;
+
 // mp_contains_once
 // ^^^^^^^^^^^^^^^^
 

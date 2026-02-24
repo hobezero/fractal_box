@@ -319,6 +319,7 @@ TEST_CASE("mp_contains", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_contains<List, A>);
 	STATIC_CHECK(fr::mp_contains<List, double>);
 	STATIC_CHECK(fr::mp_contains<List, B>);
+
 	STATIC_CHECK_FALSE(fr::mp_contains<List, char>);
 	STATIC_CHECK_FALSE(fr::mp_contains<List, C>);
 	STATIC_CHECK_FALSE(fr::mp_contains<List, List>);
@@ -326,10 +327,24 @@ TEST_CASE("mp_contains", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::mp_contains<fr::MpList<>, int>);
 }
 
+TEST_CASE("mp_pack_contains", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::mp_pack_contains<int, int, A, double, B, int, int, B>);
+	STATIC_CHECK(fr::mp_pack_contains<A, int, A, double, B, int, int, B>);
+	STATIC_CHECK(fr::mp_pack_contains<double, int, A, double, B, int, int, B>);
+	STATIC_CHECK(fr::mp_pack_contains<B, int, A, double, B, int, int, B>);
+
+	STATIC_CHECK_FALSE(fr::mp_pack_contains<char>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains<C, int, A, double, B, int, int, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains<List, int, A, double, B, int, int, B>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains<C>);
+	STATIC_CHECK_FALSE(fr::mp_pack_contains<int>);
+}
+
 TEST_CASE("mp_contains_once", "[u][engine][core][meta]") {
-	STATIC_CHECK_FALSE(fr::mp_contains_once<List, int>);
 	STATIC_CHECK(fr::mp_contains_once<List, A>);
 	STATIC_CHECK(fr::mp_contains_once<List, double>);
+
+	STATIC_CHECK_FALSE(fr::mp_contains_once<List, int>);
 	STATIC_CHECK_FALSE(fr::mp_contains_once<List, B>);
 	STATIC_CHECK_FALSE(fr::mp_contains_once<List, char>);
 	STATIC_CHECK_FALSE(fr::mp_contains_once<List, C>);
@@ -339,9 +354,10 @@ TEST_CASE("mp_contains_once", "[u][engine][core][meta]") {
 }
 
 TEST_CASE("mp_pack_contains_once", "[u][engine][core][meta]") {
-	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<int, int, A, double, B, int, int, B>);
 	STATIC_CHECK(fr::mp_pack_contains_once<A, int, A, double, B, int, int, B>);
 	STATIC_CHECK(fr::mp_pack_contains_once<double, int, A, double, B, int, int, B>);
+
+	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<int, int, A, double, B, int, int, B>);
 	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<B, int, A, double, B, int, int, B>);
 	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<char, int, A, double, B, int, int, B>);
 	STATIC_CHECK_FALSE(fr::mp_pack_contains_once<C, int, A, double, B, int, int, B>);
