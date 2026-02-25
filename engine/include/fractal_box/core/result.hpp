@@ -6,9 +6,9 @@
 #include <variant>
 
 #include "fractal_box/core/assert.hpp"
-#include "fractal_box/core/meta/meta.hpp"
-#include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/concepts.hpp"
+#include "fractal_box/core/init_tags.hpp"
+#include "fractal_box/core/meta/meta.hpp"
 #include "fractal_box/core/platform.hpp"
 
 namespace fr {
@@ -16,19 +16,39 @@ namespace fr {
 namespace detail {
 
 template<class T>
-using MapResultValue = typename MpLazyIf<std::is_void_v<T>>::template Type<std::monostate, T>;
+concept c_special_result_type
+	= std::same_as<T, InPlaceInit>
+	|| std::same_as<T, FromErrorInit>
+	|| c_from_error_as_init<T>;
 
 } // namespace detail
 
+/// @brief  A class similar to `std::expected` with the ability to hold one of many error types
+/// @note FIXME: Unlike `std::expected`, provides no guarantee that it's never valueless by
+/// exception
 template<class T, class... Errs>
-requires (sizeof...(Errs) > 0zu) && c_mp_unique_pack<Errs...>
+requires (sizeof...(Errs) > 0zu)
+	&& c_mp_unique_pack<Errs...>
+	&& (!detail::c_special_result_type<T>)
+	&& (... && !detail::c_special_result_type<Errs>)
 class Result {
-	using Value = detail::MapResultValue<T>;
+	using ValueStorage = typename MpLazyIf<std::is_void_v<T>>::template Type<std::monostate, T>;
+	using State = std::variant<ValueStorage, std::monostate, Errs...>;
 	using FirstErr = MpPackFirst<Errs...>;
+
+	template<class U, class... Gs>
+	requires (sizeof...(Gs) > 0zu)
+		&& c_mp_unique_pack<Gs...>
+		&& (!detail::c_special_result_type<U>)
+		&& (... && !detail::c_special_result_type<Gs>)
+	friend class Result;
 
 public:
 	using ValueType = T;
 	using ErrorTypes = MpList<Errs...>;
+
+	template<class U>
+	using Rebind = Result<U, Errs...>;
 
 	Result() = default;
 
@@ -50,7 +70,47 @@ public:
 	FR_FORCE_INLINE constexpr
 	Result(FromErrorInit, Args&&... args)
 	noexcept(std::is_nothrow_constructible_v<FirstErr, Args...>):
-		_state{std::in_place_index<1zu>, std::forward<Args>(args)...}
+		_state{std::in_place_index<2zu>, std::forward<Args>(args)...}
+	{ }
+
+	template<class U, class... Gs>
+	requires c_mp_subset_of<MpList<Gs...>, ErrorTypes>
+	constexpr FR_FLATTEN
+	Result(FromErrorInit, const Result<U, Gs...>& other):
+		_state{std::visit([&other]<class G>(const G& err) -> State {
+			static constexpr auto idx = mp_find<ErrorTypes, G> + 2zu;
+			if constexpr (std::is_same_v<G, std::monostate>) {
+				FR_ASSERT(false);
+				return State{std::in_place_index<1zu>};
+			}
+			if constexpr (std::is_same_v<G, U>) {
+				FR_ASSERT(other._state.index() != 0zu);
+				return State{std::in_place_index<idx>, err};
+			}
+			else {
+				return State{std::in_place_index<idx>, err};
+			}
+		}, other._state)}
+	{ }
+
+	template<class U, class... Gs>
+	requires c_mp_subset_of<MpList<Gs...>, ErrorTypes>
+	constexpr FR_FLATTEN
+	Result(FromErrorInit, Result<U, Gs...>&& other):
+		_state{std::visit([&other]<class G>(G&& err) -> State {
+			static constexpr auto idx = mp_find<ErrorTypes, std::remove_reference_t<G>> + 2zu;
+			if constexpr (std::is_same_v<std::remove_reference_t<G>, std::monostate>) {
+				FR_ASSERT(false);
+				return State{std::in_place_index<1zu>};
+			}
+			if constexpr (std::is_same_v<std::remove_reference_t<G>, U>) {
+				FR_ASSERT(other._state.index() != 0zu);
+				return State{std::in_place_index<idx>, std::move(err)};
+			}
+			else {
+				return State{std::in_place_index<idx>, std::move(err)};
+			}
+		}, std::move(other)._state)}
 	{ }
 
 	template<class E, class... Args>
@@ -58,7 +118,7 @@ public:
 	FR_FORCE_INLINE constexpr
 	Result(FromErrorAsInit<E>, Args&&... args)
 	noexcept(std::is_nothrow_constructible_v<E, Args...>):
-		_state{std::in_place_type<E>, std::forward<Args>(args)...}
+		_state{std::in_place_index<mp_find<ErrorTypes, E> + 2zu>, std::forward<Args>(args)...}
 	{ }
 
 	template<class U = std::remove_cv_t<T>>
@@ -78,7 +138,16 @@ public:
 		&& std::assignable_from<T&, U>)
 	FR_FORCE_INLINE constexpr
 	auto operator=(U&& value) noexcept(std::is_nothrow_assignable_v<T&, U>) -> Result& {
-		_state.emplace<0zu>(std::forward<U>(value));
+		_state.template emplace<0zu>(std::forward<U>(value));
+		return *this;
+	}
+
+	template<class... Args>
+	requires c_nothrow_constructible<T, Args...>
+	FR_FORCE_INLINE constexpr
+	auto emplace(Args&&... args) noexcept -> Result& {
+		_state.template emplace<0zu>(std::forward<Args>(args)...);
+		return *this;
 	}
 
 	explicit FR_FORCE_INLINE constexpr
@@ -90,14 +159,14 @@ public:
 	template<c_mp_pack_contains_once<Errs...> E>
 	FR_FORCE_INLINE constexpr
 	auto has_error() const noexcept {
-		static constexpr auto idx = mp_find<ErrorTypes, E> + 1zu;
+		static constexpr auto idx = mp_find<ErrorTypes, E> + 2zu;
 		return _state.index() == idx;
 	}
 
 	FR_FORCE_INLINE constexpr
 	auto has_error() const noexcept
 	requires (sizeof...(Errs) == 1zu) {
-		return _state.index() == 1zu;
+		return _state.index() == 2zu;
 	}
 
 	template<class Self>
@@ -128,14 +197,14 @@ public:
 	requires (sizeof...(Errs) == 1zu)
 	constexpr FR_FLATTEN
 	auto error(this Self&& self) noexcept -> FwdLike<MpPackFirst<Errs...>, Self> {
-		FR_PANIC_CHECK(self._state.index() == 1zu);
+		FR_PANIC_CHECK(self._state.index() == 2zu);
 		return std::get<1zu>(std::forward<Self>(self)._state);
 	}
 
 	template<c_mp_pack_contains_once<Errs...> E, class Self>
 	constexpr FR_FLATTEN
 	auto error(this Self&& self) noexcept -> FwdLike<E, Self> {
-		static constexpr auto idx = mp_find<ErrorTypes, E> + 1zu;
+		static constexpr auto idx = mp_find<ErrorTypes, E> + 2zu;
 		FR_PANIC_CHECK(self._state.index() == idx);
 		return std::get<idx>(std::forward<Self>(self)._state);
 	}
@@ -171,7 +240,7 @@ public:
 	constexpr FR_FLATTEN
 	auto error_or(G&& fallback) const&
 	noexcept(c_nothrow_copy_constructible<E> && c_nothrow_explicitly_convertible_to<G, E>) -> E {
-		static constexpr auto idx = mp_find<ErrorTypes, E> + 1zu;
+		static constexpr auto idx = mp_find<ErrorTypes, E> + 2zu;
 		if (_state.index() == idx)
 			return std::get<idx>(_state);
 		return static_cast<E>(std::forward<G>(fallback));
@@ -184,7 +253,7 @@ public:
 	constexpr FR_FLATTEN
 	auto error_or(G&& fallback) &&
 	noexcept(c_nothrow_move_constructible<E> && c_nothrow_explicitly_convertible_to<G, E>) -> E {
-		static constexpr auto idx = mp_find<ErrorTypes, E> + 1zu;
+		static constexpr auto idx = mp_find<ErrorTypes, E> + 2zu;
 		if (_state.index() == idx)
 			return std::get<idx>(std::move(_state));
 		return static_cast<E>(std::forward<G>(fallback));
@@ -198,8 +267,8 @@ public:
 	auto error_or(G&& fallback) const& noexcept(
 		c_nothrow_copy_constructible<FirstErr> && c_nothrow_explicitly_convertible_to<G, FirstErr>
 	) -> FirstErr {
-		if (_state.index() == 1zu)
-			return std::get<1zu>(_state);
+		if (_state.index() == 2zu)
+			return std::get<2zu>(_state);
 		return static_cast<FirstErr>(std::forward<G>(fallback));
 	}
 
@@ -211,13 +280,13 @@ public:
 	auto error_or(G&& fallback) && noexcept(
 		c_nothrow_move_constructible<FirstErr> && c_nothrow_explicitly_convertible_to<G, FirstErr>
 	) -> FirstErr {
-		if (_state.index() == 1zu)
-			return std::get<1zu>(std::move(_state));
+		if (_state.index() == 2zu)
+			return std::get<2zu>(std::move(_state));
 		return static_cast<FirstErr>(std::forward<G>(fallback));
 	}
 
 private:
-	std::variant<Value, Errs...> _state;
+	State _state;
 };
 
 } // namespace fr

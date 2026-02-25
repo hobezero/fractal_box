@@ -79,6 +79,9 @@ concept c_convertible_to = std::convertible_to<From, To>;
 template<class From, class To>
 concept c_nothrow_implicitly_convertible_to = std::is_nothrow_convertible_v<From, To>;
 
+template<class T, class... Args>
+concept c_nothrow_constructible = std::is_nothrow_constructible_v<T, Args...>;
+
 template<class T>
 concept c_nothrow_copy_constructible = std::is_nothrow_copy_constructible_v<T>;
 
