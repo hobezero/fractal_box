@@ -46,10 +46,10 @@ public:
 		, _order{GlAttribOrder::Interleaved} // doesn't matter which one
 	{ }
 
-	constexpr bool hasVertexCount() const noexcept { return *_count != unknown_gl_vertex_count; }
+	constexpr bool has_vertex_count() const noexcept { return *_count != unknown_gl_vertex_count; }
 
 	/// @pre `hasVertexCount()`
-	size_t calcDataSize() const noexcept;
+	size_t calc_data_size() const noexcept;
 
 	constexpr
 	auto order() const noexcept -> GlAttribOrder { return _order.value(); }
@@ -80,7 +80,7 @@ public:
 	{
 #if FR_ASSERT_ENABLED
 		for (auto& block : _blocks) {
-			FR_ASSERT_CHECK(block.hasVertexCount());
+			FR_ASSERT_CHECK(block.has_vertex_count());
 		}
 #endif
 	}
@@ -89,7 +89,7 @@ public:
 		: _blocks(std::move(blocks))
 	{
 		for (auto& block : _blocks) {
-			FR_ASSERT(!block.hasVertexCount());
+			FR_ASSERT(!block.has_vertex_count());
 			block.setCount(vetexCount);
 		}
 	}
@@ -133,7 +133,7 @@ public:
 	) -> std::optional<GlVertexBuffer>;
 
 	static
-	auto makeFromRawData(
+	auto make_from_raw_data(
 		std::span<const std::byte> data,
 		GlBufferLayout layout,
 		GlBufferUsage usage,
@@ -162,7 +162,7 @@ public:
 	GlObjectId release() noexcept;
 	void destroy() noexcept;
 
-	static void bindById(GlObjectId native_id) noexcept;
+	static void bind_by_id(GlObjectId native_id) noexcept;
 	void bind() noexcept;
 	static void unbind() noexcept;
 
@@ -179,7 +179,7 @@ private:
 	GlBufferLayout _layout;
 	WithDefaultValue<default_usage> _usage;
 	/// @brief Size of the GPU managed data in bytes
-	WithDefault<size_t, 0> _dataSize;
+	WithDefault<size_t, 0> _data_size;
 };
 
 enum class GlIndexType: GLenum {
@@ -249,26 +249,20 @@ public:
 	bool isValid() const noexcept { return !_oid.is_default(); }
 
 	GlObjectId native_id() const noexcept { return *_oid; }
-	GlIndexType indexType() const noexcept { return *_dataType; }
-	GLsizei vertexCount() const noexcept { return *_vertexCount; }
+	GlIndexType indexType() const noexcept { return *_data_type; }
+	GLsizei vertexCount() const noexcept { return *_vertex_count; }
 
 private:
 	void do_destroy() noexcept;
 
 private:
 	WithDefaultValue<null_native_id> _oid;
-	WithDefaultValue<GlIndexType{}> _dataType;
-	WithDefaultValue<unknown_gl_vertex_count> _vertexCount;
+	WithDefaultValue<GlIndexType{}> _data_type;
+	WithDefaultValue<unknown_gl_vertex_count> _vertex_count;
 };
 
 /// See `Magnum::DynamicAttribute` (in Attribute.h:703)
 struct GlMeshAttribInfo {
-	GlAttribLabel label;
-	GlObjectId arrayBufferId;
-	GLuint location;
-	GLintptr offset;
-	GLsizei stride; // `DynamicAttribute::_vectorStride`
-	// TODO: GLuint divisor;
 
 	static constexpr bool validate(
 		std::span<const GlMeshAttribInfo> attributes,
@@ -316,7 +310,7 @@ struct GlMeshAttribInfo {
 
 		for (auto attrib : attributes) {
 			const auto cmpById = [&attrib](const auto& buffer) {
-				return buffer->native_id() == attrib.arrayBufferId;
+				return buffer->native_id() == attrib.array_buffer_id;
 			};
 
 			// Each attribute should refer to one of the buffers
@@ -324,14 +318,14 @@ struct GlMeshAttribInfo {
 				cmpById);
 			if (buffer == vertexBuffers.end()) {
 				error_sink.push(fmt::format("attribute '{}' doesn't refer to any of the buffers "
-					"(buffer id {})", attrib.label.name.str(), attrib.arrayBufferId));
+					"(buffer id {})", attrib.label.name.str(), attrib.array_buffer_id));
 				success = false;
 				continue;
 			}
 
 			// Each attribute should be stored within one of the buffers
-			const auto* const bufferAttribLabel = detail::find_gl_attrib_in_layout((*buffer)->layout(),
-				attrib.label);
+			const auto* const bufferAttribLabel = detail::find_gl_attrib_in_layout(
+				(*buffer)->layout(), attrib.label);
 			if (!bufferAttribLabel) {
 				error_sink.push(fmt::format("attribute '{}' isn't owned by any of the buffers",
 					attrib.label.name.str()));
@@ -349,11 +343,19 @@ struct GlMeshAttribInfo {
 		}
 		return success;
 	}
+
+public:
+	GlAttribLabel label;
+	GlObjectId array_buffer_id;
+	GLuint location;
+	GLintptr offset;
+	GLsizei stride; // `DynamicAttribute::_vectorStride`
+	// TODO: GLuint divisor;
 };
 
 /// @brief The range of vertices that should be drawn by some draw call
 struct GlIndexRange {
-	GLint firstIndex = 0;
+	GLint first_index = 0;
 	GLsizei count = 0;
 };
 
@@ -379,10 +381,10 @@ public:
 	static
 	auto make(
 		GlPrimitive primitive,
-		std::vector<std::shared_ptr<GlVertexBuffer>> vertexBuffers,
+		std::vector<std::shared_ptr<GlVertexBuffer>> vertex_buffers,
 		std::vector<GlMeshAttribInfo> attributes,
-		std::shared_ptr<GlIndexBuffer> indexBuffer,
-		GlIndexRange indexRange,
+		std::shared_ptr<GlIndexBuffer> index_buffer,
+		GlIndexRange index_range,
 		IDiagnosticSink& error_sink
 	) -> std::optional<GlMesh>;
 
@@ -390,10 +392,10 @@ public:
 		AdoptInit,
 		GlObjectId native_id,
 		GlPrimitive primitive,
-		std::vector<std::shared_ptr<GlVertexBuffer>> vertexBuffers,
-		std::shared_ptr<GlIndexBuffer> indexBuffer,
+		std::vector<std::shared_ptr<GlVertexBuffer>> vertex_buffers,
+		std::shared_ptr<GlIndexBuffer> index_buffer,
 		std::vector<GlMeshAttribInfo> attributes,
-		GlIndexRange indexRange
+		GlIndexRange index_range
 	) noexcept;
 
 	GlMesh() = default;
@@ -416,7 +418,7 @@ public:
 
 	bool isValid() const noexcept { return !_oid.is_default(); }
 
-	GlIndexRange indexRange() const noexcept { return *_indexRange; }
+	GlIndexRange indexRange() const noexcept { return *_index_range; }
 	void setIndexRange(GlIndexRange range) noexcept;
 
 	void drawWithBoundShader();
@@ -429,11 +431,11 @@ private:
 	WithDefaultValue<GlPrimitive{}> _primitive;
 	// TODO: Replace with a custom centralized resource manager system based on sparse sets
 	// and reference counting
-	std::vector<std::shared_ptr<GlVertexBuffer>> _vertexBuffers;
-	std::shared_ptr<GlIndexBuffer> _indexBuffer;
+	std::vector<std::shared_ptr<GlVertexBuffer>> _vertex_buffers;
+	std::shared_ptr<GlIndexBuffer> _index_buffer;
 	std::vector<GlMeshAttribInfo> _attributes;
-	WithDefaultValue<GlIndexRange{}> _indexRange;
-	WithDefaultValue<unknown_gl_vertex_count> _totalVertexCount;
+	WithDefaultValue<GlIndexRange{}> _index_range;
+	WithDefaultValue<unknown_gl_vertex_count> _total_vertex_count;
 	// TODO: base vertex
 };
 

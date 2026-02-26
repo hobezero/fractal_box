@@ -87,7 +87,7 @@ void try_init_mesh(
 	std::span<const UvVertex> vertices,
 	IDiagnosticSink& error_sink
 ) {
-	auto buffer = GlVertexBuffer::makeFromRawData(std::as_bytes(vertices),
+	auto buffer = GlVertexBuffer::make_from_raw_data(std::as_bytes(vertices),
 		make_uv_layout_interleaved(), GlBufferUsage::StaticDraw, error_sink);
 	if (!buffer)
 		return;
@@ -99,14 +99,14 @@ void try_init_mesh(
 		{
 			{
 				.label = attrib_pos,
-				.arrayBufferId = buffer_id,
+				.array_buffer_id = buffer_id,
 				.location = 0,
 				.offset = offsetof(UvVertex, pos),
 				.stride = sizeof(UvVertex)
 			},
 			{
 				.label = attrib_tex_coords,
-				.arrayBufferId = buffer_id,
+				.array_buffer_id = buffer_id,
 				.location = 1,
 				.offset = offsetof(UvVertex, tex_coords),
 				.stride = sizeof(UvVertex)

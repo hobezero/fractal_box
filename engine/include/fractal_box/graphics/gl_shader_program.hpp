@@ -186,9 +186,9 @@ public:
 		IDiagnosticSink& warning_sink
 	);
 
-	auto getUniformLocation(const char* uniformName, IDiagnosticSink& error_sink) const
+	auto getUniformLocation(const char* uniform_name, IDiagnosticSink& error_sink) const
 		-> std::optional<GlUniformLocation>;
-	auto getAttributeLocation(const char* attributeName, IDiagnosticSink& error_sink) const
+	auto getAttributeLocation(const char* attribute_name, IDiagnosticSink& error_sink) const
 		-> std::optional<GlAttribLocation>;
 
 	static void useById(GlObjectId programId) noexcept;

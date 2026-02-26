@@ -8,13 +8,13 @@
 
 namespace fr {
 
-size_t GlAttribBlock::calcDataSize() const noexcept {
-	FR_ASSERT(hasVertexCount());
-	size_t columnSize = 0;
+size_t GlAttribBlock::calc_data_size() const noexcept {
+	FR_ASSERT(has_vertex_count());
+	size_t column_size = 0;
 	// TODO: Consider alignment
 	for (const auto& label : _attributes)
-		columnSize += gl_attrib_size(label.data_type, label.num_components);
-	return columnSize * static_cast<size_t>(*_count);
+		column_size += gl_attrib_size(label.data_type, label.num_components);
+	return column_size * static_cast<size_t>(*_count);
 }
 
 auto GlVertexBuffer::make(
@@ -32,7 +32,7 @@ auto GlVertexBuffer::make(
 	return GlVertexBuffer{adopt, oid, std::move(layout), usage, 0};
 }
 
-auto GlVertexBuffer::makeFromRawData(
+auto GlVertexBuffer::make_from_raw_data(
 	std::span<const std::byte> data,
 	GlBufferLayout layout,
 	GlBufferUsage usage,
@@ -58,7 +58,7 @@ auto GlVertexBuffer::makeFromRawData(
 		buffer = std::nullopt;
 		return buffer;
 	}
-	buffer->_dataSize = data.size();
+	buffer->_data_size = data.size();
 	// TODO: Verify that data size corresponds to the number of vertices
 	// TODO: handle GL_OUT_OF_MEMORY
 
@@ -75,7 +75,7 @@ GlVertexBuffer::GlVertexBuffer(
 	: _oid{oid}
 	, _layout{std::move(layout)}
 	, _usage{usage}
-	, _dataSize{dataSize}
+	, _data_size{dataSize}
 { }
 
 GlVertexBuffer& GlVertexBuffer::operator=(GlVertexBuffer&& other) noexcept {
@@ -84,7 +84,7 @@ GlVertexBuffer& GlVertexBuffer::operator=(GlVertexBuffer&& other) noexcept {
 	_oid = std::move(other._oid);
 	_layout = std::move(other._layout);
 	_usage = std::move(other._usage);
-	_dataSize = std::move(other._dataSize);
+	_data_size = std::move(other._data_size);
 
 	return *this;
 }
@@ -99,13 +99,13 @@ void swap(GlVertexBuffer& lhs, GlVertexBuffer& rhs) noexcept {
 	swap(lhs._oid, rhs._oid);
 	swap(lhs._layout, rhs._layout);
 	swap(lhs._usage, rhs._usage);
-	swap(lhs._dataSize, rhs._dataSize);
+	swap(lhs._data_size, rhs._data_size);
 }
 
 GlObjectId GlVertexBuffer::release() noexcept {
 	_layout.clear();
 	_usage.release();
-	_dataSize.release();
+	_data_size.release();
 
 	return _oid.release();
 }
@@ -123,16 +123,16 @@ void GlVertexBuffer::do_destroy() noexcept {
 	}
 }
 
-void GlVertexBuffer::bindById(GlObjectId native_id) noexcept {
+void GlVertexBuffer::bind_by_id(GlObjectId native_id) noexcept {
 	glBindBuffer(GL_ARRAY_BUFFER, native_id);
 }
 
 void GlVertexBuffer::bind() noexcept {
-	bindById(*_oid);
+	bind_by_id(*_oid);
 }
 
 void GlVertexBuffer::unbind() noexcept {
-	bindById(null_native_id);
+	bind_by_id(null_native_id);
 }
 
 auto GlIndexBuffer::make(IDiagnosticSink& error_sink) -> std::optional<GlIndexBuffer> {
@@ -149,20 +149,20 @@ auto GlIndexBuffer::make(IDiagnosticSink& error_sink) -> std::optional<GlIndexBu
 GlIndexBuffer::GlIndexBuffer(
 	AdoptInit,
 	GlObjectId oid,
-	GlIndexType dataType,
-	GLsizei vertexCount
+	GlIndexType data_type,
+	GLsizei vertex_count
 ) noexcept
 	: _oid{oid}
-	, _dataType{dataType}
-	, _vertexCount{vertexCount}
+	, _data_type{data_type}
+	, _vertex_count{vertex_count}
 { }
 
 GlIndexBuffer& GlIndexBuffer::operator=(GlIndexBuffer&& other) noexcept {
 	do_destroy();
 
 	_oid = std::move(other._oid);
-	_dataType = std::move(other._dataType);
-	_vertexCount = std::move(other._vertexCount);
+	_data_type = std::move(other._data_type);
+	_vertex_count = std::move(other._vertex_count);
 
 	return *this;
 }
@@ -175,13 +175,13 @@ void swap(GlIndexBuffer& lhs, GlIndexBuffer& rhs) noexcept {
 	using std::swap;
 
 	swap(lhs._oid, rhs._oid);
-	swap(lhs._dataType, rhs._dataType);
-	swap(lhs._vertexCount, rhs._vertexCount);
+	swap(lhs._data_type, rhs._data_type);
+	swap(lhs._vertex_count, rhs._vertex_count);
 }
 
 GlObjectId GlIndexBuffer::release() noexcept {
-	_dataType.release();
-	_vertexCount.release();
+	_data_type.release();
+	_vertex_count.release();
 
 	return _oid.release();
 }
@@ -209,10 +209,10 @@ void GlIndexBuffer::unbind() noexcept {
 
 auto GlMesh::make(
 	GlPrimitive primitive,
-	std::vector<std::shared_ptr<GlVertexBuffer>> vertexBuffers,
+	std::vector<std::shared_ptr<GlVertexBuffer>> vertex_buffers,
 	std::vector<GlMeshAttribInfo> attributes,
-	std::shared_ptr<GlIndexBuffer> indexBuffer,
-	GlIndexRange indexRange,
+	std::shared_ptr<GlIndexBuffer> index_buffer,
+	GlIndexRange index_range,
 	IDiagnosticSink& error_sink
 ) -> std::optional<GlMesh> {
 	DiagnosticSinkSlice myErrors{error_sink, [](const Diagnostic& error) {
@@ -227,17 +227,17 @@ auto GlMesh::make(
 		return std::nullopt;
 	}
 
-	if (!GlMeshAttribInfo::validate(attributes, vertexBuffers, myErrors))
+	if (!GlMeshAttribInfo::validate(attributes, vertex_buffers, myErrors))
 		return std::nullopt;
 
 	auto mesh = GlMesh{
 		adopt,
 		oid,
 		primitive,
-		std::move(vertexBuffers),
-		std::move(indexBuffer),
+		std::move(vertex_buffers),
+		std::move(index_buffer),
 		std::move(attributes),
-		indexRange
+		index_range
 	};
 
 	FR_DEFER [] {
@@ -246,10 +246,10 @@ auto GlMesh::make(
 		GlVertexBuffer::unbind();
 	};
 	mesh.bind();
-	GlObjectId currentBuffer = GlVertexBuffer::null_native_id;
+	GlObjectId current_buffer = GlVertexBuffer::null_native_id;
 	for (const auto& attrib : mesh._attributes) {
-		if (attrib.arrayBufferId != currentBuffer)
-			GlVertexBuffer::bindById(attrib.arrayBufferId);
+		if (attrib.array_buffer_id != current_buffer)
+			GlVertexBuffer::bind_by_id(attrib.array_buffer_id);
 		glEnableVertexAttribArray(attrib.location);
 		glVertexAttribPointer(
 			attrib.location,
@@ -266,8 +266,8 @@ auto GlMesh::make(
 		return std::nullopt;
 	}
 
-	if (mesh._indexBuffer) {
-		mesh._indexBuffer->bind();
+	if (mesh._index_buffer) {
+		mesh._index_buffer->bind();
 	}
 
 	if (const auto error_flags = get_all_gl_error_flags()) {
@@ -281,18 +281,18 @@ auto GlMesh::make(
 GlMesh::GlMesh(AdoptInit,
 	GlObjectId native_id,
 	GlPrimitive primitive,
-	std::vector<std::shared_ptr<GlVertexBuffer>> vertexBuffers,
-	std::shared_ptr<GlIndexBuffer> indexBuffer,
+	std::vector<std::shared_ptr<GlVertexBuffer>> vertex_buffers,
+	std::shared_ptr<GlIndexBuffer> index_buffer,
 	std::vector<GlMeshAttribInfo> attributes,
-	GlIndexRange indexRange
+	GlIndexRange index_range
 ) noexcept
 	: _oid{native_id}
 	, _primitive{primitive}
-	, _vertexBuffers(std::move(vertexBuffers))
-	, _indexBuffer{std::move(indexBuffer)}
+	, _vertex_buffers(std::move(vertex_buffers))
+	, _index_buffer{std::move(index_buffer)}
 	, _attributes(std::move(attributes))
-	, _indexRange{indexRange}
-	, _totalVertexCount{indexBuffer ? indexBuffer->vertexCount() : unknown_gl_vertex_count}
+	, _index_range{index_range}
+	, _total_vertex_count{index_buffer ? index_buffer->vertexCount() : unknown_gl_vertex_count}
 { }
 
 GlMesh& GlMesh::operator=(GlMesh&& other) noexcept {
@@ -300,11 +300,11 @@ GlMesh& GlMesh::operator=(GlMesh&& other) noexcept {
 
 	_oid = std::move(other._oid);
 	_primitive = std::move(other._primitive);
-	_vertexBuffers = std::move(other._vertexBuffers);
-	_indexBuffer = std::move(other._indexBuffer);
+	_vertex_buffers = std::move(other._vertex_buffers);
+	_index_buffer = std::move(other._index_buffer);
 	_attributes = std::move(other._attributes);
-	_indexRange = std::move(other._indexRange);
-	_totalVertexCount = std::move(other._totalVertexCount);
+	_index_range = std::move(other._index_range);
+	_total_vertex_count = std::move(other._total_vertex_count);
 
 	return *this;
 }
@@ -318,20 +318,20 @@ void swap(GlMesh& lhs, GlMesh& rhs) noexcept {
 
 	swap(lhs._oid, rhs._oid);
 	swap(lhs._primitive, rhs._primitive);
-	swap(lhs._vertexBuffers, rhs._vertexBuffers);
-	swap(lhs._indexBuffer, rhs._indexBuffer);
+	swap(lhs._vertex_buffers, rhs._vertex_buffers);
+	swap(lhs._index_buffer, rhs._index_buffer);
 	swap(lhs._attributes, rhs._attributes);
-	swap(lhs._indexRange, rhs._indexRange);
-	swap(lhs._totalVertexCount, rhs._totalVertexCount);
+	swap(lhs._index_range, rhs._index_range);
+	swap(lhs._total_vertex_count, rhs._total_vertex_count);
 }
 
 GlObjectId GlMesh::release() noexcept {
 	_primitive = null_gl_primitive;
-	_vertexBuffers.clear();
-	_indexBuffer.reset();
+	_vertex_buffers.clear();
+	_index_buffer.reset();
 	_attributes.clear();
-	_indexRange = {};
-	_totalVertexCount = unknown_gl_vertex_count;
+	_index_range = {};
+	_total_vertex_count = unknown_gl_vertex_count;
 
 	return _oid.release();
 }
@@ -358,28 +358,28 @@ void GlMesh::unbind() noexcept {
 }
 
 void GlMesh::setIndexRange(GlIndexRange range) noexcept {
-	FR_ASSERT(range.firstIndex >= 0 && range.count > 0);
-	FR_ASSERT(range.firstIndex + range.count <= _totalVertexCount);
+	FR_ASSERT(range.first_index >= 0 && range.count > 0);
+	FR_ASSERT(range.first_index + range.count <= _total_vertex_count);
 
-	_indexRange = range;
+	_index_range = range;
 }
 
 void GlMesh::drawWithBoundShader() {
 	FR_ASSERT(!_oid.is_default());
 
 	bind();
-	if (_indexBuffer && _indexBuffer->isValid()) {
+	if (_index_buffer && _index_buffer->isValid()) {
 		glDrawElements(
 			to_underlying(*_primitive),
-			_indexRange->count,
-			to_underlying(_indexBuffer->indexType()),
-			gl_index_offset_ptr(_indexBuffer->indexType(), _indexRange->firstIndex)
+			_index_range->count,
+			to_underlying(_index_buffer->indexType()),
+			gl_index_offset_ptr(_index_buffer->indexType(), _index_range->first_index)
 		);
 		// glDrawRangeElements: same as glDrawElements, with a potential optimization
-		// (vertex indices pointed by (indices, count) lie between [start, end] inclusive
+		// (vertex indices pointed by (indices, count) lie between [start, end] (inclusive)
 	}
 	else {
-		glDrawArrays(to_underlying(*_primitive), _indexRange->firstIndex, _indexRange->count);
+		glDrawArrays(to_underlying(*_primitive), _index_range->first_index, _index_range->count);
 	}
 
 	FR_GL_ASSERT_FAST();

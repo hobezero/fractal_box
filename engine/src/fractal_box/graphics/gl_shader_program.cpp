@@ -120,24 +120,26 @@ bool GlShader::compile(
 		));
 	};
 
-	const size_t maxNumParts = std::max_element(shaders.begin(), shaders.end(),
-		[](Ref<GlShader> lhs, Ref<GlShader> rhs) { return lhs->_sources.size() < rhs->_sources.size(); }
+	const size_t max_num_parts = std::ranges::max_element(shaders,
+		[](Ref<GlShader> lhs, Ref<GlShader> rhs) {
+			return lhs->_sources.size() < rhs->_sources.size();
+		}
 	)->get()._sources.size();
 
-	std::vector<const GLchar*> pointers(maxNumParts);
-	std::vector<GLint> sizes(maxNumParts);
+	std::vector<const GLchar*> pointers(max_num_parts);
+	std::vector<GLint> sizes(max_num_parts);
 
 	for (Ref<GlShader> shader : shaders) {
-		const size_t numParts = shader->_sources.size();
-		FR_ASSERT(numParts <= static_cast<size_t>(std::numeric_limits<GLsizei>::max()));
-		for (size_t i = 0; i < numParts; ++i) {
+		const size_t num_parts = shader->_sources.size();
+		FR_ASSERT(num_parts <= static_cast<size_t>(std::numeric_limits<GLsizei>::max()));
+		for (size_t i = 0; i < num_parts; ++i) {
 			pointers[i] = static_cast<const GLchar*>(shader->_sources[i].data());
 			const size_t len = shader->_sources[i].size();
 			FR_ASSERT(len <= static_cast<size_t>(std::numeric_limits<GLint>::max()));
 			sizes[i] = static_cast<GLint>(len);
 			// TODO: Convert Unicode characters in WebGL mode
 		}
-		glShaderSource(shader->native_id(), static_cast<GLsizei>(numParts), pointers.data(),
+		glShaderSource(shader->native_id(), static_cast<GLsizei>(num_parts), pointers.data(),
 			sizes.data());
 	}
 
@@ -147,19 +149,19 @@ bool GlShader::compile(
 
 	for (Ref<GlShader> shader : shaders) {
 		GLint success = GL_FALSE;
-		GLint logLength = 0;
+		GLint log_length = 0;
 		glGetShaderiv(shader->native_id(), GL_COMPILE_STATUS, &success);
-		glGetShaderiv(shader->native_id(), GL_INFO_LOG_LENGTH, &logLength);
-		if (logLength < 0) {
+		glGetShaderiv(shader->native_id(), GL_INFO_LOG_LENGTH, &log_length);
+		if (log_length < 0) {
 			addWarning(shader, fmt::format("failed to retrieve info log: "
-				"negative length {} reported", logLength));
-			logLength = 0;
+				"negative length {} reported", log_length));
+			log_length = 0;
 		}
 
-		std::string message(static_cast<size_t>(logLength), '\0');
-		if (logLength > 0) {
-			glGetShaderInfoLog(shader->native_id(), logLength, &logLength, &message[0]);
-			message.resize(static_cast<size_t>(logLength - 1));
+		std::string message(static_cast<size_t>(log_length), '\0');
+		if (log_length > 0) {
+			glGetShaderInfoLog(shader->native_id(), log_length, &log_length, &message[0]);
+			message.resize(static_cast<size_t>(log_length - 1));
 		}
 
 		if (success == GL_TRUE) {
@@ -200,9 +202,9 @@ auto GlShaderProgram::makeLinked(
 		return fmt::format("Warning while making GlShaderProgram '{}': {}", strOr(name), diagnostic);
 	}};
 
-	const size_t numShaders = params.size();
-	std::vector<GlShader> shaders(numShaders);
-	for (size_t i = 0; i < numShaders; ++i) {
+	const size_t num_shaders = params.size();
+	std::vector<GlShader> shaders(num_shaders);
+	for (size_t i = 0; i < num_shaders; ++i) {
 		auto result = GlShader::make(*params[i].type, *std::move(params[i].name), myErrors);
 		if (!result)
 			continue;
@@ -213,12 +215,12 @@ auto GlShaderProgram::makeLinked(
 		return std::nullopt;
 
 	// TODO: remove this allocation
-	std::vector<Ref<GlShader>> shaderRefs;
-	shaderRefs.reserve(numShaders);
-	for (size_t i = 0; i < numShaders; ++i)
-		shaderRefs.push_back(Ref{shaders[i]});
+	std::vector<Ref<GlShader>> shader_refs;
+	shader_refs.reserve(num_shaders);
+	for (size_t i = 0; i < num_shaders; ++i)
+		shader_refs.push_back(Ref{shaders[i]});
 
-	auto compRes = GlShader::compile(shaderRefs, myErrors, myWarnings);
+	auto compRes = GlShader::compile(shader_refs, myErrors, myWarnings);
 	if (!compRes)
 		return std::nullopt;
 
@@ -350,15 +352,15 @@ bool GlShaderProgram::link(
 }
 
 auto GlShaderProgram::getUniformLocation(
-	const char* uniformName, IDiagnosticSink& error_sink
+	const char* uniform_name, IDiagnosticSink& error_sink
 ) const -> std::optional<GlUniformLocation> {
-	FR_ASSERT(uniformName);
+	FR_ASSERT(uniform_name);
 	FR_ASSERT(!_oid.is_default());
 
-	GlUniformLocation location = glGetUniformLocation(*_oid, uniformName);
+	GlUniformLocation location = glGetUniformLocation(*_oid, uniform_name);
 	if (location == -1) {
 		error_sink.push(fmt::format("Failed to get location of uniform '{}' of GlShaderProgram '{}'",
-			uniformName, _name));
+			uniform_name, _name));
 		return std::nullopt;
 	}
 	return location;
@@ -422,19 +424,25 @@ void GlShaderProgram::set_uniform(
 	glUniform1fv(uniform.location(), static_cast<GLsizei>(values.size()), values.data());
 }
 
-void GlShaderProgram::set_uniform(GlUniform<glm::vec2> uniform, std::span<const glm::vec2> values) noexcept {
+void GlShaderProgram::set_uniform(
+	GlUniform<glm::vec2> uniform, std::span<const glm::vec2> values
+) noexcept {
 	FR_ASSERT(!_oid.is_default());
 	glUniform2fv(uniform.location(), static_cast<GLsizei>(values.size()),
 		glm::value_ptr(values.front()));
 }
 
-void GlShaderProgram::set_uniform(GlUniform<glm::vec3> uniform, std::span<const glm::vec3> values) noexcept {
+void GlShaderProgram::set_uniform(
+	GlUniform<glm::vec3> uniform, std::span<const glm::vec3> values
+) noexcept {
 	FR_ASSERT(!_oid.is_default());
 	glUniform3fv(uniform.location(), static_cast<GLsizei>(values.size()),
 		glm::value_ptr(values.front()));
 }
 
-void GlShaderProgram::set_uniform(GlUniform<glm::vec4> uniform, std::span<const glm::vec4> values) noexcept {
+void GlShaderProgram::set_uniform(
+	GlUniform<glm::vec4> uniform, std::span<const glm::vec4> values
+) noexcept {
 	FR_ASSERT(!_oid.is_default());
 	glUniform4fv(uniform.location(), static_cast<GLsizei>(values.size()),
 		glm::value_ptr(values.front()));
@@ -442,7 +450,9 @@ void GlShaderProgram::set_uniform(GlUniform<glm::vec4> uniform, std::span<const 
 
 // set_uniform: int vectors
 
-void GlShaderProgram::set_uniform(GlUniform<GLint> uniform, std::span<const GLint> values) noexcept {
+void GlShaderProgram::set_uniform(
+	GlUniform<GLint> uniform, std::span<const GLint> values
+) noexcept {
 	FR_ASSERT(!_oid.is_default());
 	glUniform1iv(uniform.location(), static_cast<GLsizei>(values.size()), values.data());
 }
@@ -459,7 +469,8 @@ void GlShaderProgram::set_uniform(
 	GlUniform<glm::ivec3> uniform, std::span<const glm::ivec3> values
 ) noexcept {
 	FR_ASSERT(!_oid.is_default());
-	glUniform3iv(uniform.location(), static_cast<GLsizei>(values.size()), glm::value_ptr(values.front()));
+	glUniform3iv(uniform.location(), static_cast<GLsizei>(values.size()),
+		glm::value_ptr(values.front()));
 }
 
 void GlShaderProgram::set_uniform(
