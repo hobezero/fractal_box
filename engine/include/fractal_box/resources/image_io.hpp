@@ -6,7 +6,7 @@
 
 #include <cmrc/cmrc.hpp>
 
-#include "fractal_box/core/diagnostic.hpp"
+#include "fractal_box/core/error_handling/diagnostic.hpp"
 #include "fractal_box/graphics/gl_texture.hpp"
 
 namespace fr {

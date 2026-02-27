@@ -111,7 +111,6 @@ private:
 };
 
 /// @brief An object pool that doesn't provide stable pointers, but guarantees stable indices
-/// @todo TODO: Rename to IndexedPool?
 template<class T, template<class> class Container = std::vector>
 class IndexedPool {
 	using Cell = std::variant<T, typename Container<T>::size_type>;

@@ -7,7 +7,7 @@
 
 #include "fractal_box/core/containers/linear_flat_set.hpp"
 #include "fractal_box/core/default_utils.hpp"
-#include "fractal_box/core/error.hpp"
+#include "fractal_box/core/error_handling/error.hpp"
 #include "fractal_box/graphics/gl_common.hpp"
 #include "fractal_box/graphics/gl_texture.hpp"
 

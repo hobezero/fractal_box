@@ -1,10 +1,10 @@
 #ifndef ASTEROIDS_RESOURCES_HPP
 #define ASTEROIDS_RESOURCES_HPP
 
-#include "fractal_box/core/error.hpp"
+#include "asteroids/shaders.hpp"
+#include "fractal_box/core/error_handling/error.hpp"
 #include "fractal_box/graphics/gl_mesh.hpp"
 #include "fractal_box/graphics/gl_texture.hpp"
-#include "asteroids/shaders.hpp"
 
 namespace aster {
 

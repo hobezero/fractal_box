@@ -10,7 +10,7 @@
 #include "fractal_box/core/assert_fmt.hpp"
 #include "fractal_box/core/containers/sparse_set.hpp"
 #include "fractal_box/core/containers/type_object_map.hpp"
-#include "fractal_box/core/error.hpp"
+#include "fractal_box/core/error_handling/error.hpp"
 #include "fractal_box/core/functional.hpp"
 #include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/logging.hpp"

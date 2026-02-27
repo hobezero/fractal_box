@@ -1,4 +1,4 @@
-#include "fractal_box/core/result.hpp"
+#include "fractal_box/core/error_handling/result.hpp"
 
 #include <string>
 

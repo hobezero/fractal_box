@@ -9,7 +9,7 @@
 
 #include "fractal_box/core/algorithm.hpp"
 #include "fractal_box/core/default_utils.hpp"
-#include "fractal_box/core/diagnostic.hpp"
+#include "fractal_box/core/error_handling/diagnostic.hpp"
 #include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/graphics/gl_attributes.hpp"
 #include "fractal_box/graphics/gl_common.hpp"

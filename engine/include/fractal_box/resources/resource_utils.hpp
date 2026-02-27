@@ -9,7 +9,7 @@
 #include <cmrc/cmrc.hpp>
 
 #include "fractal_box/core/assert_fmt.hpp"
-#include "fractal_box/core/diagnostic.hpp"
+#include "fractal_box/core/error_handling/diagnostic.hpp"
 
 namespace fr {
 

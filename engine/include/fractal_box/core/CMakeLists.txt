@@ -14,11 +14,12 @@ target_sources(fractal_box_engine PRIVATE
 	control_flow.hpp
 	default_utils.hpp
 	enum_utils.hpp
-	error.hpp
 	functional.hpp
 	in_place_args.hpp
 	init_tags.hpp
+	int128.hpp
 	int_types.hpp
+	interval.hpp
 	iterator_utils.hpp
 	log_levels.hpp
 	logging.hpp
@@ -37,5 +38,6 @@ target_sources(fractal_box_engine PRIVATE
 )
 
 add_subdirectory(containers)
+add_subdirectory(error_handling)
 add_subdirectory(hashing)
 add_subdirectory(meta)
