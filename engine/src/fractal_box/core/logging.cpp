@@ -14,8 +14,8 @@ void vlog_message(
 ) {
 	FR_UNUSED(location);
 	auto buffer = fmt::memory_buffer{};
-	fmt::format_to(std::back_inserter(buffer), "[{} {:%T}] ", log_level_prefix_long(log_level),
-		when.time_since_epoch());
+	fmt::format_to(std::back_inserter(buffer), "[{:%T} {}] ", when.time_since_epoch(),
+		log_level_prefix_long(log_level));
 	fmt::vformat_to(std::back_inserter(buffer), format, args);
 	buffer.append(std::string_view{"\n"});
 

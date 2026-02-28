@@ -234,7 +234,7 @@ public:
 	}
 
 	constexpr
-	auto color_idx() -> std::optional<unsigned> {
+	auto color_idx() const -> std::optional<unsigned> {
 		if (is_color())
 			return static_cast<unsigned>(_value - GL_COLOR_ATTACHMENT0);
 		return std::nullopt;
