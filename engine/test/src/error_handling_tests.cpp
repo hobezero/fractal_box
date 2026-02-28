@@ -1,4 +1,5 @@
 #include "fractal_box/core/error_handling/result.hpp"
+#include "fractal_box/core/error_handling/status.hpp"
 
 #include <string>
 
@@ -8,9 +9,16 @@ namespace {
 
 struct A { };
 
+struct HardConstructable {
+	HardConstructable() = delete;
+
+	constexpr
+	HardConstructable(A) noexcept { }
+};
+
 } // namespace
 
-TEST_CASE("Result", "[u][engine][core][result]") {
+TEST_CASE("Result", "[u][engine][core][error_handling]") {
 	SECTION("type properties") {
 		STATIC_CHECK(std::is_default_constructible_v<fr::Result<int, std::string, int>>);
 		STATIC_CHECK(std::is_nothrow_default_constructible_v<fr::Result<int, std::string, int>>);
@@ -48,6 +56,13 @@ TEST_CASE("Result", "[u][engine][core][result]") {
 	}
 	SECTION("construct from value") {
 		const auto a = fr::Result<int, std::string, int>{23};
+		REQUIRE(a.has_value());
+		CHECK(a.value() == 23);
+		CHECK(*a == 23);
+		CHECK(*a.operator->() == 23);
+	}
+	SECTION("construct from value in-place") {
+		const auto a = fr::Result<int, std::string, int>{fr::in_place, 23};
 		REQUIRE(a.has_value());
 		CHECK(a.value() == 23);
 		CHECK(*a == 23);
@@ -194,5 +209,106 @@ TEST_CASE("Result", "[u][engine][core][result]") {
 			auto e = fr::Result<int, int, unsigned, std::string>{23};
 			CHECK(std::move(e).error_or<std::string>("DEF") == "DEF");
 		}
+	}
+}
+
+TEST_CASE("Status", "[u][engine][core][error_handling]") {
+	SECTION("type properties") {
+		STATIC_CHECK(std::is_default_constructible_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_default_constructible_v<fr::Status<>>);
+		STATIC_CHECK(std::is_nothrow_default_constructible_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_nothrow_default_constructible_v<fr::Status<>>);
+		STATIC_CHECK_FALSE(std::is_default_constructible_v<fr::Status<HardConstructable>>);
+
+		STATIC_CHECK(std::is_copy_constructible_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_copy_constructible_v<fr::Status<int>>);
+		STATIC_CHECK(std::is_copy_constructible_v<fr::Status<>>);
+		STATIC_CHECK_FALSE(std::is_nothrow_copy_constructible_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_nothrow_copy_constructible_v<fr::Status<int>>);
+		STATIC_CHECK(std::is_nothrow_copy_constructible_v<fr::Status<>>);
+
+		STATIC_CHECK(std::is_copy_assignable_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_copy_assignable_v<fr::Status<int>>);
+		STATIC_CHECK(std::is_copy_assignable_v<fr::Status<>>);
+		STATIC_CHECK_FALSE(std::is_nothrow_copy_assignable_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_nothrow_copy_assignable_v<fr::Status<int>>);
+		STATIC_CHECK(std::is_nothrow_copy_assignable_v<fr::Status<>>);
+
+		STATIC_CHECK(std::is_move_constructible_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_move_constructible_v<fr::Status<>>);
+		STATIC_CHECK(std::is_nothrow_move_constructible_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_nothrow_move_constructible_v<fr::Status<>>);
+
+		STATIC_CHECK(std::is_move_assignable_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_move_assignable_v<fr::Status<>>);
+		STATIC_CHECK(std::is_nothrow_move_assignable_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_nothrow_move_assignable_v<fr::Status<>>);
+
+		STATIC_CHECK(std::is_destructible_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_nothrow_destructible_v<fr::Status<std::string>>);
+		STATIC_CHECK(std::is_trivially_destructible_v<fr::Status<int>>);
+		STATIC_CHECK(std::is_trivially_destructible_v<fr::Status<>>);
+	}
+	SECTION("default-construct") {
+		SECTION("void value") {
+			const auto a = fr::Status<>{};
+			CHECK(a.has_value());
+			CHECK(a);
+		}
+		SECTION("non-void value") {
+			const auto a = fr::Status<std::string>{};
+			REQUIRE(a.has_value());
+			REQUIRE(a);
+			CHECK(a.value() == std::string{}); // NOLINT
+			CHECK(*a == std::string{}); // NOLINT
+			CHECK(*a.operator->() == std::string{}); // NOLINT
+		}
+	}
+	SECTION("construct from value") {
+		const auto a = fr::Status<std::string>{"abcd"};
+		REQUIRE(a.has_value());
+		REQUIRE(a);
+		CHECK(a.value() == "abcd");
+		CHECK(*a == "abcd");
+		CHECK(*a.operator->() == "abcd");
+	}
+	SECTION("construct from value in-place") {
+		const auto a = fr::Status<std::string>{fr::in_place, "abcd"};
+		REQUIRE(a.has_value());
+		REQUIRE(a);
+		CHECK(a.value() == "abcd");
+		CHECK(*a == "abcd");
+		CHECK(*a.operator->() == "abcd");
+	}
+	SECTION("construct from error") {
+		SECTION("void value") {
+			const auto a = fr::Status<>{fr::from_error};
+			CHECK_FALSE(a.has_value());
+			CHECK_FALSE(a);
+		}
+		SECTION("non-void value") {
+			const auto a = fr::Status<std::string>{fr::from_error};
+			CHECK_FALSE(a.has_value());
+			CHECK_FALSE(a);
+		}
+	}
+	SECTION("assign value") {
+		auto a = fr::Status<std::string>{fr::from_error};
+		a = "abcd";
+		CHECK(a.value() == "abcd");
+
+		auto b = fr::Status<std::string>{"qwe"};
+		b = "abcd";
+		CHECK(b.value() == "abcd");
+
+	}
+	SECTION("emplace value") {
+		auto a = fr::Status<std::string>{fr::from_error};
+		a.emplace("abcd");
+		CHECK(a.value() == "abcd");
+
+		auto b = fr::Status<std::string>{"qwe"};
+		b.emplace("abcd");
+		CHECK(b.value() == "abcd");
 	}
 }

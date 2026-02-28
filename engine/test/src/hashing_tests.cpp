@@ -42,7 +42,7 @@ public:
 
 } // namespace
 
-TEST_CASE("rapidhash.values", "[u][engine][core][hash]") {
+TEST_CASE("rapidhash.values", "[u][engine][core][hashing]") {
 	static constexpr uint64_t seed = UINT64_C(0x2D4523AF012EB42F);
 	static constexpr HashTuple inputs[] = {
 		{
@@ -435,7 +435,7 @@ auto unhashable_view() {
 
 } // namespace
 
-TEST_CASE("get_hashability", "[u][engine][core][hash]") {
+TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 	using enum fr::HashableCategory;
 	using enum fr::HashableMode;
 	using HA = fr::Hashability;
@@ -536,7 +536,7 @@ TEST_CASE("get_hashability", "[u][engine][core][hash]") {
 	}
 }
 
-TEST_CASE("UniHasher.lenses1", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.lenses1", "[u][engine][core][hashing]") {
 	using L1 = fr::detail::UniHashableLens1;
 	SECTION("one byte-hashable") {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<char>};
@@ -603,7 +603,7 @@ public:
 
 } // namespace
 
-TEST_CASE("UniHasher.lenses2", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.lenses2", "[u][engine][core][hashing]") {
 	SECTION("one byte-hashable") {
 		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_list<char>);
 		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.byte_hashables[0]>('a') == 'a');
@@ -697,20 +697,20 @@ auto make_hasher() -> Hasher {
 		return Hasher{};
 }
 
-TEST_CASE("UIntOfSize", "[u][engine][core][hash]") {
+TEST_CASE("UIntOfSize", "[u][engine][core][hashing]") {
 	STATIC_CHECK(std::same_as<fr::UIntOfSize<1>, uint8_t>);
 	STATIC_CHECK(std::same_as<fr::UIntOfSize<2>, uint16_t>);
 	STATIC_CHECK(std::same_as<fr::UIntOfSize<4>, uint32_t>);
 	STATIC_CHECK(std::same_as<fr::UIntOfSize<8>, uint64_t>);
 }
 
-TEST_CASE("HashDigestOfSize", "[u][engine][core][hash]") {
+TEST_CASE("HashDigestOfSize", "[u][engine][core][hashing]") {
 	STATIC_CHECK(std::same_as<fr::HashDigestOfSize<2>, fr::HashDigest16>);
 	STATIC_CHECK(std::same_as<fr::HashDigestOfSize<4>, fr::HashDigest32>);
 	STATIC_CHECK(std::same_as<fr::HashDigestOfSize<8>, fr::HashDigest64>);
 }
 
-TEST_CASE("UniHasher.SFINAE", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.SFINAE", "[u][engine][core][hashing]") {
 	using HashableTypes = fr::MpList<
 		bool,
 		int,
@@ -804,7 +804,7 @@ TEST_CASE("UniHasher.SFINAE", "[u][engine][core][hash]") {
 	}
 }
 
-TEST_CASE("UniHasher.type-properties", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.type-properties", "[u][engine][core][hashing]") {
 	fr::for_each_type<Hashers>([]<class Hasher> {
 		if constexpr (Hasher::opts.seeding != Provided) {
 			STATIC_CHECK(std::is_default_constructible_v<Hasher>);
@@ -834,7 +834,7 @@ TEST_CASE("UniHasher.type-properties", "[u][engine][core][hash]") {
 	});
 }
 
-TEST_CASE("UniHasher.primitives", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.primitives", "[u][engine][core][hashing]") {
 	fr::for_each_type<Hashers>([]<class Hasher> {
 		INFO(fr::unqualified_type_name<Hasher>);
 		const auto hasher = make_hasher<Hasher>();
@@ -857,7 +857,7 @@ TEST_CASE("UniHasher.primitives", "[u][engine][core][hash]") {
 	});
 }
 
-TEST_CASE("UniHasher.wrapper-Ptr", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.wrapper-Ptr", "[u][engine][core][hashing]") {
 	fr::for_each_type<Hashers>([]<class Hasher> {
 		INFO(fr::unqualified_type_name<Hasher>);
 		const auto hasher = make_hasher<Hasher>();
@@ -871,7 +871,7 @@ TEST_CASE("UniHasher.wrapper-Ptr", "[u][engine][core][hash]") {
 	});
 }
 
-TEST_CASE("UniHasher.wrapper-Commutative", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.wrapper-Commutative", "[u][engine][core][hashing]") {
 	fr::for_each_type<Hashers>([]<class Hasher> {
 		INFO(fr::unqualified_type_name<Hasher>);
 		const auto hasher = make_hasher<Hasher>();
@@ -899,7 +899,7 @@ TEST_CASE("UniHasher.wrapper-Commutative", "[u][engine][core][hash]") {
 	});
 }
 
-TEST_CASE("UniHasher.strings", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.strings", "[u][engine][core][hashing]") {
 	SECTION("non-equal objects => different hash codes") {
 		fr::for_each_type<Hashers>([]<class Hasher> {
 			INFO(fr::unqualified_type_name<Hasher>);
@@ -980,7 +980,7 @@ TEST_CASE("UniHasher.strings", "[u][engine][core][hash]") {
 	}
 }
 
-TEST_CASE("UniHasher.custom", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.custom", "[u][engine][core][hashing]") {
 	SECTION("equal objects => equal hash codes") {
 		fr::for_each_type<ConstexprHashers>([]<class Hasher> {
 			constexpr auto hasher = make_hasher<Hasher>();
@@ -1013,7 +1013,7 @@ TEST_CASE("UniHasher.custom", "[u][engine][core][hash]") {
 	}
 }
 
-TEST_CASE("UniHasher.described", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.described", "[u][engine][core][hashing]") {
 	SECTION("OptOut") {
 		fr::for_each_type<Hashers>([]<class Hasher> {
 			INFO(fr::unqualified_type_name<Hasher>);
@@ -1088,7 +1088,7 @@ TEST_CASE("UniHasher.described", "[u][engine][core][hash]") {
 	}
 }
 
-TEST_CASE("UniHasher.records", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.records", "[u][engine][core][hashing]") {
 	SECTION("HashableAggregate") {
 		fr::for_each_type<Hashers>([]<class Hasher> {
 			INFO(fr::unqualified_type_name<Hasher>);
@@ -1156,7 +1156,7 @@ TEST_CASE("UniHasher.records", "[u][engine][core][hash]") {
 	}
 }
 
-TEST_CASE("UniHasher.enum", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.enum", "[u][engine][core][hashing]") {
 	fr::for_each_type<Hashers>([]<class Hasher> {
 		INFO(fr::unqualified_type_name<Hasher>);
 		constexpr auto hasher = make_hasher<Hasher>();
@@ -1170,7 +1170,7 @@ TEST_CASE("UniHasher.enum", "[u][engine][core][hash]") {
 	});
 }
 
-TEST_CASE("UniHasher.optional", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.optional", "[u][engine][core][hashing]") {
 	fr::for_each_type<ConstexprHashers>([]<class Hasher> {
 		INFO(fr::unqualified_type_name<Hasher>);
 		constexpr auto comp_hasher = make_hasher<Hasher>();
@@ -1191,7 +1191,7 @@ TEST_CASE("UniHasher.optional", "[u][engine][core][hash]") {
 	});
 }
 
-TEST_CASE("UniHasher.range", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.range", "[u][engine][core][hashing]") {
 	SECTION("CustomStruct[4]") {
 		fr::for_each_type<ConstexprHashers>([]<class Hasher> {
 			INFO(fr::unqualified_type_name<Hasher>);
@@ -1247,7 +1247,7 @@ TEST_CASE("UniHasher.range", "[u][engine][core][hash]") {
 	}
 }
 
-TEST_CASE("UniHasher.provided-static-seed", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.provided-static-seed", "[u][engine][core][hashing]") {
 	using HasherA = fr::UniHasher<{.seeding = Stable, .seed = 25}>;
 	using HasherB = fr::UniHasher<{.seeding = Stable, .seed = 46}>;
 	using HasherC = fr::UniHasher<{.seeding = Stable, .seed = 25}>;
@@ -1268,7 +1268,7 @@ TEST_CASE("UniHasher.provided-static-seed", "[u][engine][core][hash]") {
 	STATIC_CHECK(hasher_a(46) != hasher_b(25));
 }
 
-TEST_CASE("UniHasher.provided-seed", "[u][engine][core][hash]") {
+TEST_CASE("UniHasher.provided-seed", "[u][engine][core][hashing]") {
 	using Hasher = fr::UniHasher<{.seeding = Provided}>;
 
 	const auto hasher_a = Hasher{25};

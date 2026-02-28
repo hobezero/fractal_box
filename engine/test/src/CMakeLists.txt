@@ -5,6 +5,7 @@ target_sources(fractal_box_tests PRIVATE
 	collision_tests.cpp
 	components_tests.cpp
 	concepts_tests.cpp
+	error_handling_tests.cpp
 	functional_tests.cpp
 	hashing_tests.cpp
 	indexed_pool_tests.cpp
@@ -17,7 +18,6 @@ target_sources(fractal_box_tests PRIVATE
 	preprocessor_tests.cpp
 	ref_tests.cpp
 	reflection_tests.cpp
-	result_tests.cpp
 	scope_tests.cpp
 	sparse_set_tests.cpp
 	type_index_tests.cpp

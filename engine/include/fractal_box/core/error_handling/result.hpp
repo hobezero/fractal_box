@@ -115,7 +115,7 @@ public:
 
 	template<class E, class... Args>
 	requires c_mp_pack_contains_once<E, Errs...>
-	FR_FORCE_INLINE constexpr
+	explicit(false) FR_FORCE_INLINE constexpr
 	Result(FromErrorAsInit<E>, Args&&... args)
 	noexcept(std::is_nothrow_constructible_v<E, Args...>):
 		_state{std::in_place_index<mp_find<ErrorTypes, E> + 2zu>, std::forward<Args>(args)...}
@@ -142,12 +142,17 @@ public:
 		return *this;
 	}
 
+	friend FR_FORCE_INLINE constexpr
+	auto swap(Result& lhs, Result& rhs) noexcept(std::is_nothrow_swappable_v<State>) {
+		using std::swap;
+		swap(lhs._state, rhs._state);
+	}
+
 	template<class... Args>
-	requires c_nothrow_constructible<T, Args...>
+	requires (!c_void<T>) && c_nothrow_constructible<T, Args...>
 	FR_FORCE_INLINE constexpr
-	auto emplace(Args&&... args) noexcept -> Result& {
-		_state.template emplace<0zu>(std::forward<Args>(args)...);
-		return *this;
+	auto emplace(Args&&... args) noexcept -> decltype(auto) {
+		return _state.template emplace<0zu>(std::forward<Args>(args)...);
 	}
 
 	explicit FR_FORCE_INLINE constexpr

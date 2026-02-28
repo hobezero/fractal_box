@@ -63,7 +63,7 @@ auto bench_rapidhash(const std::string& algo_name) {
 	REQUIRE_FALSE(bench.results().empty());
 }
 
-TEST_CASE("bench:rapidhash", "[b][engine][hash]") {
+TEST_CASE("bench:rapidhash", "[b][engine][hashing]") {
 	bench_rapidhash<fr::Rapidhash<true, false, true>>("rapidhash (compact)");
 	bench_rapidhash<fr::Rapidhash<true, false, false>>("rapidhash (non-compact)");
 	bench_rapidhash<fr::Rapidhash<true, true, true>>("rapidhash (compact protected)");
@@ -338,7 +338,7 @@ auto bench_hasher(std::string_view tag, const T& obj) {
 	REQUIRE_FALSE(bench.results().empty());
 }
 
-TEST_CASE("bench:hashers", "[b][engine][hash]") {
+TEST_CASE("bench:hashers", "[b][engine][hashing]") {
 	// TODO: Randomly generate a stream of objects to see branch prediction effects
 	bench_hasher({}, MyDigest<fr::HashDigest64>{67831});
 
