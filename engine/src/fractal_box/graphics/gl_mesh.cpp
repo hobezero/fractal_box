@@ -215,7 +215,7 @@ auto GlMesh::make(
 	GlIndexRange index_range,
 	IDiagnosticSink& error_sink
 ) -> std::optional<GlMesh> {
-	DiagnosticSinkSlice myErrors{error_sink, [](const Diagnostic& error) {
+	DiagnosticSinkSlice myErrors{error_sink, [](const OldDiagnostic& error) {
 		return fmt::format("Can't make GlMesh: {}", error);
 	}};
 

@@ -90,7 +90,7 @@ auto make_texture2d_from_resources(
 	const GlTextureParams& texture_params,
 	IDiagnosticSink& error_sink
 ) -> std::optional<GlTexture2d> {
-	DiagnosticSinkSlice loading_errors {error_sink, [&] (const Diagnostic& error) {
+	DiagnosticSinkSlice loading_errors {error_sink, [&] (const OldDiagnostic& error) {
 		return fmt::format("Failed to load texture asset '{}': {}", file_name, error);
 	}};
 	const auto file_data = try_get_resource_data(assets_fs, file_name);
@@ -99,7 +99,7 @@ auto make_texture2d_from_resources(
 		return std::nullopt;
 	}
 
-	DiagnosticSinkSlice decoding_errors {error_sink, [&] (const Diagnostic& error) {
+	DiagnosticSinkSlice decoding_errors {error_sink, [&] (const OldDiagnostic& error) {
 		return fmt::format("Failed to load texture asset '{}': can't decode image: {}",
 			file_name, error);
 	}};

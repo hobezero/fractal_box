@@ -40,7 +40,7 @@ class KeplerWarsConan(ConanFile):
         self.requires("fmt/12.1.0")
         self.requires("glm/1.0.1")
         self.requires("cityhash/cci.20130801")
-        self.requires("sdl/2.30.7")
+        self.requires("sdl/2.32.10")
         self.requires("stb/cci.20240531")
         self.requires("imgui/1.91.0")
         # TODO: make test dependencies optional

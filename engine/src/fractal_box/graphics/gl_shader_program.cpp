@@ -195,10 +195,10 @@ auto GlShaderProgram::makeLinked(
 	IDiagnosticSink& error_sink,
 	IDiagnosticSink& warning_sink
 ) -> std::optional<GlShaderProgram> {
-	DiagnosticSinkSlice myErrors{error_sink, [&](const Diagnostic& diagnostic) {
+	DiagnosticSinkSlice myErrors{error_sink, [&](const OldDiagnostic& diagnostic) {
 		return fmt::format("Can't make GlShaderProgram '{}': {}", strOr(name), diagnostic);
 	}};
-	DiagnosticSinkSlice myWarnings{warning_sink, [&](const Diagnostic& diagnostic) {
+	DiagnosticSinkSlice myWarnings{warning_sink, [&](const OldDiagnostic& diagnostic) {
 		return fmt::format("Warning while making GlShaderProgram '{}': {}", strOr(name), diagnostic);
 	}};
 

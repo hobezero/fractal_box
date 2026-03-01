@@ -83,3 +83,9 @@ ctest --test-dir build -V -R bench_
 ```
 
 // TODO: How to run benchmarks directly  
+
+## Attribution
+
+This project incorporates parts of the source code of several third-party projects:
+ - [Boost](https://www.boost.org/) licensed under the Boost Software License - Version 1.0
+ - [rapidhash](https://github.com/Nicoshev/rapidhash) licensed under the MIT License
