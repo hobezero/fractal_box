@@ -1,13 +1,18 @@
 add_executable(fractal_box_tests)
 
-target_include_directories(fractal_box_tests PRIVATE src)
-
 target_link_libraries(fractal_box_tests PRIVATE
 	$<$<BOOL:${FR_DEV_MODE}>:fractal_box::default_warnings>
 	$<$<BOOL:${FR_DEV_MODE}>:fractal_box::default_errors>
 	fractal_box::sanitizer_options
 	fractal_box::engine
 	fractal_box::wrapped_catch2_with_main
+)
+
+target_sources(fractal_box_tests
+	PRIVATE
+		FILE_SET private_headers
+		TYPE HEADERS
+		BASE_DIRS src
 )
 
 add_test(NAME test_assert COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][assert])

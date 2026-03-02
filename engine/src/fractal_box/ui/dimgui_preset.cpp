@@ -2,8 +2,8 @@
 
 #include <SDL2/SDL.h>
 #include <imgui.h>
-#include <imgui_impl_opengl3.h>
-#include <imgui_impl_sdl2.h>
+#include <imgui_backends/imgui_impl_opengl3.h>
+#include <imgui_backends/imgui_impl_sdl2.h>
 
 #include "fractal_box/core/logging.hpp"
 #include "fractal_box/platform/sdl_preset.hpp"

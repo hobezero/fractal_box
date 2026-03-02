@@ -1,4 +1,4 @@
-target_sources(fractal_box_engine PRIVATE
+target_sources(fractal_box_engine PUBLIC FILE_SET HEADERS FILES
 	core_graphics_preset.hpp
 	core_shaders.hpp
 	debug_draw_config.hpp

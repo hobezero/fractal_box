@@ -1,10 +1,15 @@
-#! /usr/bin/env bash
+#!/usr/bin/env bash
 
 usage_message="Usage: conan_install <directory>"
 
-if [[ $# -eq 0 ]]; then
-	echo "Error: expected 1 argument"
-	printf "%s\n" "${usage_message}"
+if [[ $# -ne 1 ]]; then
+	printf "Error: expected 1 argument\n" >&2
+	printf "%s\n" "${usage_message}" >&2
+	exit 1
+fi
+
+if [[ ! -d "$1" ]]; then
+	printf "Error: '%s' is not a directory\n" "$1" >&2
 	exit 1
 fi
 
@@ -22,6 +27,7 @@ function call_conan_install() {
 	conan install "${src_dir}" --output-folder=. --profile:build "$2" --profile:host "$3" --build=missing
 }
 
+# shellcheck source=/dev/null
 source .venv/bin/activate
 
 call_conan_install "${build_dir}/gcc-debug" gcc-release gcc-debug

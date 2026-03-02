@@ -1,3 +1,5 @@
+include_guard(GLOBAL)
+
 # TODO: Split into two functions: enable_options and enable_compiler_flags
 function(enable_sanitizer_options option_prefix option_category namespace)
 	add_library(${namespace}_sanitizer_options INTERFACE)

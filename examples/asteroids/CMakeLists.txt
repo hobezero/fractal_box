@@ -8,7 +8,11 @@ target_link_libraries(asteroids PRIVATE
 	asteroids::assets
 )
 
-target_include_directories(asteroids PRIVATE src)
+target_sources(asteroids
+	PRIVATE
+		FILE_SET HEADERS
+		BASE_DIRS src
+)
 
 if(FR_INSTALL)
 	include(GNUInstallDirs)

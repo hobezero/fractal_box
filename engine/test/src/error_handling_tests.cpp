@@ -9,11 +9,11 @@ namespace {
 
 struct A { };
 
-struct HardConstructable {
-	HardConstructable() = delete;
+struct HardConstructible {
+	HardConstructible() = delete;
 
 	constexpr
-	HardConstructable(A) noexcept { }
+	HardConstructible(A) noexcept { }
 };
 
 } // namespace
@@ -218,7 +218,7 @@ TEST_CASE("Status", "[u][engine][core][error_handling]") {
 		STATIC_CHECK(std::is_default_constructible_v<fr::Status<>>);
 		STATIC_CHECK(std::is_nothrow_default_constructible_v<fr::Status<std::string>>);
 		STATIC_CHECK(std::is_nothrow_default_constructible_v<fr::Status<>>);
-		STATIC_CHECK_FALSE(std::is_default_constructible_v<fr::Status<HardConstructable>>);
+		STATIC_CHECK_FALSE(std::is_default_constructible_v<fr::Status<HardConstructible>>);
 
 		STATIC_CHECK(std::is_copy_constructible_v<fr::Status<std::string>>);
 		STATIC_CHECK(std::is_copy_constructible_v<fr::Status<int>>);

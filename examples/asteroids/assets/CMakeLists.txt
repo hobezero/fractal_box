@@ -1,4 +1,4 @@
-include("${PROJECT_SOURCE_DIR}/cmake/CMakeRC.cmake")
+include("${PROJECT_SOURCE_DIR}/cmake/cmake_rc.cmake")
 
 cmrc_add_resource_library(asteroids_game_assets ALIAS asteroids::assets NAMESPACE aster
 	fonts/Oxanium-SemiBold.ttf
