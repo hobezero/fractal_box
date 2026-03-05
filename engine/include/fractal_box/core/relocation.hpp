@@ -20,7 +20,7 @@ namespace fr {
 
 template<class T>
 concept c_has_custom_is_trivially_relocatable = requires(T x) {
-	{ kepler_custom_is_trivially_relocatable(x) } -> c_const_value_of_type<bool>;
+	{ fr_custom_is_trivially_relocatable(x) } -> c_value_c_of_type<bool>;
 };
 
 template<class T>
@@ -28,7 +28,7 @@ inline constexpr auto is_trivially_relocatable = bool_c<std::is_trivially_copyab
 
 template<c_has_custom_is_trivially_relocatable T>
 inline constexpr auto is_trivially_relocatable<T>
-	= decltype(kepler_custom_is_trivially_relocatable(std::declval<T>())){};
+	= decltype(fr_custom_is_trivially_relocatable(std::declval<T>())){};
 
 template<class T>
 concept c_trivially_relocatable = is_trivially_relocatable<T>();

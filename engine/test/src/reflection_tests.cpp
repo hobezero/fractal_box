@@ -16,12 +16,12 @@
 // NOTE: Can't use an anonymous namespace because `type_name` would produce implementation-
 // specific strings which can't be asserted in unit tests
 
-struct KeplerTestClassInGlobalNs {
+struct FrTestClassInGlobalNs {
 	long long my_int;
 };
 
 template<class T, class U>
-struct KeplerTestTemplateClass {
+struct FrTestTemplateClass {
 	long long my_int;
 };
 
@@ -74,10 +74,9 @@ TEST_CASE("type_name", "[u][engine][core][reflection]") {
 	STATIC_CHECK(fr::type_name_lit<char> == "char"sv);
 	STATIC_CHECK(fr::type_name_lit<long double> == "long double"sv);
 
-	STATIC_CHECK(fr::type_name_lit<KeplerTestClassInGlobalNs>
-		== "KeplerTestClassInGlobalNs"sv);
-	STATIC_CHECK(fr::type_name_lit<KeplerTestTemplateClass<int, long double>>
-		== "KeplerTestTemplateClass<int, long double>"sv);
+	STATIC_CHECK(fr::type_name_lit<FrTestClassInGlobalNs> == "FrTestClassInGlobalNs"sv);
+	STATIC_CHECK(fr::type_name_lit<FrTestTemplateClass<int, long double>>
+		== "FrTestTemplateClass<int, long double>"sv);
 	STATIC_CHECK(fr::type_name_lit<frt::ClassInANs>
 		== "frt::ClassInANs"sv);
 	STATIC_CHECK(fr::type_name_lit<frt::ClassInANs::InnerClass>
@@ -99,10 +98,9 @@ TEST_CASE("unqualified_type_name", "[u][engine][core][reflection]") {
 	STATIC_CHECK(fr::unqualified_type_name_lit<char> == "char"sv);
 	STATIC_CHECK(fr::unqualified_type_name_lit<long double> == "long double"sv);
 
-	STATIC_CHECK(fr::unqualified_type_name_lit<KeplerTestClassInGlobalNs>
-		== "KeplerTestClassInGlobalNs"sv);
-	STATIC_CHECK(fr::unqualified_type_name_lit<KeplerTestTemplateClass<int, long double>>
-		== "KeplerTestTemplateClass<int, long double>"sv);
+	STATIC_CHECK(fr::unqualified_type_name_lit<FrTestClassInGlobalNs> == "FrTestClassInGlobalNs"sv);
+	STATIC_CHECK(fr::unqualified_type_name_lit<FrTestTemplateClass<int, long double>>
+		== "FrTestTemplateClass<int, long double>"sv);
 	STATIC_CHECK(fr::unqualified_type_name_lit<frt::ClassInANs>
 		== "ClassInANs"sv);
 	STATIC_CHECK(fr::unqualified_type_name_lit<frt::ClassInANs::InnerClass>
@@ -125,10 +123,9 @@ TEST_CASE("clean_type_name", "[u][engine][core][reflection]") {
 	STATIC_CHECK(fr::clean_type_name_lit<char> == "char"sv);
 	STATIC_CHECK(fr::clean_type_name_lit<long double> == "long double"sv);
 
-	STATIC_CHECK(fr::clean_type_name_lit<KeplerTestClassInGlobalNs>
-		== "KeplerTestClassInGlobalNs"sv);
-	STATIC_CHECK(fr::clean_type_name_lit<KeplerTestTemplateClass<int, long double>>
-		== "KeplerTestTemplateClass"sv);
+	STATIC_CHECK(fr::clean_type_name_lit<FrTestClassInGlobalNs> == "FrTestClassInGlobalNs"sv);
+	STATIC_CHECK(fr::clean_type_name_lit<FrTestTemplateClass<int, long double>>
+		== "FrTestTemplateClass"sv);
 	STATIC_CHECK(fr::clean_type_name_lit<frt::ClassInANs>
 		== "ClassInANs"sv);
 	STATIC_CHECK(fr::clean_type_name_lit<frt::ClassInANs::InnerClass>
@@ -140,8 +137,8 @@ TEST_CASE("clean_type_name", "[u][engine][core][reflection]") {
 }
 
 TEST_CASE("member_name", "[u][engine][core][reflection]") {
-	STATIC_CHECK(fr::member_name<&KeplerTestClassInGlobalNs::my_int> == "my_int"sv);
-	STATIC_CHECK(fr::member_name<&KeplerTestTemplateClass<int*, long double>::my_int>
+	STATIC_CHECK(fr::member_name<&FrTestClassInGlobalNs::my_int> == "my_int"sv);
+	STATIC_CHECK(fr::member_name<&FrTestTemplateClass<int*, long double>::my_int>
 		== "my_int"sv);
 	STATIC_CHECK(fr::member_name<&frt::ClassInANs::my_int> == "my_int"sv);
 	STATIC_CHECK(fr::member_name<&frt::ClassInANs::InnerClass::my_int> == "my_int"sv);
@@ -209,7 +206,7 @@ struct MyParentC { };
 
 struct MyGadget {
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(MyGadget) {
+	auto fr_describe(MyGadget) {
 		return fr::class_desc<>;
 	}
 };
@@ -225,7 +222,7 @@ struct MyWidget: public MyParentA, protected MyParentB, private MyParentC {
 	{ }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(MyWidget) noexcept {
+	auto fr_describe(MyWidget) noexcept {
 		return fr::class_desc<
 			fr::Name<"MyWidget">,
 			fr::DisplayName<"My Widget">,

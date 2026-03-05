@@ -1,7 +1,7 @@
 #ifndef FR_BENCH_BENCH_COMMON_BENCH_HELPERS_HPP
 #define FR_BENCH_BENCH_COMMON_BENCH_HELPERS_HPP
 
-namespace kepler_bench {
+namespace frb {
 
 inline constexpr char lorem_text[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
 	"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
@@ -29,5 +29,5 @@ voluptates repudiandae sint et molestiae non recusandae. Itaque earum rerum hic 
 delectus, ut aut reiciendis voluptatibus maiores alias consequatur aut perferendis doloribus
 asperiores repellat.)";
 
-} // namespace kepler_bench
+} // namespace frb
 #endif // include guard

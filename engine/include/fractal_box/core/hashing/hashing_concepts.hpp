@@ -20,7 +20,7 @@ struct DummyHasherVisitor: public HasherVisitorBase {
 
 template<class T>
 concept c_has_custom_hash = requires(const T object, detail::DummyHasherVisitor visitor) {
-	{ kepler_custom_hash(object, visitor) };
+	{ fr_custom_hash(object, visitor) };
 };
 
 template<class T, class Hasher>

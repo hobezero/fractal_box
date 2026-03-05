@@ -45,7 +45,7 @@ concept c_maybe_with_inline_display_name = !requires { T::display_name; }
 
 template<class T>
 concept c_has_describe = requires(std::remove_cvref_t<T> obj) {
-	kepler_describe(obj);
+	fr_describe(obj);
 };
 
 template<class T>
@@ -53,7 +53,7 @@ concept c_described_class
 	= c_class<std::remove_cvref_t<T>>
 	&& c_has_describe<T>
 	&& requires(std::remove_cvref_t<T> obj) {
-		{ kepler_describe(obj) } -> c_class_desc;
+		{ fr_describe(obj) } -> c_class_desc;
 	};
 
 template<class T>
@@ -78,7 +78,7 @@ struct Description;
 template<c_described_class T>
 struct Description<T> {
 private:
-	using Desc = decltype(kepler_describe(std::declval<T>()));
+	using Desc = decltype(fr_describe(std::declval<T>()));
 	using Parts = typename Desc::Parts;
 	using Names = MpFilter<Parts, IsDescriptionName>;
 	using DisplayNames = MpFilter<Parts, IsDescriptionDisplayName>;

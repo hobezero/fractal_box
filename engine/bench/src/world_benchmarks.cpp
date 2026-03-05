@@ -800,11 +800,11 @@ TEST_CASE("bench:world.stress-testing", "[b][engine][world]") {
 }
 
 extern "C"
-void kepler_world_emplace_component(fr::World<>& world, fr::World<>::Entity eid) noexcept {
+void fr_world_emplace_component(fr::World<>& world, fr::World<>::Entity eid) noexcept {
 	world.emplace_component<A>(eid, 24, 56);
 }
 
 extern "C"
-void kepler_world_emplace_components(fr::World<>& world, fr::World<>::Entity eid) noexcept  {
+void fr_world_emplace_components(fr::World<>& world, fr::World<>::Entity eid) noexcept  {
 	world.emplace_components(eid, fr::in_place_args<A>(24, 56));
 }

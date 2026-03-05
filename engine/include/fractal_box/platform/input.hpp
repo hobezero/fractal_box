@@ -234,7 +234,7 @@ private:
 		// TODO: modifiers?
 
 		friend consteval
-		auto kepler_describe(SwitchInput) noexcept {
+		auto fr_describe(SwitchInput) noexcept {
 			return class_desc<
 				Attributes<Hashable{}>,
 				Field<&SwitchInput::id>,

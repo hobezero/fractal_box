@@ -15,7 +15,6 @@
 #include "bench_common/bench_helpers.hpp"
 #include "bench_common/old_hash.hpp"
 
-namespace kpb = kepler_bench;
 namespace nanobench = ankerl::nanobench;
 
 template<class Algo>
@@ -84,13 +83,13 @@ template<fr::c_hash_digest T>
 struct MyDigest {
 	template<class H>
 	friend constexpr
-	auto kepler_old_custom_hash(const MyDigest& self) noexcept {
+	auto fr_old_custom_hash(const MyDigest& self) noexcept {
 		return H::hash_expansion(self.value);
 	}
 
 	template<class H>
 	friend constexpr
-	void kepler_custom_hash(const MyDigest& self, H& visitor) noexcept {
+	void fr_custom_hash(const MyDigest& self, H& visitor) noexcept {
 		visitor(H::digest(self.value));
 	}
 
@@ -104,12 +103,12 @@ struct MyWrap {
 
 	template<class H>
 	friend constexpr
-	auto kepler_old_custom_hash(const Self& self) noexcept {
+	auto fr_old_custom_hash(const Self& self) noexcept {
 		return H::hash_expansion(self.value);
 	}
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) noexcept {
+	auto fr_describe(const Self&) noexcept {
 		return fr::class_desc<
 			fr::Attributes<fr::Hashable{}>,
 			fr::Field<&Self::value>
@@ -126,12 +125,12 @@ struct MyPair {
 
 	template<class H>
 	friend constexpr
-	auto kepler_old_custom_hash(const Self& self) noexcept {
+	auto fr_old_custom_hash(const Self& self) noexcept {
 		return H::hash_expansion(self.first, self.second);
 	}
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) noexcept {
+	auto fr_describe(const Self&) noexcept {
 		return fr::class_desc<
 			fr::Attributes<fr::Hashable{}>,
 			fr::Field<&Self::first>,
@@ -147,7 +146,7 @@ public:
 struct CustomClass {
 	template<class H>
 	[[maybe_unused]] friend constexpr
-	void kepler_custom_hash(const CustomClass& self, H visitor) noexcept {
+	void fr_custom_hash(const CustomClass& self, H visitor) noexcept {
 		visitor(
 			self.a,
 			self.b,
@@ -173,7 +172,7 @@ public:
 
 struct DescribedClass {
 	[[maybe_unused]] friend constexpr
-	auto kepler_describe(const DescribedClass&) noexcept {
+	auto fr_describe(const DescribedClass&) noexcept {
 		using Self = DescribedClass;
 		return fr::class_desc<
 			fr::Attributes<fr::Hashable{}>,
@@ -230,7 +229,7 @@ requires std::same_as<T, CustomClass>
 	|| std::same_as<T, DescribedClass>
 	|| std::same_as<T, AggregateClass>
 constexpr
-auto kepler_old_custom_hash(const T& self) noexcept {
+auto fr_old_custom_hash(const T& self) noexcept {
 	return H::hash_expansion(
 		self.a,
 		H::hash_range(self.b),
@@ -346,8 +345,8 @@ TEST_CASE("bench:hashers", "[b][engine][hashing]") {
 	bench_hasher({}, MyWrap<uint64_t>{67832});
 
 	bench_hasher("short", MyWrap<std::string>{"abcdefghABCDE"});
-	bench_hasher("medium", MyWrap<std::string>{kpb::lorem_text});
-	bench_hasher("long", MyWrap<std::string>{kpb::lorem_text_long});
+	bench_hasher("medium", MyWrap<std::string>{frb::lorem_text});
+	bench_hasher("long", MyWrap<std::string>{frb::lorem_text_long});
 
 	bench_hasher("engaged", MyWrap<std::optional<uint64_t>>{2345});
 	bench_hasher("disengaged", MyWrap<std::optional<uint64_t>>{std::nullopt});
@@ -371,36 +370,36 @@ TEST_CASE("bench:hashers", "[b][engine][hashing]") {
 }
 
 extern "C"
-auto kepler_hash_int32(int32_t v) noexcept -> fr::HashDigest64 {
+auto fr_hash_int32(int32_t v) noexcept -> fr::HashDigest64 {
 	return fr::UniHasher<>{}(v);
 }
 
 extern "C"
-auto kepler_hash_bool(bool v) noexcept -> fr::HashDigest64 {
+auto fr_hash_bool(bool v) noexcept -> fr::HashDigest64 {
 	return fr::UniHasher<>{}(v);
 }
 
 extern "C"
-auto kepler_hash_bool_std(bool v) noexcept -> fr::HashDigest64 {
+auto fr_hash_bool_std(bool v) noexcept -> fr::HashDigest64 {
 	return calc_std_hash(v);
 }
 
 extern "C"
-auto kepler_hash_pair_bool(std::pair<bool, bool> v) noexcept -> fr::HashDigest64 {
+auto fr_hash_pair_bool(std::pair<bool, bool> v) noexcept -> fr::HashDigest64 {
 	return fr::UniHasher<>{}(v);
 }
 
 extern "C" FR_FLATTEN
-auto kepler_hash_custom(const CustomClass& v) noexcept -> fr::HashDigest64 {
+auto fr_hash_custom(const CustomClass& v) noexcept -> fr::HashDigest64 {
 	return fr::UniHasher<>{}(v);
 }
 
 extern "C" FR_FLATTEN
-auto kepler_hash_described(const DescribedClass& v) noexcept -> fr::HashDigest64 {
+auto fr_hash_described(const DescribedClass& v) noexcept -> fr::HashDigest64 {
 	return fr::UniHasher<>{}(v);
 }
 
 extern "C" FR_FLATTEN
-auto kepler_hash_aggregate(const AggregateClass& v) noexcept -> fr::HashDigest64 {
+auto fr_hash_aggregate(const AggregateClass& v) noexcept -> fr::HashDigest64 {
 	return fr::UniHasher<>{}(v);
 }

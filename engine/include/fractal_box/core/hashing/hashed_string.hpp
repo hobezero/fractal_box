@@ -118,7 +118,7 @@ public:
 	auto operator==(BasicStringId, BasicStringId) -> bool = default;
 
 	friend consteval
-	auto kepler_describe(BasicStringId) noexcept {
+	auto fr_describe(BasicStringId) noexcept {
 		return class_desc<
 			Attributes<HashableMode::OptIn>,
 			Field<&BasicStringId::_hash>,
@@ -225,7 +225,7 @@ public:
 	}
 
 	friend consteval
-	auto kepler_describe(const BasicHashedStr&) noexcept {
+	auto fr_describe(const BasicHashedStr&) noexcept {
 		return class_desc<
 			Attributes<HashableMode::OptIn>,
 			Bases<StringIdType>,
@@ -301,7 +301,7 @@ public:
 	}
 
 	friend consteval
-	auto kepler_describe(const BasicHashedCStrView&) noexcept {
+	auto fr_describe(const BasicHashedCStrView&) noexcept {
 		return class_desc<
 			Attributes<HashableMode::OptIn>,
 			Bases<StringIdType>,
@@ -371,7 +371,7 @@ public:
 	}
 
 	friend consteval
-	auto kepler_describe(const BasicHashedStrView&) noexcept {
+	auto fr_describe(const BasicHashedStrView&) noexcept {
 		return class_desc<
 			Attributes<HashableMode::OptIn>,
 			Bases<StringIdType>,

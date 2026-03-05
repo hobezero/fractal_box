@@ -9,7 +9,7 @@
 
 /// @brief DO NOT USE downstream, this is an implementation detail
 /// @note Has to be in the global namespace
-struct kepler_detail_ReflStruct {
+struct fr_detail_ReflStruct {
 	enum class ReflEnum {
 		ReflValue
 	};
@@ -74,16 +74,16 @@ struct TypeNameHelper {
 };
 
 struct ClassNameHelper {
-	static constexpr auto test_name = pretty_func_name<::kepler_detail_ReflStruct>();
-	static constexpr char test_str[] = "kepler_detail_ReflStruct";
+	static constexpr auto test_name = pretty_func_name<::fr_detail_ReflStruct>();
+	static constexpr char test_str[] = "fr_detail_ReflStruct";
 	static constexpr size_t start_pos = test_name.find(test_str);
 	static_assert(start_pos != std::string_view::npos);
 	static constexpr size_t suffix_len = test_name.size() - start_pos - (std::size(test_str) - 1zu);
 };
 
 struct EnumNameHelper {
-	static constexpr auto test_name = pretty_func_name<::kepler_detail_ReflStruct::ReflEnum>();
-	static constexpr char test_str[] = "kepler_detail_ReflStruct::ReflEnum";
+	static constexpr auto test_name = pretty_func_name<::fr_detail_ReflStruct::ReflEnum>();
+	static constexpr char test_str[] = "fr_detail_ReflStruct::ReflEnum";
 	static constexpr size_t start_pos = test_name.find(test_str);
 	static_assert(start_pos != std::string_view::npos);
 	static constexpr size_t suffix_len = test_name.size() - start_pos - (std::size(test_str) - 1zu);
@@ -91,8 +91,8 @@ struct EnumNameHelper {
 
 struct MemberNameHelper {
 	static constexpr auto test_name = pretty_func_name<
-		&kepler_detail_ReflStruct::_refl_member>();
-	static constexpr char test_str[] = "&kepler_detail_ReflStruct::_refl_member";
+		&fr_detail_ReflStruct::_refl_member>();
+	static constexpr char test_str[] = "&fr_detail_ReflStruct::_refl_member";
 	static constexpr size_t start_pos = test_name.find(test_str);
 	static_assert(start_pos != std::string_view::npos);
 	static constexpr size_t suffix_len = test_name.size() - start_pos - (std::size(test_str) - 1zu);
@@ -100,7 +100,7 @@ struct MemberNameHelper {
 
 struct MemberNameHelper2 {
 	static constexpr auto test_name = pretty_func_name<
-		&fake_object<kepler_detail_ReflStruct>()._refl_member>();
+		&fake_object<fr_detail_ReflStruct>()._refl_member>();
 	static constexpr char test_str[] = "_refl_member";
 	static constexpr size_t start_pos = test_name.find(test_str);
 	static_assert(start_pos != std::string_view::npos);

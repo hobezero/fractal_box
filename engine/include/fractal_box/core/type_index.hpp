@@ -95,7 +95,7 @@ public:
 	auto operator<=>(this TypeIndex, TypeIndex) = default;
 
 	friend consteval
-	auto kepler_describe(TypeIndex) noexcept {
+	auto fr_describe(TypeIndex) noexcept {
 		return class_desc<
 			Attributes<Hashable{}>,
 			Field<&TypeIndex::_value>

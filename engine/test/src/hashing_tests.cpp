@@ -159,7 +159,7 @@ struct CustomStruct {
 public:
 	template<class H>
 	friend constexpr
-	void kepler_custom_hash(const CustomStruct& self, H& visitor) {
+	void fr_custom_hash(const CustomStruct& self, H& visitor) {
 		visitor(self.x, self.y, self.z, self.w);
 	}
 
@@ -188,7 +188,7 @@ struct DescribedNonHashableClass {
 	DescribedNonHashableClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) {
+	auto fr_describe(const Self&) {
 		return fr::class_desc<
 			fr::Field<&Self::_x>,
 			fr::Field<&Self::_y>,
@@ -209,7 +209,7 @@ struct DescribedOptOutClass {
 	DescribedOptOutClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) {
+	auto fr_describe(const Self&) {
 		return fr::class_desc<
 			fr::Attributes<fr::HashableMode::OptOut>,
 			fr::Field<&Self::_x>,
@@ -231,7 +231,7 @@ struct DescribedOptInClass {
 	DescribedOptInClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) {
+	auto fr_describe(const Self&) {
 		return fr::class_desc<
 			fr::Attributes<fr::HashableMode::OptIn>,
 			fr::Field<&Self::_x, fr::Attributes<fr::Hashable{}>>,
@@ -253,7 +253,7 @@ struct DescribedAsBytesClass {
 	DescribedAsBytesClass(int x, int y, int z): _x{x}, _y{y}, _z{z} { }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) {
+	auto fr_describe(const Self&) {
 		return fr::class_desc<
 			fr::Attributes<fr::HashableMode::AsBytes>,
 			fr::Field<&Self::_x>,
@@ -275,7 +275,7 @@ struct DescribedNoneClass {
 	DescribedNoneClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) {
+	auto fr_describe(const Self&) {
 		return fr::class_desc<
 			fr::Attributes<fr::HashableMode::None>,
 			fr::Field<&Self::_x>,
@@ -297,7 +297,7 @@ struct DescribedHashableClass {
 	DescribedHashableClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) {
+	auto fr_describe(const Self&) {
 		return fr::class_desc<
 			fr::Attributes<fr::Hashable{}>,
 			fr::Field<&Self::_x>,
@@ -319,7 +319,7 @@ struct DescribedHashableFalseClass {
 	DescribedHashableFalseClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) {
+	auto fr_describe(const Self&) {
 		return fr::class_desc<
 			fr::Attributes<fr::Hashable{false}>,
 			fr::Field<&Self::_x>,
@@ -344,7 +344,7 @@ public:
 
 struct BaseB {
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const BaseB&) {
+	auto fr_describe(const BaseB&) {
 		return fr::class_desc<
 			fr::Attributes<fr::Hashable{}>,
 			fr::Field<&BaseB::b>,
@@ -381,7 +381,7 @@ struct DescribedHashableWithBasesAndProps: public BaseA, public BaseB, public Ba
 	{ }
 
 	[[maybe_unused]] friend consteval
-	auto kepler_describe(const Self&) {
+	auto fr_describe(const Self&) {
 		return fr::class_desc<
 			fr::Bases<BaseA, BaseB, BaseC>,
 			fr::Attributes<fr::HashableMode::OptIn>,

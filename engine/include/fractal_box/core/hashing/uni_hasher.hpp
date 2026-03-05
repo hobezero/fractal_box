@@ -675,7 +675,7 @@ public:
 					absorb_wrapper(obj);
 				}
 				else if constexpr (hashability.category() == Custom) {
-					kepler_custom_hash(obj, *this);
+					fr_custom_hash(obj, *this);
 				}
 				else if constexpr (hashability.category() == Described) {
 					absorb_described(obj);

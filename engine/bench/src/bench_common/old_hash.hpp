@@ -233,13 +233,13 @@ concept c_old_hashable_by_default = requires(const T& object) {
 };
 
 template<class T, class Digest, class KindC>
-using AdlTestKeplerCustomHash = decltype(
-	kepler_old_custom_hash<HashOps<Digest, KindC::value>>(std::declval<const T&>()));
+using AdlTestFrCustomHash = decltype(
+	fr_old_custom_hash<HashOps<Digest, KindC::value>>(std::declval<const T&>()));
 
-/// @note Can't use `requires` because `kepler_old_custom_hash` might be declared after this header.
+/// @note Can't use `requires` because `fr_old_custom_hash` might be declared after this header.
 /// `is_detected` idiom delays the check until template instantiation
 template<class T, class Digest, HashKind Kind>
-concept c_custom_hashable = is_detected<AdlTestKeplerCustomHash, T, Digest, ValueC<Kind>>;
+concept c_custom_hashable = is_detected<AdlTestFrCustomHash, T, Digest, ValueC<Kind>>;
 
 } // namespace detail
 
@@ -269,7 +269,7 @@ struct Hash<DigestType, Kind, T> {
 			return detail::hash_value_default<Digest, Kind>(value);
 		}
 		else if constexpr (detail::c_custom_hashable<T, Digest, Kind>) {
-			return kepler_old_custom_hash<HashOps<Digest, Kind>>(value);
+			return fr_old_custom_hash<HashOps<Digest, Kind>>(value);
 		}
 		else if constexpr (Kind == HashKind::Unstable &&
 			detail::c_custom_hashable<T, Digest, HashKind::Stable>
@@ -277,7 +277,7 @@ struct Hash<DigestType, Kind, T> {
 			/// TODO: Test this branch
 			return hash_mix_boost(
 				hash_seed_unstable<Digest>,
-				kepler_old_custom_hash<HashOps<Digest, HashKind::Stable>>(value)
+				fr_old_custom_hash<HashOps<Digest, HashKind::Stable>>(value)
 			);
 		}
 		else

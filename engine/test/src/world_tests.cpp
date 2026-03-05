@@ -22,7 +22,7 @@ struct Pos {
 	auto operator==(const Pos&, const Pos&) -> bool = default;
 
 	friend
-	auto kepler_custom_is_trivially_relocatable(Pos) -> fr::TrueC;
+	auto fr_custom_is_trivially_relocatable(Pos) -> fr::TrueC;
 
 public:
 	float x;
@@ -34,7 +34,7 @@ struct Velocity {
 	auto operator==(const Velocity&, const Velocity&) -> bool = default;
 
 	friend
-	auto kepler_custom_is_trivially_relocatable(Velocity) -> fr::TrueC;
+	auto fr_custom_is_trivially_relocatable(Velocity) -> fr::TrueC;
 
 public:
 	float mps;

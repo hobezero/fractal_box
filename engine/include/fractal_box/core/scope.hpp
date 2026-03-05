@@ -69,7 +69,7 @@ struct DeferToken {
 
 } // namespace detail
 
-#define FR_DEFER const auto FR_UNIQUE_NAME(kepler_defer_var) = ::fr::detail::DeferToken{} |
+#define FR_DEFER const auto FR_UNIQUE_NAME(fr_defer_var) = ::fr::detail::DeferToken{} |
 
 } // namespace fr
 #endif // include guard
