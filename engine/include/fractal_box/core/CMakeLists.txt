@@ -14,6 +14,7 @@ target_sources(fractal_box_engine PUBLIC FILE_SET HEADERS FILES
 	control_flow.hpp
 	default_utils.hpp
 	enum_utils.hpp
+	function_ref.hpp
 	functional.hpp
 	in_place_args.hpp
 	init_tags.hpp

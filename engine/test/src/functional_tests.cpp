@@ -1,3 +1,4 @@
+#include "fractal_box/core/function_ref.hpp"
 #include "fractal_box/core/functional.hpp"
 
 #include <catch2/catch_test_macros.hpp>
@@ -204,4 +205,41 @@ TEST_CASE("c_getter_setter_pair", "[u][engine][core][functional]") {
 	CHECK_FALSE(fr::c_getter_setter_pair<&StringProperty::get, &StringProperty::get>);
 	CHECK_FALSE(fr::c_getter_setter_pair<&IntProperty::get, &StringProperty::set>);
 	CHECK_FALSE(fr::c_getter_setter_pair<&StringProperty::get_int_prop, &StringProperty::set>);
+}
+
+namespace {
+
+auto free_func(int x) noexcept -> int {
+	return x + 1;
+}
+
+auto call(fr::FunctionRef<int(int)> f, int param) -> int {
+	return f(param);
+}
+
+struct Callable {
+	auto operator()(int x) const { return x + this->b; }
+	auto operator()(int x) { return x + this->b + 1; } // NOLINT
+
+public:
+	int b;
+};
+
+} // namespace
+
+TEST_CASE("FunctionRef.basics", "[u][engine][core][functional]") {
+	SECTION("free function") {
+		CHECK(call(&free_func, 20) == 21);
+	}
+	SECTION("lambda") {
+		CHECK(call([b = 2](int x) { return x + b; }, 20) == 22);
+	}
+	SECTION("immutable callable object") {
+		const auto c = Callable{3};
+		CHECK(call(c, 20) == 23);
+	}
+	SECTION("mutable callable object") {
+		auto c = Callable{3};
+		CHECK(call(c, 20) == 24);
+	}
 }

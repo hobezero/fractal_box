@@ -152,20 +152,32 @@ enum class Access: uint8_t {
 // Concepts
 // --------
 
+// c_value_c
+// ^^^^^^^^^
+
+template<class T>
+inline constexpr auto is_value_c = false;
+
+template<auto V>
+inline constexpr auto is_value_c<ValueC<V>> = true;
+
+template<class T>
+concept c_value_c = is_value_c<T>;
+
 // c_const_value_of_type
 // ^^^^^^^^^^^^^^^^^^^^^
 
 template<class T, class U>
-inline constexpr auto is_const_value_of_type = false;
+inline constexpr auto is_value_c_of_type = false;
 
 template<class U, U val>
-inline constexpr auto is_const_value_of_type<ValueC<val>, U> = true;
+inline constexpr auto is_value_c_of_type<ValueC<val>, U> = true;
 
 template<class T, class U>
-using IsConstValueOfType = BoolC<is_const_value_of_type<T, U>>;
+using IsValueCOfType = BoolC<is_value_c_of_type<T, U>>;
 
 template<class T, class U>
-concept c_const_value_of_type = is_const_value_of_type<T, U>;
+concept c_value_c_of_type = is_value_c_of_type<T, U>;
 
 // c_type_list
 // ^^^^^^^^^^^
