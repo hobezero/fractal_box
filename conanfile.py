@@ -38,6 +38,7 @@ class KeplerWarsConan(ConanFile):
     def requirements(self):
         self.requires("hedley/15")
         self.requires("fmt/12.1.0")
+        self.requires("sfl/2.0.0")
         self.requires("glm/1.0.1")
         self.requires("cityhash/cci.20130801")
         self.requires("sdl/2.32.10")

@@ -6,6 +6,7 @@ add_library(fractal_box::engine ALIAS fractal_box_engine)
 find_package(Threads REQUIRED)
 find_package(hedley 15 REQUIRED)
 find_package(fmt 12.1 REQUIRED)
+find_package(sfl 2.0 REQUIRED)
 find_package(glm 1.0 REQUIRED)
 find_package(cityhash REQUIRED)
 find_package(SDL2 2.32 REQUIRED)
@@ -29,6 +30,7 @@ target_link_libraries(fractal_box_engine
 		SDL2::SDL2
 		cityhash::cityhash
 		fractal_box::wrapped_glm
+		sfl::sfl
 		fmt::fmt-header-only
 		hedley::hedley
 		Threads::Threads
