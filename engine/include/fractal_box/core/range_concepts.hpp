@@ -12,6 +12,8 @@ namespace fr {
 // Helpers
 // -------
 
+/// @brief Same as `std::ranges::range_value_t`
+/// @todo TODO: Remove this, it's the same as `std::ranges::range_value_t`
 template<class T>
 using RangeValue = std::iter_value_t<decltype(std::ranges::begin(std::declval<T&>()))>;
 
@@ -54,7 +56,8 @@ concept c_container
 		requires std::forward_iterator<typename C::const_iterator>;
 		requires std::convertible_to<typename C::iterator, typename C::const_iterator>;
 		requires std::signed_integral<typename C::difference_type>;
-		/// @note Standard mandates unsigned integers, but let's give some leeway to `ssize_t` gang
+		/// @note The standard mandates unsigned integers, but let's give some leeway to the
+		/// `ssize_t` gang
 		requires std::integral<typename C::size_type>;
 
 		// Member functions

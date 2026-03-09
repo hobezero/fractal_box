@@ -142,33 +142,33 @@ struct PlayerTag { };
 } // namespace
 
 template<>
-struct fmt::formatter<::Pos>: formatter<char> {
+struct fmt::formatter<Pos>: formatter<char> {
 	static
-	auto format(const ::Pos& pos, format_context& ctx) {
+	auto format(const Pos& pos, format_context& ctx) {
 		return fmt::format_to(ctx.out(), "({}, {})", pos.x, pos.y);
 	}
 };
 
 template<>
-struct fmt::formatter<::Velocity>: formatter<float> {
+struct fmt::formatter<Velocity>: formatter<float> {
 	static
-	auto format(const ::Velocity& velocity, format_context& ctx) {
+	auto format(const Velocity& velocity, format_context& ctx) {
 		return fmt::format_to(ctx.out(), "{}", velocity.mps);
 	}
 };
 
 template<>
-struct fmt::formatter<::MyStr>: formatter<char> {
+struct fmt::formatter<MyStr>: formatter<char> {
 	static
-	auto format(const ::MyStr& str, format_context& ctx) {
+	auto format(const MyStr& str, format_context& ctx) {
 		return fmt::format_to(ctx.out(), "{}", str.data);
 	}
 };
 
 template<>
-struct fmt::formatter<::MyData>: formatter<char> {
+struct fmt::formatter<MyData>: formatter<char> {
 	static
-	auto format(const ::MyData& data, format_context& ctx) {
+	auto format(const MyData& data, format_context& ctx) {
 		if (data.data().empty())
 			return fmt::format_to(ctx.out(), "{{}}");
 
@@ -177,25 +177,25 @@ struct fmt::formatter<::MyData>: formatter<char> {
 };
 
 template<>
-struct fmt::formatter<::MyNum>: formatter<char> {
+struct fmt::formatter<MyNum>: formatter<char> {
 	static
-	auto format(const ::MyNum& num, format_context& ctx) {
+	auto format(const MyNum& num, format_context& ctx) {
 		return fmt::format_to(ctx.out(), "{}", num.value);
 	}
 };
 
 template<>
-struct fmt::formatter<::MyChar>: formatter<char> {
+struct fmt::formatter<MyChar>: formatter<char> {
 	static
-	auto format(const ::MyChar& ch, format_context& ctx) {
+	auto format(const MyChar& ch, format_context& ctx) {
 		return fmt::format_to(ctx.out(), "{}", ch.value);
 	}
 };
 
 template<>
-struct fmt::formatter<::MySimd>: formatter<char> {
+struct fmt::formatter<MySimd>: formatter<char> {
 	static
-	auto format(const ::MySimd& simd, format_context& ctx) {
+	auto format(const MySimd& simd, format_context& ctx) {
 		return fmt::format_to(ctx.out(), "{{{}|{}}}", simd.lo, simd.hi);
 	}
 };
@@ -209,13 +209,13 @@ FR_DIAGNOSTIC_POP
 		auto convert(fr::PassAbi<Type> obj) -> std::string { return fmt::format("{}", obj); } \
 	};
 
-FR_TEST_DEFINE_CATCH_STRING_MAKER(::Pos)
-FR_TEST_DEFINE_CATCH_STRING_MAKER(::Velocity)
-FR_TEST_DEFINE_CATCH_STRING_MAKER(::MyStr)
-FR_TEST_DEFINE_CATCH_STRING_MAKER(::MyData)
-FR_TEST_DEFINE_CATCH_STRING_MAKER(::MyNum)
-FR_TEST_DEFINE_CATCH_STRING_MAKER(::MyChar)
-FR_TEST_DEFINE_CATCH_STRING_MAKER(::MySimd)
+FR_TEST_DEFINE_CATCH_STRING_MAKER(Pos)
+FR_TEST_DEFINE_CATCH_STRING_MAKER(Velocity)
+FR_TEST_DEFINE_CATCH_STRING_MAKER(MyStr)
+FR_TEST_DEFINE_CATCH_STRING_MAKER(MyData)
+FR_TEST_DEFINE_CATCH_STRING_MAKER(MyNum)
+FR_TEST_DEFINE_CATCH_STRING_MAKER(MyChar)
+FR_TEST_DEFINE_CATCH_STRING_MAKER(MySimd)
 
 TEST_CASE("Arhetype.hash", "[u][engine][runtime][ecs][world]") {
 	using Pair = std::pair<unsigned, unsigned>;

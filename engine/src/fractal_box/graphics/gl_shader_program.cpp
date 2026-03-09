@@ -160,7 +160,7 @@ bool GlShader::compile(
 
 		std::string message(static_cast<size_t>(log_length), '\0');
 		if (log_length > 0) {
-			glGetShaderInfoLog(shader->native_id(), log_length, &log_length, &message[0]);
+			glGetShaderInfoLog(shader->native_id(), log_length, &log_length, message.data());
 			message.resize(static_cast<size_t>(log_length - 1));
 		}
 
