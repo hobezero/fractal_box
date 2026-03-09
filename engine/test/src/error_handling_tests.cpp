@@ -1,3 +1,4 @@
+#include "fractal_box/core/error_handling/diagnostic.hpp"
 #include "fractal_box/core/error_handling/result.hpp"
 #include "fractal_box/core/error_handling/status.hpp"
 
@@ -310,5 +311,132 @@ TEST_CASE("Status", "[u][engine][core][error_handling]") {
 		auto b = fr::Status<std::string>{"qwe"};
 		b.emplace("abcd");
 		CHECK(b.value() == "abcd");
+	}
+}
+
+namespace {
+
+struct WarnA {
+	auto severity() const noexcept -> fr::DiagnosticSeverity {
+		return fr::DiagnosticSeverity::Warning;
+	}
+
+	friend
+	auto to_string(WarnA) -> std::string { return "WarnA"; }
+};
+
+struct ErrA {
+	auto severity() const noexcept -> fr::DiagnosticSeverity {
+		return fr::DiagnosticSeverity::Error;
+	}
+
+	friend
+	auto to_string(ErrA) -> std::string { return "ErrA"; }
+};
+
+struct ErrB {
+	auto severity() const noexcept -> fr::DiagnosticSeverity {
+		return fr::DiagnosticSeverity::Error;
+	}
+};
+
+auto make_diagnostic_handler(
+	std::vector<fr::DiagnosticTypeId>& error_ids,
+	std::vector<fr::DiagnosticTypeId>& warning_ids,
+	bool expect_context
+) {
+	return [&, expect_context](fr::Diagnostic diag) -> fr::ControlFlow {
+		if (expect_context) {
+			CHECK(diag.parent() != nullptr);
+		}
+		else {
+			CHECK(diag.parent() == nullptr);
+		}
+		if (diag.severity() == fr::DiagnosticSeverity::Error) {
+			error_ids.push_back(diag.type_id());
+			return fr::ControlFlow::Break;
+		}
+
+		warning_ids.push_back(diag.type_id());
+		return fr::ControlFlow::Continue;
+	};
+}
+
+} // namespace
+
+template<>
+struct fmt::formatter<ErrB>: formatter<char> {
+	static
+	auto format(ErrB, format_context& ctx) {
+		return fmt::format_to(ctx.out(), "ErrB");
+	}
+};
+
+TEST_CASE("DiagnosticSink", "[u][engine][core][error_handling]") {
+	auto error_ids = std::vector<fr::DiagnosticTypeId>();
+	auto warning_ids = std::vector<fr::DiagnosticTypeId>();
+
+	auto sink = fr::DiagnosticSink{[](fr::Diagnostic) -> fr::ControlFlow {
+		return fr::ControlFlow::Continue;
+	}};
+
+	SECTION("no context") {
+		sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, false));
+
+		CHECK(sink.push(ErrA{}) == fr::ControlFlow::Break);
+		CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
+			fr::Diagnostic::type_id_for<ErrA>()
+		});
+
+		CHECK(sink.push(WarnA{}) == fr::ControlFlow::Continue);
+		CHECK(warning_ids == std::vector<fr::DiagnosticTypeId>{
+			fr::Diagnostic::type_id_for<WarnA>()
+		});
+
+		CHECK(sink.push(ErrB{}) == fr::ControlFlow::Break);
+		CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
+			fr::Diagnostic::type_id_for<ErrA>(),
+			fr::Diagnostic::type_id_for<ErrB>()
+		});
+
+		CHECK(sink.warning_count() == 1);
+		CHECK(sink.error_count() == 2);
+	}
+	SECTION("with context") {
+		sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, true));
+		const auto ctx_a = sink.make_frame(fr::StringContext{[] { return "CtxA"; }});
+
+		CHECK(sink.push(ErrA{}) == fr::ControlFlow::Break);
+		CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
+			fr::Diagnostic::type_id_for<ErrA>()
+		});
+
+		CHECK(sink.push(WarnA{}) == fr::ControlFlow::Continue);
+		CHECK(warning_ids == std::vector<fr::DiagnosticTypeId>{
+			fr::Diagnostic::type_id_for<WarnA>()
+		});
+
+		{
+			const auto ctx_b = sink.make_frame(fr::StringContext{[] { return "CtxB"; }});
+			const auto obs = sink.make_observer();
+
+			CHECK(sink.push(ErrB{}) == fr::ControlFlow::Break);
+			CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
+				fr::Diagnostic::type_id_for<ErrA>(),
+				fr::Diagnostic::type_id_for<ErrB>()
+			});
+
+			CHECK(ctx_b.warning_count() == 0);
+			CHECK(ctx_b.error_count() == 1);
+
+			CHECK(obs.warning_count() == 0);
+			CHECK(obs.error_count() == 1);
+		}
+
+		CHECK(sink.warning_count() == 1);
+		CHECK(sink.error_count() == 2);
+
+		CHECK(ctx_a.warning_count() == 1);
+		CHECK(ctx_a.error_count() == 2);
 	}
 }

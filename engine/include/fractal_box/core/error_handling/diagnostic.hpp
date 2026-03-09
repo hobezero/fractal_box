@@ -1,21 +1,27 @@
 #ifndef FRACTAL_BOX_CORE_ERROR_HANDLING_DIAGNOSTIC_HPP
 #define FRACTAL_BOX_CORE_ERROR_HANDLING_DIAGNOSTIC_HPP
 
+#include <functional>
+#include <memory>
 #include <span>
 #include <string>
-#include <memory>
 #include <vector>
-// #include <deque>
 
 #include <fmt/format.h>
 
 #include "fractal_box/core/assert.hpp"
+#include "fractal_box/core/control_flow.hpp"
 #include "fractal_box/core/functional.hpp"
 #include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/platform.hpp"
 #include "fractal_box/core/preprocessor.hpp"
 
 namespace fr {
+
+template<class T>
+concept c_has_to_string = requires(const T obj) {
+	{ to_string(obj) } -> std::convertible_to<std::string>;
+};
 
 enum class DiagnosticSeverity: uint8_t {
 	Context,
@@ -24,7 +30,12 @@ enum class DiagnosticSeverity: uint8_t {
 };
 
 template<class T>
-concept c_diagnosticable = c_nothrow_movable<T> && fmt::formattable<T>;
+concept c_diagnosticable
+	= c_nothrow_movable<T>
+	&& (c_has_to_string<T> || fmt::formattable<T>)
+	&& requires(const T obj) {
+		{ obj.severity() } -> std::same_as<DiagnosticSeverity>;
+	};
 
 class Diagnostic;
 
@@ -48,7 +59,7 @@ union DiagnosticStorage {
 
 public:
 	void* ptr;
-	alignas(void*)  unsigned char buffer[3 * sizeof(void*)];
+	alignas(void*) unsigned char buffer[4 * sizeof(void*)];
 };
 
 template<class T>
@@ -67,9 +78,9 @@ struct DiagnosticVTable {
 	using SwapWithHeapFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
 	using SwapWithSboFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
 
+	using SeverityFn = auto (*)(const Diagnostic& dest) -> DiagnosticSeverity;
 	using FormatFn = auto (*)(const Diagnostic& dest) -> std::string;
 
-private:
 public:
 	DestructiveMoveConstructFn destructive_move_construct_fn;
 	DestructiveMoveAssignFn destructive_move_assign_fn;
@@ -79,8 +90,12 @@ public:
 	SwapWithHeapFn swap_with_heap_fn;
 	SwapWithSboFn swap_with_sbo_fn;
 
+	SeverityFn severity_fn;
 	FormatFn format_fn;
 };
+
+template<class T, class Derived>
+struct DiagnosticActionsBase;
 
 template<class T>
 struct DiagnosticActions;
@@ -95,7 +110,7 @@ public:
 	static FR_FORCE_INLINE
 	auto type_id_for() noexcept -> DiagnosticTypeId {
 		return static_cast<DiagnosticTypeId>(reinterpret_cast<uintptr_t>(
-			&detail::DiagnosticActions<T>::template vtable<T>));
+			&detail::DiagnosticActions<T>::vtable));
 	}
 
 	Diagnostic() = default;
@@ -104,10 +119,11 @@ public:
 	requires c_diagnosticable<std::remove_cvref_t<U>>
 		&& (!std::same_as<std::remove_cvref_t<U>, Diagnostic>)
 		&& (!c_in_place_as_init<std::remove_cvref_t<U>>)
-	Diagnostic(U&& value):
+	explicit(false)
+	Diagnostic(U&& value, const Diagnostic* parent = nullptr):
 		_storage{uninitialized},
-		_vptr{&detail::DiagnosticActions<std::remove_cvref_t<U>>
-			::template vtable<std::remove_cvref_t<U>>}
+		_vptr{&detail::DiagnosticActions<std::remove_cvref_t<U>>::vtable},
+		_parent{parent}
 	{
 		using T = std::remove_cvref_t<U>;
 		detail::DiagnosticActions<T>::create(_storage, std::forward<U>(value));
@@ -116,9 +132,10 @@ public:
 	template<class U, class... Args>
 	requires c_diagnosticable<U>
 		&& std::constructible_from<U, Args...>
+	explicit(false)
 	Diagnostic(InPlaceAsInit<U>, Args&&... args):
 		_storage{uninitialized},
-		_vptr{&detail::DiagnosticActions<U>::template vtable<U>}
+		_vptr{&detail::DiagnosticActions<U>::vtable}
 	{
 		detail::DiagnosticActions<U>::create(_storage, std::forward<Args>(args)...);
 	}
@@ -128,7 +145,7 @@ public:
 
 	Diagnostic(Diagnostic&& other) noexcept:
 		_storage{uninitialized},
-		_context{std::exchange(other._context, nullptr)}
+		_parent{std::exchange(other._parent, nullptr)}
 	{
 		if (other._vptr) {
 			other._vptr->destructive_move_construct_fn(*this, other);
@@ -163,7 +180,7 @@ public:
 			_vptr = std::exchange(other._vptr, nullptr);
 		}
 
-		_context = std::exchange(other._context, nullptr);
+		_parent = std::exchange(other._parent, nullptr);
 
 		return *this;
 	}
@@ -192,33 +209,74 @@ public:
 			rhs._vptr->destructive_move_construct_fn(lhs, rhs);
 			lhs._vptr = std::exchange(rhs._vptr, nullptr);
 		}
-		// Otherwise, both objects are empty, do nothing
+
+		using std::swap;
+		swap(lhs._parent, rhs._parent);
 	}
 
 	void reset() noexcept {
 		if (_vptr) {
 			_vptr->destroy_fn(*this);
 			_vptr = nullptr;
-			_context = nullptr;
+			_parent = nullptr;
 		}
 	}
 
+	auto severity() const noexcept -> DiagnosticSeverity {
+		FR_ASSERT(_vptr);
+		return _vptr->severity_fn(*this);
+	}
+
+	auto type_id() const noexcept -> DiagnosticTypeId {
+		return static_cast<DiagnosticTypeId>(reinterpret_cast<uintptr_t>(_vptr));
+	}
+
+	template<c_diagnosticable T>
+	auto is() const noexcept -> bool {
+		return type_id() == type_id_for<T>();
+	}
+
+	auto parent() const noexcept -> const Diagnostic* { return _parent; }
+	auto set_parent(const Diagnostic* parent) noexcept { _parent = parent; }
+
 private:
+	template<class T, class Derived>
+	friend struct detail::DiagnosticActionsBase;
+
 	template<class T>
 	friend struct detail::DiagnosticActions;
 
 private:
 	detail::DiagnosticStorage _storage {zero_init};
-	detail::DiagnosticVTable* _vptr = nullptr;
-	Diagnostic* _context = nullptr;
-	// std::deque<Diagnostic> _children;
+	const detail::DiagnosticVTable* _vptr = nullptr;
+	const Diagnostic* _parent = nullptr;
 };
 
 namespace detail {
 
+template<class T, class Derived>
+struct DiagnosticActionsBase {
+	static
+	auto severity_thunk(const Diagnostic& dest) -> DiagnosticSeverity {
+		return Derived::get_object(dest._storage)->severity();
+	}
+
+	static
+	auto format_thunk(const Diagnostic& dest) -> std::string {
+		if constexpr (c_has_to_string<T>) {
+			return to_string(*Derived::get_object(dest._storage));
+		}
+		else {
+			return fmt::format("{}", *Derived::get_object(dest._storage));
+		}
+	}
+};
+
 template<class T>
-struct DiagnosticActions {
+struct DiagnosticActions: private DiagnosticActionsBase<T, DiagnosticActions<T>> {
 private:
+	using Base = DiagnosticActionsBase<T, DiagnosticActions<T>>;
+
 	static
 	void destructive_move_construct_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
 		dest._storage.ptr = src._storage.release_ptr();
@@ -265,11 +323,6 @@ private:
 		src._storage.ptr = tmp.release();
 	}
 
-	static
-	auto format_thunk(const Diagnostic& dest) -> std::string {
-		return fmt::format("{}", get_object(dest._storage));
-	}
-
 public:
 	static constexpr auto vtable = DiagnosticVTable{
 		.destructive_move_construct_fn = &destructive_move_construct_thunk,
@@ -278,7 +331,8 @@ public:
 		.swap_fn = &swap_thunk,
 		.swap_with_heap_fn = &swap_with_heap_thunk,
 		.swap_with_sbo_fn = &swap_with_sbo_thunk,
-		.format_fn = &format_thunk
+		.severity_fn = &Base::severity_thunk,
+		.format_fn = &Base::format_thunk
 	};
 
 	static FR_FORCE_INLINE
@@ -320,8 +374,10 @@ public:
 };
 
 template<c_diagnostic_sbo_suitable T>
-struct DiagnosticActions<T> {
+struct DiagnosticActions<T>: private DiagnosticActionsBase<T, DiagnosticActions<T>> {
 private:
+	using Base = DiagnosticActionsBase<T, DiagnosticActions<T>>;
+
 	static
 	void destructive_move_construct_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
 		create(dest._storage, std::move(*get_object(src._storage)));
@@ -374,11 +430,6 @@ private:
 		create(src._storage, std::move(tmp));
 	}
 
-	static
-	auto format_thunk(const Diagnostic& dest) -> std::string {
-		return fmt::format("{}", get_object(dest._storage));
-	}
-
 public:
 	static constexpr auto vtable = DiagnosticVTable{
 		.destructive_move_construct_fn = &destructive_move_construct_thunk,
@@ -387,7 +438,8 @@ public:
 		.swap_fn = &swap_thunk,
 		.swap_with_heap_fn = &swap_with_heap_thunk,
 		.swap_with_sbo_fn = &swap_with_sbo_thunk,
-		.format_fn = &format_thunk
+		.severity_fn = &Base::severity_thunk,
+		.format_fn = &Base::format_thunk
 	};
 
 	static FR_FORCE_INLINE
@@ -430,6 +482,178 @@ public:
 };
 
 } // namespace detail
+
+class DiagnosticSink;
+
+class DiagnosticFrame {
+public:
+	explicit
+	DiagnosticFrame(DiagnosticSink& sink) noexcept;
+
+	DiagnosticFrame(const DiagnosticFrame&) = delete;
+	auto operator=(const DiagnosticFrame&) -> DiagnosticFrame& = delete;
+
+	DiagnosticFrame(DiagnosticFrame&&) = delete;
+	auto operator=(DiagnosticFrame&&) -> DiagnosticFrame& = delete;
+
+	~DiagnosticFrame();
+
+	auto warning_count() const noexcept -> size_t;
+	auto error_count() const noexcept -> size_t;
+
+	FR_FORCE_INLINE
+	auto has_warnings() const noexcept -> bool { return warning_count() == 0zu; }
+
+	FR_FORCE_INLINE
+	auto has_errors() const noexcept -> bool { return error_count() == 0zu; }
+
+private:
+	DiagnosticSink* _sink;
+	size_t _init_warning_count;
+	size_t _init_error_count;
+};
+
+class DiagnosticObserver {
+public:
+	explicit
+	DiagnosticObserver(const DiagnosticSink& sink) noexcept;
+
+	auto warning_count() const noexcept -> size_t;
+	auto error_count() const noexcept -> size_t;
+
+	FR_FORCE_INLINE
+	auto has_warnings() const noexcept -> bool { return warning_count() == 0zu; }
+
+	FR_FORCE_INLINE
+	auto has_errors() const noexcept -> bool { return error_count() == 0zu; }
+
+private:
+	const DiagnosticSink* _sink;
+	size_t _init_warning_count;
+	size_t _init_error_count;
+};
+
+class DiagnosticSink {
+public:
+	using Handler = std::function<ControlFlow (Diagnostic)>;
+
+	DiagnosticSink(Handler handler):
+		_handler{std::move(handler)}
+	{ }
+
+	void set_handler(Handler handler) {
+		_handler = std::move(handler);
+	}
+
+	template<class T>
+	requires c_diagnosticable<std::remove_cvref_t<T>>
+	auto push(T&& diagnostic) -> ControlFlow {
+		switch (diagnostic.severity()) {
+			case DiagnosticSeverity::Context:
+				FR_PANIC();
+			case DiagnosticSeverity::Warning:
+				++_warning_count;
+				break;
+			case DiagnosticSeverity::Error:
+				++_error_count;
+				break;
+		}
+
+		FR_PANIC_CHECK(_handler);
+		return _handler(Diagnostic{std::forward<T>(diagnostic), top_frame()});
+	}
+
+	template<class T>
+	requires c_diagnosticable<std::remove_cvref_t<T>>
+	[[nodiscard]]
+	auto make_frame(T&& context) -> DiagnosticFrame {
+		FR_PANIC_CHECK(context.severity() == DiagnosticSeverity::Context);
+		_frame_stack.emplace_back(context, top_frame());
+		return DiagnosticFrame{*this};
+	}
+
+	auto make_observer() const noexcept -> DiagnosticObserver {
+		return DiagnosticObserver{*this};
+	}
+
+	void pop_frame() noexcept {
+		_frame_stack.pop_back();
+	}
+
+	auto top_frame() const noexcept -> const Diagnostic* {
+		return _frame_stack.empty() ? nullptr : &_frame_stack.back();
+	}
+
+	FR_FORCE_INLINE
+	auto warning_count() const noexcept -> size_t { return _warning_count; }
+
+	FR_FORCE_INLINE
+	auto error_count() const noexcept -> size_t { return _error_count; }
+
+private:
+	std::vector<Diagnostic> _frame_stack;
+	Handler _handler;
+	size_t _warning_count = 0zu;
+	size_t _error_count = 0zu;
+};
+
+inline
+DiagnosticFrame::DiagnosticFrame(DiagnosticSink& sink) noexcept:
+	_sink{&sink},
+	_init_warning_count{sink.warning_count()},
+	_init_error_count{sink.error_count()}
+{ }
+
+inline
+auto DiagnosticFrame::warning_count() const noexcept -> size_t {
+	return _sink->warning_count() - _init_warning_count;
+}
+
+inline
+auto DiagnosticFrame::error_count() const noexcept -> size_t {
+	return _sink->error_count() - _init_error_count;
+}
+
+inline
+DiagnosticFrame::~DiagnosticFrame() {
+	_sink->pop_frame();
+}
+
+inline
+DiagnosticObserver::DiagnosticObserver(const DiagnosticSink& sink) noexcept:
+	_sink{&sink},
+	_init_warning_count{sink.warning_count()},
+	_init_error_count{sink.error_count()}
+{ }
+
+inline
+auto DiagnosticObserver::warning_count() const noexcept -> size_t {
+	return _sink->warning_count() - _init_warning_count;
+}
+
+inline
+auto DiagnosticObserver::error_count() const noexcept -> size_t {
+	return _sink->error_count() - _init_error_count;
+}
+
+template<class Func>
+class StringContext {
+public:
+	explicit constexpr
+	StringContext(Func&& func): _func{std::move(func)} { }
+
+	static constexpr
+	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Context; }
+
+	friend
+	auto to_string(const StringContext& context) -> std::string { return context._func(); }
+
+private:
+	Func _func;
+};
+
+template<class F>
+StringContext(F&&) -> StringContext<std::remove_cvref_t<F>>;
 
 /// @todo
 ///   TODO: Support the ability to declare that only one error is possible
@@ -525,7 +749,6 @@ public:
 private:
 	std::vector<OldDiagnostic> _diagnostics;
 };
-
 
 /// @brief Sink every result (an `std::expected`-like object) that is an error
 template<typename... T>
