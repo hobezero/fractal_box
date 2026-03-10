@@ -189,7 +189,7 @@ auto GlShaderProgram::make(
 		(name.empty() ? fmt::format("#{}", oid) : std::move(name))};
 }
 
-auto GlShaderProgram::makeLinked(
+auto GlShaderProgram::make_linked(
 	std::string name,
 	std::span<GlShader::Params> params,
 	IDiagnosticSink& error_sink,
@@ -229,7 +229,7 @@ auto GlShaderProgram::makeLinked(
 		return std::nullopt;
 
 	for (auto& shader : shaders)
-		program->attachShader(shader);
+		program->attach_shader(shader);
 
 	auto linkRes = program->link(myErrors, myWarnings);
 	if (!linkRes)
@@ -283,25 +283,25 @@ void GlShaderProgram::do_destroy() noexcept {
 	}
 }
 
-void GlShaderProgram::attachShader(GlShader& shader) {
+void GlShaderProgram::attach_shader(GlShader& shader) {
 	FR_ASSERT(!_oid.is_default());
 	FR_ASSERT(shader.native_id() != GlShader::null_native_id);
 
 	glAttachShader(*_oid, shader.native_id());
 }
 
-void GlShaderProgram::detachShader(GlShader& shader) {
+void GlShaderProgram::detach_shader(GlShader& shader) {
 	FR_ASSERT(!_oid.is_default());
 	FR_ASSERT(shader.native_id() != GlShader::null_native_id);
 
 	glDetachShader(*_oid, shader.native_id());
 }
 
-bool GlShaderProgram::link(
+auto GlShaderProgram::link(
 	std::span<Ref<GlShaderProgram>> programs,
 	IDiagnosticSink& error_sink,
 	IDiagnosticSink& warning_sink
-) {
+) -> bool {
 	FR_ASSERT(!programs.empty());
 
 	DiagnosticSinkSlice myErrors{error_sink};
@@ -322,20 +322,20 @@ bool GlShaderProgram::link(
 
 	for (Ref<GlShaderProgram> program : programs) {
 		GLint success = GL_FALSE;
-		GLint logLength = 0;
+		GLint log_length = 0;
 		glGetProgramiv(program->oid(), GL_LINK_STATUS, &success);
-		glGetProgramiv(program->oid(), GL_INFO_LOG_LENGTH, &logLength);
+		glGetProgramiv(program->oid(), GL_INFO_LOG_LENGTH, &log_length);
 
-		if (logLength < 0) {
+		if (log_length < 0) {
 			addWarning(program, fmt::format("failed to retrieve info log: "
-				"negative length {} reported", logLength));
-			logLength = 0;
+				"negative length {} reported", log_length));
+			log_length = 0;
 		}
 
-		std::string message(static_cast<size_t>(logLength), '\0');
-		if (logLength > 0) {
-			glGetProgramInfoLog(program->oid(), logLength, &logLength, message.data());
-			message.resize(static_cast<size_t>(logLength - 1));
+		std::string message(static_cast<size_t>(log_length), '\0');
+		if (log_length > 0) {
+			glGetProgramInfoLog(program->oid(), log_length, &log_length, message.data());
+			message.resize(static_cast<size_t>(log_length - 1));
 		}
 
 		if (success == GL_TRUE) {
@@ -351,7 +351,7 @@ bool GlShaderProgram::link(
 	return myErrors.empty();
 }
 
-auto GlShaderProgram::getUniformLocation(
+auto GlShaderProgram::get_uniform_location(
 	const char* uniform_name, IDiagnosticSink& error_sink
 ) const -> std::optional<GlUniformLocation> {
 	FR_ASSERT(uniform_name);
@@ -366,7 +366,7 @@ auto GlShaderProgram::getUniformLocation(
 	return location;
 }
 
-auto GlShaderProgram::getAttributeLocation(
+auto GlShaderProgram::get_attribute_location(
 	const char* attributeName, IDiagnosticSink& error_sink
 ) const -> std::optional<GlUniformLocation> {
 	FR_ASSERT(attributeName);
@@ -381,8 +381,8 @@ auto GlShaderProgram::getAttributeLocation(
 	return location;
 }
 
-void GlShaderProgram::useById(GlObjectId programId) noexcept {
-	glUseProgram(programId);
+void GlShaderProgram::use_by_id(GlObjectId program_id) noexcept {
+	glUseProgram(program_id);
 }
 
 void GlShaderProgram::use() const noexcept {
@@ -702,7 +702,7 @@ void GlShaderProgram::draw(GlMesh& mesh) {
 	FR_ASSERT(!_oid.is_default());
 
 	use();
-	mesh.drawWithBoundShader();
+	mesh.draw_with_bound_shader();
 }
 
 #endif

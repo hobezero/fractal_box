@@ -147,7 +147,7 @@ public:
 		-> std::optional<GlShaderProgram>;
 
 	/// @brief Create, compile, and link a GlShaderProgram object using the provided shader parameters
-	[[nodiscard]] static auto makeLinked(
+	[[nodiscard]] static auto make_linked(
 		std::string name,
 		std::span<GlShader::Params> params,
 		IDiagnosticSink& error_sink,
@@ -170,30 +170,36 @@ public:
 	GlObjectId release() noexcept;
 	void destroy() noexcept;
 
-	void attachShader(GlShader& shader);
-	void detachShader(GlShader& shader);
+	void attach_shader(GlShader& shader);
+	void detach_shader(GlShader& shader);
 
-	[[nodiscard]] bool link(IDiagnosticSink& error_sink, IDiagnosticSink& warning_sink) {
+	[[nodiscard]]
+	auto link(IDiagnosticSink& error_sink, IDiagnosticSink& warning_sink) -> bool {
 		return link(to_span<Ref<GlShaderProgram>>({*this}), error_sink, warning_sink);
 	}
 
 	/// @brief Link a set of programs. The linking is potentionally parallel and is more
 	/// efficient than linking each program separately
 	/// @pre `!program.empty()`
-	[[nodiscard]] static bool link(
+	[[nodiscard]] static
+	auto link(
 		std::span<Ref<GlShaderProgram>> programs,
 		IDiagnosticSink& error_sink,
 		IDiagnosticSink& warning_sink
-	);
+	) -> bool;
 
-	auto getUniformLocation(const char* uniform_name, IDiagnosticSink& error_sink) const
+	auto get_uniform_location(const char* uniform_name, IDiagnosticSink& error_sink) const
 		-> std::optional<GlUniformLocation>;
-	auto getAttributeLocation(const char* attribute_name, IDiagnosticSink& error_sink) const
+	auto get_attribute_location(const char* attribute_name, IDiagnosticSink& error_sink) const
 		-> std::optional<GlAttribLocation>;
 
-	static void useById(GlObjectId programId) noexcept;
+	static
+	void use_by_id(GlObjectId program_id) noexcept;
+
 	void use() const noexcept;
-	static void unuse() noexcept;
+
+	static
+	void unuse() noexcept;
 
 	// scalars
 	void set_uniform(GlUniform<GLfloat> uniform, GLfloat value) noexcept;
@@ -302,9 +308,10 @@ public:
 	auto value() const noexcept -> GlUniformLocation { return _value; }
 
 private:
-	friend class detail::GlLocationUnwrapper;
+	friend detail::GlLocationUnwrapper;
 
-	explicit GlCheckedUniformLocation(GlUniformLocation location): _value{location} { }
+	explicit
+	GlCheckedUniformLocation(GlUniformLocation location): _value{location} { }
 
 private:
 	GlUniformLocation _value;
@@ -321,7 +328,7 @@ public:
 	{ }
 
 	auto operator()(const char* name) -> GlCheckedUniformLocation {
-		auto loc = _program->getUniformLocation(name, *_error_sink);
+		auto loc = _program->get_uniform_location(name, *_error_sink);
 		if (!loc)
 			return GlCheckedUniformLocation{-1};
 		return GlCheckedUniformLocation{*loc};
@@ -347,7 +354,7 @@ inline auto make_gl_uniforms_object(
 template<class T>
 class GlUniform {
 public:
-	using type = T;
+	using Type = T;
 
 	GlUniform() = delete;
 	constexpr GlUniform(GlCheckedUniformLocation loc) noexcept: _location{loc.value()} { }

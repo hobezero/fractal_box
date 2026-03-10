@@ -19,10 +19,10 @@ auto ScreenQuadShader::make(
 		.name = "ScreenQuadShader",
 		.version = gl_version,
 		.filesystem = cmrc::fr::get_filesystem(),
-		.vertexShaderFilePath = "shaders/screen_quad.vert.glsl",
-		.vertexShaderName = "screen_quad.vert.glsl",
-		.fragmentShaderFilePath = "shaders/screen_quad.frag.glsl",
-		.fragmentShaderName = "screen_quad.frag.glsl",
+		.vertex_shader_file_path = "shaders/screen_quad.vert.glsl",
+		.vertex_shader_name = "screen_quad.vert.glsl",
+		.fragment_shader_file_path = "shaders/screen_quad.frag.glsl",
+		.fragment_shader_name = "screen_quad.frag.glsl",
 		.error_sink = error_sink,
 		.warning_sink = warning_sink
 	});

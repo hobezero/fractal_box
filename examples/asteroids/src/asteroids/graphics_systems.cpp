@@ -47,9 +47,9 @@ auto RenderSystem::run(
 		if (!sprite.is_visible)
 			return;
 		const auto mvp_mat = vp_mat * transform.make_model_matrix();
-		shader.bindTexture(*sprite.texture);
-		shader.setViewProjMatUniform(mvp_mat);
-		shader.setDepthUniform(1.f - sprite.z_index);
+		shader.bind_texture(*sprite.texture);
+		shader.set_view_proj_mat_uniform(mvp_mat);
+		shader.set_depth_uniform(1.f - sprite.z_index);
 		shader.draw(*sprite.mesh);
 	});
 
@@ -86,14 +86,14 @@ auto DebugDrawRenderSystem::run(
 	// AABB
 	const auto aabbs = world.build_uncached_query<const fr::Collider>();
 	if (config.aabb_wire_enabled) {
-		color_shader.setDepthUniform(0.5f);
-		color_shader.setColorUniform(fr::Color4{1.f, 1.f, 0.1f, 0.95f});
+		color_shader.set_depth_uniform(0.5f);
+		color_shader.set_color_uniform(fr::Color4{1.f, 1.f, 0.1f, 0.95f});
 		aabbs.for_each([&](const fr::Collider& collider) {
 			collider.visit(fr::Overload{
 				[&](fr::FAaRect aabb) {
 					const auto t = fr::ParallelTransform{aabb.center(), aabb.size()};
 					const auto mvp_mat = vp_mat * t.make_model_matrix();
-					color_shader.setViewProjMatUniform(mvp_mat);
+					color_shader.set_view_proj_mat_uniform(mvp_mat);
 					color_shader.draw(resources.mesh_square_wire);
 				},
 				[](auto&&) { }
@@ -101,14 +101,14 @@ auto DebugDrawRenderSystem::run(
 		});
 	}
 	if (config.aabb_solid_enabled) {
-		color_shader.setDepthUniform(0.5f);
-		color_shader.setColorUniform(fr::Color4{1.f, 1.f, 0.1f, 0.2f});
+		color_shader.set_depth_uniform(0.5f);
+		color_shader.set_color_uniform(fr::Color4{1.f, 1.f, 0.1f, 0.2f});
 		aabbs.for_each([&](const fr::Collider& collider) {
 			collider.visit(fr::Overload{
 				[&](fr::FAaRect aabb) {
 					const auto t = fr::ParallelTransform{aabb.center(),aabb.size()};
 					const auto mvp_mat = vp_mat * t.make_model_matrix();
-					color_shader.setViewProjMatUniform(mvp_mat);
+					color_shader.set_view_proj_mat_uniform(mvp_mat);
 					color_shader.draw(resources.mesh_square_solid);
 				},
 				[](auto&&) { }
@@ -118,11 +118,11 @@ auto DebugDrawRenderSystem::run(
 
 	// Mesh
 	if (config.mesh_solid_enabled) {
-		color_shader.setDepthUniform(0.1f);
-		color_shader.setColorUniform(fr::Color4{0.3f, 1.f, 0.3f, 0.2f});
+		color_shader.set_depth_uniform(0.1f);
+		color_shader.set_color_uniform(fr::Color4{0.3f, 1.f, 0.3f, 0.2f});
 		renderables.for_each([&](const fr::Transform& transform, fr::Sprite& sprite) {
 			const auto mvp_mat = vp_mat * transform.make_model_matrix();
-			color_shader.setViewProjMatUniform(mvp_mat);
+			color_shader.set_view_proj_mat_uniform(mvp_mat);
 			color_shader.draw(*sprite.mesh);
 		});
 	}
@@ -131,11 +131,11 @@ auto DebugDrawRenderSystem::run(
 	// WebGL doesn't suport glPolygonMode(..)
 	if (config.mesh_wire_enabled) {
 		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-		color_shader.setDepthUniform(0.1f);
-		color_shader.setColorUniform(fr::Color4{0.1f, 1.f, 0.1f, 0.95f});
+		color_shader.set_depth_uniform(0.1f);
+		color_shader.set_color_uniform(fr::Color4{0.1f, 1.f, 0.1f, 0.95f});
 		renderables.for_each([&](const fr::Transform& transform, fr::Sprite& sprite) {
 			const auto mvp_mat = vp_mat * transform.make_model_matrix();
-			color_shader.setViewProjMatUniform(mvp_mat);
+			color_shader.set_view_proj_mat_uniform(mvp_mat);
 			color_shader.draw(*sprite.mesh);
 		});
 		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
@@ -144,21 +144,21 @@ auto DebugDrawRenderSystem::run(
 
 	// Collision
 	if (config.collider_solid_enabled) {
-		color_shader.setDepthUniform(0.5f);
-		color_shader.setColorUniform(fr::Color4{1.f, 0.4f, 0.4f, 0.2f});
+		color_shader.set_depth_uniform(0.5f);
+		color_shader.set_color_uniform(fr::Color4{1.f, 0.4f, 0.4f, 0.2f});
 		aabbs.for_each([&](const fr::Collider& collider) {
 			collider.visit(fr::Overload{
 				[&](fr::FAaRect aabb) {
 					const auto t = fr::ParallelTransform{aabb.center(), aabb.size()};
 					const auto mvp_mat = vp_mat * t.make_model_matrix();
-					color_shader.setViewProjMatUniform(mvp_mat);
+					color_shader.set_view_proj_mat_uniform(mvp_mat);
 					color_shader.draw(resources.mesh_square_solid);
 				},
 				[&](fr::FCircle circle) {
 					const auto t = fr::ParallelTransform{circle.center(),
 						{2.f * circle.radius(), 2.f * circle.radius()}};
 					const auto mvp_mat = vp_mat * t.make_model_matrix();
-					color_shader.setViewProjMatUniform(mvp_mat);
+					color_shader.set_view_proj_mat_uniform(mvp_mat);
 					color_shader.draw(resources.mesh_circle_solid);
 				},
 				[](auto&&) { }
@@ -167,27 +167,27 @@ auto DebugDrawRenderSystem::run(
 	}
 
 	if (config.collider_wire_enabled) {
-		color_shader.setDepthUniform(0.5f);
-		color_shader.setColorUniform(fr::Color4{1.f, 0.1f, 0.1f, 0.95f});
+		color_shader.set_depth_uniform(0.5f);
+		color_shader.set_color_uniform(fr::Color4{1.f, 0.1f, 0.1f, 0.95f});
 		aabbs.for_each([&](const fr::Collider& collider) {
 			collider.visit(fr::Overload{
 				[&](fr::FPoint2d point) {
 					const auto t = fr::ParallelTransform{point, {5.f, 5.f}};
 					const auto mvp_mat = vp_mat * t.make_model_matrix();
-					color_shader.setViewProjMatUniform(mvp_mat);
+					color_shader.set_view_proj_mat_uniform(mvp_mat);
 					color_shader.draw(resources.mesh_circle_solid);
 				},
 				[&](fr::FAaRect aabb) {
 					const auto t = fr::ParallelTransform{aabb.center(), aabb.size()};
 					const auto mvp_mat = vp_mat * t.make_model_matrix();
-					color_shader.setViewProjMatUniform(mvp_mat);
+					color_shader.set_view_proj_mat_uniform(mvp_mat);
 					color_shader.draw(resources.mesh_square_wire);
 				},
 				[&](fr::FCircle circle) {
 					const auto t = fr::ParallelTransform{circle.center(),
 						{2.f * circle.radius(), 2.f * circle.radius()}};
 					const auto mvp_mat = vp_mat * t.make_model_matrix();
-					color_shader.setViewProjMatUniform(mvp_mat);
+					color_shader.set_view_proj_mat_uniform(mvp_mat);
 					color_shader.draw(resources.mesh_circle_wire);
 				},
 				[](auto&&) { }
@@ -197,31 +197,31 @@ auto DebugDrawRenderSystem::run(
 
 	if (config.adhoc_enabled) {
 		for (const auto& line : adhoc.shapes().lines.values()) {
-			color_shader.setDepthUniform(line.z_index);
-			color_shader.setColorUniform(line.color);
-			color_shader.setViewProjMatUniform(vp_mat * line.make_transform().make_model_matrix());
+			color_shader.set_depth_uniform(line.z_index);
+			color_shader.set_color_uniform(line.color);
+			color_shader.set_view_proj_mat_uniform(vp_mat * line.make_transform().make_model_matrix());
 			color_shader.draw(resources.mesh_line);
 		}
 		for (const auto& rect : adhoc.shapes().rects.values()) {
-			color_shader.setDepthUniform(rect.z_index);
-			color_shader.setColorUniform(rect.color);
-			color_shader.setViewProjMatUniform(vp_mat * rect.make_transform().make_model_matrix());
+			color_shader.set_depth_uniform(rect.z_index);
+			color_shader.set_color_uniform(rect.color);
+			color_shader.set_view_proj_mat_uniform(vp_mat * rect.make_transform().make_model_matrix());
 			color_shader.draw(rect.shape_fill == fr::ShapeFill::Solid ? resources.mesh_square_solid
 				: resources.mesh_square_wire);
 		}
 		for (const auto& circle : adhoc.shapes().circles.values()) {
-			color_shader.setDepthUniform(circle.z_index);
-			color_shader.setColorUniform(circle.color);
-			color_shader.setViewProjMatUniform(vp_mat
+			color_shader.set_depth_uniform(circle.z_index);
+			color_shader.set_color_uniform(circle.color);
+			color_shader.set_view_proj_mat_uniform(vp_mat
 				* circle.make_transform().make_model_matrix());
 			color_shader.draw(circle.shape_fill == fr::ShapeFill::Solid
 				? resources.mesh_circle_solid : resources.mesh_circle_wire);
 		}
 		for (const auto& point : adhoc.shapes().points.values()) {
-			color_shader.setDepthUniform(point.z_index);
-			color_shader.setColorUniform(point.color);
+			color_shader.set_depth_uniform(point.z_index);
+			color_shader.set_color_uniform(point.color);
 			// TODO: calculate scale in screen space
-			color_shader.setViewProjMatUniform(vp_mat
+			color_shader.set_view_proj_mat_uniform(vp_mat
 				* point.make_transform(1.f).make_model_matrix());
 			color_shader.draw(resources.mesh_circle_solid);
 		}

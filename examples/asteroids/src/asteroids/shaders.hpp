@@ -16,7 +16,7 @@ class ColorShader final: public fr::GlShaderProgram {
 	using Base = GlShaderProgram;
 
 	struct Uniforms {
-		fr::GlUniform<glm::mat3> viewProjMat;
+		fr::GlUniform<glm::mat3> view_proj_mat;
 		fr::GlUniform<GLfloat> depth;
 		fr::GlUniform<glm::vec4> color;
 	};
@@ -27,21 +27,23 @@ public:
 		{fr::attrib_tex_coords, 1},
 	};
 
-	static auto make(
+	static
+	auto make(
 		fr::IDiagnosticSink& error_sink, fr::IDiagnosticSink& warning_sink
 	) -> std::optional<ColorShader>;
 
-	explicit ColorShader() = default;
+	explicit
+	ColorShader() = default;
 
-	void setViewProjMatUniform(const glm::mat3& value) noexcept {
-		set_uniform(_uniforms.viewProjMat, value);
+	void set_view_proj_mat_uniform(const glm::mat3& value) noexcept {
+		set_uniform(_uniforms.view_proj_mat, value);
 	}
 
-	void setDepthUniform(decltype(Uniforms::depth)::type value) noexcept {
+	void set_depth_uniform(decltype(Uniforms::depth)::Type value) noexcept {
 		set_uniform(_uniforms.depth, value);
 	}
 
-	void setColorUniform(fr::Color4 value) noexcept {
+	void set_color_uniform(fr::Color4 value) noexcept {
 		set_uniform(_uniforms.color, value);
 	}
 
@@ -57,7 +59,7 @@ class SpriteShader final: public fr::GlShaderProgram {
 	using Base = fr::GlShaderProgram;
 
 	struct Uniforms {
-		fr::GlUniform<glm::mat3> viewProjMat;
+		fr::GlUniform<glm::mat3> view_proj_mat;
 		fr::GlUniform<GLfloat> depth;
 	};
 
@@ -67,21 +69,23 @@ public:
 		{fr::attrib_tex_coords, 1},
 	};
 
-	static auto make(
+	static
+	auto make(
 		fr::IDiagnosticSink& error_sink, fr::IDiagnosticSink& warning_sink
 	) -> std::optional<SpriteShader>;
 
-	explicit SpriteShader() = default;
+	explicit
+	SpriteShader() = default;
 
-	void setViewProjMatUniform(const glm::mat3& value) noexcept {
-		set_uniform(_uniforms.viewProjMat, value);
+	void set_view_proj_mat_uniform(const glm::mat3& value) noexcept {
+		set_uniform(_uniforms.view_proj_mat, value);
 	}
 
-	void setDepthUniform(decltype(Uniforms::depth)::type value) noexcept {
+	void set_depth_uniform(decltype(Uniforms::depth)::Type value) noexcept {
 		set_uniform(_uniforms.depth, value);
 	}
 
-	void bindTexture(const fr::GlTexture2d& texture) noexcept;
+	void bind_texture(const fr::GlTexture2d& texture) noexcept;
 
 private:
 	SpriteShader(fr::AdoptInit, Base&& base, Uniforms&& uniforms) noexcept;

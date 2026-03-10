@@ -357,14 +357,14 @@ void GlMesh::unbind() noexcept {
 	glBindVertexArray(null_native_id);
 }
 
-void GlMesh::setIndexRange(GlIndexRange range) noexcept {
+void GlMesh::set_index_range(GlIndexRange range) noexcept {
 	FR_ASSERT(range.first_index >= 0 && range.count > 0);
 	FR_ASSERT(range.first_index + range.count <= _total_vertex_count);
 
 	_index_range = range;
 }
 
-void GlMesh::drawWithBoundShader() {
+void GlMesh::draw_with_bound_shader() {
 	FR_ASSERT(!_oid.is_default());
 
 	bind();

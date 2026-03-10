@@ -41,12 +41,14 @@ public:
 		, _count{vertexCount}
 	{ }
 
-	constexpr GlAttribBlock(const GlAttribLabel& attrib)
+	constexpr
+	GlAttribBlock(const GlAttribLabel& attrib)
 		: _attributes(1, attrib)
 		, _order{GlAttribOrder::Interleaved} // doesn't matter which one
 	{ }
 
-	constexpr bool has_vertex_count() const noexcept { return *_count != unknown_gl_vertex_count; }
+	constexpr
+	auto has_vertex_count() const noexcept -> bool { return *_count != unknown_gl_vertex_count; }
 
 	/// @pre `hasVertexCount()`
 	size_t calc_data_size() const noexcept;
@@ -75,8 +77,9 @@ class GlBufferLayout {
 public:
 	GlBufferLayout() = default;
 
-	explicit constexpr GlBufferLayout(std::vector<GlAttribBlock> blocks)
-		: _blocks(std::move(blocks))
+	explicit constexpr
+	GlBufferLayout(std::vector<GlAttribBlock> blocks):
+		_blocks(std::move(blocks))
 	{
 #if FR_ASSERT_ENABLED
 		for (auto& block : _blocks) {
@@ -85,8 +88,9 @@ public:
 #endif
 	}
 
-	explicit constexpr GlBufferLayout(GLsizei vetexCount, std::vector<GlAttribBlock> blocks)
-		: _blocks(std::move(blocks))
+	explicit constexpr
+	GlBufferLayout(GLsizei vetexCount, std::vector<GlAttribBlock> blocks):
+		_blocks(std::move(blocks))
 	{
 		for (auto& block : _blocks) {
 			FR_ASSERT(!block.has_vertex_count());
@@ -104,9 +108,10 @@ private:
 
 namespace detail {
 
-inline constexpr const GlAttribLabel* find_gl_attrib_in_layout(
+inline constexpr
+auto find_gl_attrib_in_layout(
 	const GlBufferLayout& layout, const GlAttribLabel& target
-) noexcept {
+) noexcept -> const GlAttribLabel* {
 	for (const auto& block : layout.blocks()) {
 		for (const auto& attrib : block.attribs()) {
 			if (attrib.name == target.name)
@@ -140,8 +145,11 @@ public:
 		IDiagnosticSink& error_sink
 	) -> std::optional<GlVertexBuffer>;
 
-	explicit constexpr GlVertexBuffer() noexcept = default;
-	explicit GlVertexBuffer(
+	explicit constexpr
+	GlVertexBuffer() noexcept = default;
+
+	explicit
+	GlVertexBuffer(
 		AdoptInit,
 		GlObjectId oid,
 		GlBufferLayout layout,
@@ -157,14 +165,19 @@ public:
 
 	~GlVertexBuffer();
 
-	friend void swap(GlVertexBuffer& lhs, GlVertexBuffer& rhs) noexcept;
+	friend
+	void swap(GlVertexBuffer& lhs, GlVertexBuffer& rhs) noexcept;
 
 	GlObjectId release() noexcept;
 	void destroy() noexcept;
 
-	static void bind_by_id(GlObjectId native_id) noexcept;
+	static
+	void bind_by_id(GlObjectId native_id) noexcept;
+
 	void bind() noexcept;
-	static void unbind() noexcept;
+
+	static
+	void unbind() noexcept;
 
 	bool isValid() const noexcept { return !_oid.is_default(); }
 
@@ -238,13 +251,16 @@ public:
 
 	~GlIndexBuffer();
 
-	friend void swap(GlIndexBuffer& lhs, GlIndexBuffer& rhs) noexcept;
+	friend
+	void swap(GlIndexBuffer& lhs, GlIndexBuffer& rhs) noexcept;
 
 	GlObjectId release() noexcept;
 	void destroy() noexcept;
 
 	void bind() noexcept;
-	static void unbind() noexcept;
+
+	static
+	void unbind() noexcept;
 
 	bool isValid() const noexcept { return !_oid.is_default(); }
 
@@ -264,11 +280,12 @@ private:
 /// See `Magnum::DynamicAttribute` (in Attribute.h:703)
 struct GlMeshAttribInfo {
 
-	static constexpr bool validate(
+	static constexpr
+	auto validate(
 		std::span<const GlMeshAttribInfo> attributes,
 		const auto& vertexBuffers,
 		IDiagnosticSink& error_sink
-	) noexcept {
+	) noexcept -> bool {
 		bool success = true;
 		// All attributes should be unique
 		if (!test_all_unique_small_reported(attributes.begin(), attributes.end(), EqualTo<>{},
@@ -408,20 +425,23 @@ public:
 
 	~GlMesh();
 
-	friend void swap(GlMesh& lhs, GlMesh& rhs) noexcept;
+	friend
+	void swap(GlMesh& lhs, GlMesh& rhs) noexcept;
 
 	GlObjectId release() noexcept;
 	void destroy() noexcept;
 
 	void bind() noexcept;
-	static void unbind() noexcept;
+
+	static
+	void unbind() noexcept;
 
 	bool isValid() const noexcept { return !_oid.is_default(); }
 
-	GlIndexRange indexRange() const noexcept { return *_index_range; }
-	void setIndexRange(GlIndexRange range) noexcept;
+	GlIndexRange index_range() const noexcept { return *_index_range; }
+	void set_index_range(GlIndexRange range) noexcept;
 
-	void drawWithBoundShader();
+	void draw_with_bound_shader();
 
 private:
 	void do_destroy() noexcept;

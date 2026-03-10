@@ -22,10 +22,10 @@ auto ColorShader::make(
 		.name = "ColorShader",
 		.version = gl_version,
 		.filesystem = cmrc::aster::get_filesystem(),
-		.vertexShaderFilePath = "shaders/color.vert",
-		.vertexShaderName = "color.vert",
-		.fragmentShaderFilePath = "shaders/color.frag",
-		.fragmentShaderName = "color.frag",
+		.vertex_shader_file_path = "shaders/color.vert",
+		.vertex_shader_name = "color.vert",
+		.fragment_shader_file_path = "shaders/color.frag",
+		.fragment_shader_name = "color.frag",
 		.error_sink = error_sink,
 		.warning_sink = warning_sink
 	});
@@ -34,7 +34,7 @@ auto ColorShader::make(
 
 	auto u_pack = make_gl_uniforms_object(*program, [](auto unwrap) {
 		return Uniforms {
-			.viewProjMat = unwrap("u_view_proj_mat"),
+			.view_proj_mat = unwrap("u_view_proj_mat"),
 			.depth = unwrap("u_depth"),
 			.color = unwrap("u_color"),
 		};
@@ -45,12 +45,12 @@ auto ColorShader::make(
 	return ColorShader{fr::adopt, std::move(*program), std::move(*u_pack)};
 }
 
-ColorShader::ColorShader(fr::AdoptInit, Base&& base, Uniforms&& uniforms) noexcept
-	: Base{std::move(base)}
-	, _uniforms{std::move(uniforms)}
+ColorShader::ColorShader(fr::AdoptInit, Base&& base, Uniforms&& uniforms) noexcept:
+	Base{std::move(base)},
+	_uniforms{std::move(uniforms)}
 { }
 
-void SpriteShader::bindTexture(const fr::GlTexture2d& texture) noexcept {
+void SpriteShader::bind_texture(const fr::GlTexture2d& texture) noexcept {
 	glActiveTexture(GL_TEXTURE0);
 	texture.bind();
 }
@@ -62,10 +62,10 @@ auto SpriteShader::make(
 		.name = "SpriteShader",
 		.version = gl_version,
 		.filesystem = cmrc::aster::get_filesystem(),
-		.vertexShaderFilePath = "shaders/sprite.vert",
-		.vertexShaderName = "sprite.vert",
-		.fragmentShaderFilePath = "shaders/sprite.frag",
-		.fragmentShaderName = "sprite.frag",
+		.vertex_shader_file_path = "shaders/sprite.vert",
+		.vertex_shader_name = "sprite.vert",
+		.fragment_shader_file_path = "shaders/sprite.frag",
+		.fragment_shader_name = "sprite.frag",
 		.error_sink = error_sink,
 		.warning_sink = warning_sink
 	});
@@ -74,7 +74,7 @@ auto SpriteShader::make(
 
 	auto u_pack = make_gl_uniforms_object(*program, [](auto unwrap) {
 		return Uniforms {
-			.viewProjMat = unwrap("u_view_proj_mat"),
+			.view_proj_mat = unwrap("u_view_proj_mat"),
 			.depth = unwrap("u_depth")
 		};
 	}, error_sink);
@@ -84,9 +84,9 @@ auto SpriteShader::make(
 	return SpriteShader{fr::adopt, std::move(*program), std::move(*u_pack)};
 }
 
-SpriteShader::SpriteShader(fr::AdoptInit, Base&& base, Uniforms&& uniforms) noexcept
-	: Base{std::move(base)}
-	, _uniforms{std::move(uniforms)}
+SpriteShader::SpriteShader(fr::AdoptInit, Base&& base, Uniforms&& uniforms) noexcept:
+	Base{std::move(base)},
+	_uniforms{std::move(uniforms)}
 { }
 
 } // namespace aster
