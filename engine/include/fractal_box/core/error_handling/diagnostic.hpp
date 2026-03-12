@@ -29,6 +29,16 @@ enum class DiagnosticSeverity: uint8_t {
 	Error,
 };
 
+struct WarningBase {
+	static constexpr
+	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Warning; }
+};
+
+struct ErrorBase {
+	static constexpr
+	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Error; }
+};
+
 template<class T>
 concept c_diagnosticable
 	= c_nothrow_movable<T>
@@ -70,6 +80,10 @@ concept c_diagnostic_sbo_suitable
 ;
 
 struct DiagnosticVTable {
+	using GetPtrFn = auto (*)(const Diagnostic& dest) -> const void*;
+	using SeverityFn = auto (*)(const Diagnostic& dest) -> DiagnosticSeverity;
+	using FormatFn = auto (*)(const Diagnostic& dest) -> std::string;
+
 	using DestructiveMoveConstructFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
 	using DestructiveMoveAssignFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
 	using DestroyFn = void (*)(Diagnostic& dest) noexcept;
@@ -78,10 +92,11 @@ struct DiagnosticVTable {
 	using SwapWithHeapFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
 	using SwapWithSboFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
 
-	using SeverityFn = auto (*)(const Diagnostic& dest) -> DiagnosticSeverity;
-	using FormatFn = auto (*)(const Diagnostic& dest) -> std::string;
-
 public:
+	GetPtrFn get_ptr_fn;
+	SeverityFn severity_fn;
+	FormatFn format_fn;
+
 	DestructiveMoveConstructFn destructive_move_construct_fn;
 	DestructiveMoveAssignFn destructive_move_assign_fn;
 	DestroyFn destroy_fn;
@@ -89,9 +104,6 @@ public:
 	SwapFn swap_fn;
 	SwapWithHeapFn swap_with_heap_fn;
 	SwapWithSboFn swap_with_sbo_fn;
-
-	SeverityFn severity_fn;
-	FormatFn format_fn;
 };
 
 template<class T, class Derived>
@@ -120,10 +132,9 @@ public:
 		&& (!std::same_as<std::remove_cvref_t<U>, Diagnostic>)
 		&& (!c_in_place_as_init<std::remove_cvref_t<U>>)
 	explicit(false)
-	Diagnostic(U&& value, const Diagnostic* parent = nullptr):
+	Diagnostic(U&& value):
 		_storage{uninitialized},
-		_vptr{&detail::DiagnosticActions<std::remove_cvref_t<U>>::vtable},
-		_parent{parent}
+		_vptr{&detail::DiagnosticActions<std::remove_cvref_t<U>>::vtable}
 	{
 		using T = std::remove_cvref_t<U>;
 		detail::DiagnosticActions<T>::create(_storage, std::forward<U>(value));
@@ -144,8 +155,7 @@ public:
 	auto operator=(const Diagnostic&) -> Diagnostic& = delete;
 
 	Diagnostic(Diagnostic&& other) noexcept:
-		_storage{uninitialized},
-		_parent{std::exchange(other._parent, nullptr)}
+		_storage{uninitialized}
 	{
 		if (other._vptr) {
 			other._vptr->destructive_move_construct_fn(*this, other);
@@ -180,8 +190,6 @@ public:
 			_vptr = std::exchange(other._vptr, nullptr);
 		}
 
-		_parent = std::exchange(other._parent, nullptr);
-
 		return *this;
 	}
 
@@ -209,16 +217,12 @@ public:
 			rhs._vptr->destructive_move_construct_fn(lhs, rhs);
 			lhs._vptr = std::exchange(rhs._vptr, nullptr);
 		}
-
-		using std::swap;
-		swap(lhs._parent, rhs._parent);
 	}
 
 	void reset() noexcept {
 		if (_vptr) {
 			_vptr->destroy_fn(*this);
 			_vptr = nullptr;
-			_parent = nullptr;
 		}
 	}
 
@@ -227,17 +231,36 @@ public:
 		return _vptr->severity_fn(*this);
 	}
 
+	auto format() const noexcept -> std::string {
+		FR_ASSERT(_vptr);
+		return _vptr->format_fn(*this);
+	}
+
+	FR_FORCE_INLINE
 	auto type_id() const noexcept -> DiagnosticTypeId {
 		return static_cast<DiagnosticTypeId>(reinterpret_cast<uintptr_t>(_vptr));
 	}
 
 	template<c_diagnosticable T>
+	FR_FORCE_INLINE
 	auto is() const noexcept -> bool {
 		return type_id() == type_id_for<T>();
 	}
 
-	auto parent() const noexcept -> const Diagnostic* { return _parent; }
-	auto set_parent(const Diagnostic* parent) noexcept { _parent = parent; }
+	template<c_diagnosticable T>
+	auto try_cast() const noexcept -> const T* {
+		if (type_id() != type_id_for<T>())
+			return nullptr;
+
+		return static_cast<const T*>(_vptr->get_ptr_fn(*this));
+	}
+
+	template<c_diagnosticable T>
+	auto cast() const noexcept -> const T& {
+		FR_PANIC_CHECK(type_id() == type_id_for<T>());
+
+		return *static_cast<const T*>(_vptr->get_ptr_fn(*this));
+	}
 
 private:
 	template<class T, class Derived>
@@ -249,13 +272,17 @@ private:
 private:
 	detail::DiagnosticStorage _storage {zero_init};
 	const detail::DiagnosticVTable* _vptr = nullptr;
-	const Diagnostic* _parent = nullptr;
 };
 
 namespace detail {
 
 template<class T, class Derived>
 struct DiagnosticActionsBase {
+	static
+	auto get_ptr_thunk(const Diagnostic& dest) -> const void* {
+		return Derived::get_object(dest._storage);
+	}
+
 	static
 	auto severity_thunk(const Diagnostic& dest) -> DiagnosticSeverity {
 		return Derived::get_object(dest._storage)->severity();
@@ -325,14 +352,15 @@ private:
 
 public:
 	static constexpr auto vtable = DiagnosticVTable{
+		.get_ptr_fn = &Base::get_ptr_thunk,
+		.severity_fn = &Base::severity_thunk,
+		.format_fn = &Base::format_thunk,
 		.destructive_move_construct_fn = &destructive_move_construct_thunk,
 		.destructive_move_assign_fn = &destructive_move_assign_thunk,
 		.destroy_fn = &destroy_thunk,
 		.swap_fn = &swap_thunk,
 		.swap_with_heap_fn = &swap_with_heap_thunk,
 		.swap_with_sbo_fn = &swap_with_sbo_thunk,
-		.severity_fn = &Base::severity_thunk,
-		.format_fn = &Base::format_thunk
 	};
 
 	static FR_FORCE_INLINE
@@ -432,14 +460,15 @@ private:
 
 public:
 	static constexpr auto vtable = DiagnosticVTable{
+		.get_ptr_fn = &Base::get_ptr_thunk,
+		.severity_fn = &Base::severity_thunk,
+		.format_fn = &Base::format_thunk,
 		.destructive_move_construct_fn = &destructive_move_construct_thunk,
 		.destructive_move_assign_fn = &destructive_move_assign_thunk,
 		.destroy_fn = &destroy_thunk,
 		.swap_fn = &swap_thunk,
 		.swap_with_heap_fn = &swap_with_heap_thunk,
 		.swap_with_sbo_fn = &swap_with_sbo_thunk,
-		.severity_fn = &Base::severity_thunk,
-		.format_fn = &Base::format_thunk
 	};
 
 	static FR_FORCE_INLINE
@@ -502,10 +531,10 @@ public:
 	auto error_count() const noexcept -> size_t;
 
 	FR_FORCE_INLINE
-	auto has_warnings() const noexcept -> bool { return warning_count() == 0zu; }
+	auto has_warnings() const noexcept -> bool { return warning_count() != 0zu; }
 
 	FR_FORCE_INLINE
-	auto has_errors() const noexcept -> bool { return error_count() == 0zu; }
+	auto has_errors() const noexcept -> bool { return error_count() != 0zu; }
 
 private:
 	DiagnosticSink* _sink;
@@ -522,10 +551,10 @@ public:
 	auto error_count() const noexcept -> size_t;
 
 	FR_FORCE_INLINE
-	auto has_warnings() const noexcept -> bool { return warning_count() == 0zu; }
+	auto has_warnings() const noexcept -> bool { return warning_count() != 0zu; }
 
 	FR_FORCE_INLINE
-	auto has_errors() const noexcept -> bool { return error_count() == 0zu; }
+	auto has_errors() const noexcept -> bool { return error_count() != 0zu; }
 
 private:
 	const DiagnosticSink* _sink;
@@ -535,7 +564,7 @@ private:
 
 class DiagnosticSink {
 public:
-	using Handler = std::function<ControlFlow (Diagnostic)>;
+	using Handler = std::function<ControlFlow (Diagnostic, std::span<const Diagnostic>)>;
 
 	DiagnosticSink(Handler handler):
 		_handler{std::move(handler)}
@@ -560,7 +589,7 @@ public:
 		}
 
 		FR_PANIC_CHECK(_handler);
-		return _handler(Diagnostic{std::forward<T>(diagnostic), top_frame()});
+		return _handler(Diagnostic{std::forward<T>(diagnostic)}, _frame_stack);
 	}
 
 	template<class T>
@@ -568,7 +597,7 @@ public:
 	[[nodiscard]]
 	auto make_frame(T&& context) -> DiagnosticFrame {
 		FR_PANIC_CHECK(context.severity() == DiagnosticSeverity::Context);
-		_frame_stack.emplace_back(context, top_frame());
+		_frame_stack.emplace_back(context);
 		return DiagnosticFrame{*this};
 	}
 

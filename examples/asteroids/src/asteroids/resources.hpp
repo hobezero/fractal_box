@@ -10,7 +10,7 @@ namespace aster {
 
 class GameResources {
 public:
-	auto init() -> fr::ErrorOr<>;
+	auto init(fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<>;
 
 public:
 	// Shaders

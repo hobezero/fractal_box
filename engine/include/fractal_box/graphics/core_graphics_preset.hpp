@@ -14,7 +14,7 @@ namespace fr {
 
 struct CoreMeshes {
 	static
-	auto make() -> ErrorOr<CoreMeshes>;
+	auto make(DiagnosticSink& diag_sink) -> Status<CoreMeshes>;
 
 public:
 	GlMesh ndc_quad;

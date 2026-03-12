@@ -85,10 +85,10 @@ void try_init_mesh(
 	GlMesh& target_mesh,
 	GlPrimitive primitive,
 	std::span<const UvVertex> vertices,
-	IDiagnosticSink& error_sink
+	DiagnosticSink& diag_sink
 ) {
 	auto buffer = GlVertexBuffer::make_from_raw_data(std::as_bytes(vertices),
-		make_uv_layout_interleaved(), GlBufferUsage::StaticDraw, error_sink);
+		make_uv_layout_interleaved(), GlBufferUsage::StaticDraw, diag_sink);
 	if (!buffer)
 		return;
 
@@ -114,7 +114,7 @@ void try_init_mesh(
 		},
 		{},
 		{.count = static_cast<GLsizei>(vertices.size())},
-		error_sink
+		diag_sink
 	);
 
 	if (mesh)

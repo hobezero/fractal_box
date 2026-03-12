@@ -24,9 +24,8 @@ void try_assign_with(Target& target, Source&& source) {
 		target = *std::forward<Source>(source);
 }
 
-auto GameResources::init() -> fr::ErrorOr<> {
-	// TODO: Check for OpenGL errors
-
+auto GameResources::init(fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<> {
+	auto obs = diag_sink.make_observer();
 	fr::DiagnosticStore errors;
 	fr::DiagnosticStore warnings;
 
@@ -35,15 +34,15 @@ auto GameResources::init() -> fr::ErrorOr<> {
 	try_assign_with(this->sprite_shader, SpriteShader::make(errors, warnings));
 
 	// Meshes
-	try_init_mesh(this->mesh_line, fr::GlPrimitive::LineStrip, fr::mesh_line_data, errors);
+	try_init_mesh(this->mesh_line, fr::GlPrimitive::LineStrip, fr::mesh_line_data, diag_sink);
 	try_init_mesh(this->mesh_square_solid, fr::GlPrimitive::Triangles, fr::mesh_square_solid_data,
-		errors);
+		diag_sink);
 	try_init_mesh(this->mesh_square_wire, fr::GlPrimitive::LineLoop, fr::mesh_square_wire_data,
-		errors);
+		diag_sink);
 	try_init_mesh(this->mesh_circle_solid, fr::GlPrimitive::TriangleFan,
-		fr::make_circle_solid_mesh_data(0.5f, 32), errors);
+		fr::make_circle_solid_mesh_data(0.5f, 32), diag_sink);
 	try_init_mesh(this->mesh_circle_wire, fr::GlPrimitive::LineLoop,
-		fr::make_circle_wire_mesh_data(0.5f, 32), errors);
+		fr::make_circle_wire_mesh_data(0.5f, 32), diag_sink);
 
 	// Textures
 	const auto fs = cmrc::aster::get_filesystem();
@@ -61,22 +60,14 @@ auto GameResources::init() -> fr::ErrorOr<> {
 			error_flags));
 	}
 
-#if FR_LOG_ERROR_ENABLED
-	for (const auto& error : errors.get_all())
-		FR_LOG_ERROR("{}", error);
-#endif
-#if FR_LOG_WARN_ENABLED
-	for (const auto& warning : warnings.get_all())
-		FR_LOG_WARN("{}", warning);
-#endif
-
-	if (!errors.empty()) {
-		return make_error_fmt(fr::Errc::ResourceLoadingError, "While initializing resources: "
-			"{} error(s), {} warning(s)", errors.size(), warnings.size());
+	if (obs.has_errors()) {
+		FR_LOG_ERROR("While initializing core meshes: {} error(s), {} warning(s)",
+			obs.error_count(), obs.warning_count());
+		return fr::make_error(fr::Errc::ResourceLoadingError, "Failed to load game resources");
 	}
-	else if (!warnings.empty()) {
-		FR_LOG_WARN("While initializing resources: 0 error(s), {} warning(s)",
-			errors.size(), warnings.size());
+	else if (obs.has_warnings()) {
+		FR_LOG_WARN("While initializing core meshes: {} error(s), {} warning(s)",
+			obs.error_count(), obs.warning_count());
 	}
 	return {};
 }

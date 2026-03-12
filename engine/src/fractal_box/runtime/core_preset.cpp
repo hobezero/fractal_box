@@ -1,5 +1,6 @@
 #include "fractal_box/runtime/core_preset.hpp"
 
+#include "fractal_box/core/error_handling/diagnostic.hpp"
 #include "fractal_box/core/platform.hpp"
 #include "fractal_box/math/math.hpp"
 
@@ -200,11 +201,39 @@ auto BasicRunner::run(
 	return res;
 }
 
+static
+auto handle_diagnostic(Diagnostic diag, std::span<const Diagnostic> context) -> ControlFlow {
+	for (auto i = 0zu; i < context.size(); ++i) {
+		switch (diag.severity()) {
+			case DiagnosticSeverity::Context:
+				FR_PANIC();
+			case DiagnosticSeverity::Warning:
+				FR_LOG_WARN("{:>{}}{}", "", 2 * i, context[i].format());
+				break;
+			case DiagnosticSeverity::Error:
+				FR_LOG_ERROR("{:>{}}{}", "", 2 * i, context[i].format());
+				break;
+		}
+	}
+	switch (diag.severity()) {
+		case DiagnosticSeverity::Context:
+			FR_PANIC();
+		case DiagnosticSeverity::Warning:
+			FR_LOG_WARN("{:>{}}{}", "", 2 * context.size(), diag.format());
+			break;
+		case DiagnosticSeverity::Error:
+			FR_LOG_ERROR("{:>{}}{}", "", 2 * context.size(), diag.format());
+			break;
+	}
+	return ControlFlow::Continue;
+}
+
 void CorePreset::build(Runtime& runtime) {
 	runtime
 		.add_phases<OneShotPhases>()
 		.add_phases<LoopPhases>()
 		.try_add_part(ProfilerConfig::make())
+		.add_part(DiagnosticSink{&handle_diagnostic})
 		.add_part(Profiler{})
 		.add_part(LoopStatus::Flow)
 		.try_add_part(LoopConfig::make())

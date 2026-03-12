@@ -18,17 +18,22 @@ static constexpr UvVertex ndc_quad_data[] = {
 	{{+1.f, +1.f}, {1.f, 1.f}},
 };
 
-auto CoreMeshes::make() -> ErrorOr<CoreMeshes> {
-	DiagnosticStore error_sink;
-	DiagnosticStore warning_sink;
+auto CoreMeshes::make(DiagnosticSink& diag_sink) -> Status<CoreMeshes> {
+	auto frame = diag_sink.make_frame(StringContext{[] { return "While making CoreMeshes:"; }});
 
 	CoreMeshes meshes;
-	try_init_mesh(meshes.ndc_quad, GlPrimitive::Triangles, ndc_quad_data, error_sink);
-	if (!error_sink.empty()) {
-		return make_error_fmt(Errc::ResourceLoadingError, "While initializing core meshes: "
-			"{} error(s), {} warning(s)", error_sink.size(), warning_sink.size());
+	try_init_mesh(meshes.ndc_quad, GlPrimitive::Triangles, ndc_quad_data, diag_sink);
+
+	if (frame.has_errors()) {
+		FR_LOG_ERROR("While initializing core meshes: {} error(s), {} warning(s)",
+			frame.error_count(), frame.warning_count());
+		return from_error;
 	}
-	return ErrorOr<CoreMeshes>{std::in_place, std::move(meshes)};
+	if (frame.has_warnings()) {
+		FR_LOG_WARN("While initializing core meshes: {} error(s), {} warning(s)",
+			frame.error_count(), frame.warning_count());
+	}
+	return meshes;
 }
 
 auto Offscreen::try_init(glm::ivec2 dimensions, IDiagnosticSink& errors) -> ErrorOr<> {
@@ -77,7 +82,7 @@ auto Offscreen::try_init(glm::ivec2 dimensions, IDiagnosticSink& errors) -> Erro
 
 struct CoreGraphicsInitSystem {
 	static
-	auto run(Runtime& runtime, const SdlData& sdl) -> ErrorOr<> {
+	auto run(Runtime& runtime, const SdlData& sdl, DiagnosticSink& diag_sink) -> ErrorOr<> {
 		auto errors = DiagnosticStore{};
 		auto warnings = DiagnosticStore{};
 
@@ -96,9 +101,10 @@ struct CoreGraphicsInitSystem {
 		}
 		runtime.add_part(*std::move(screen_quad_shader));
 
-		auto meshes = CoreMeshes::make();
+		auto meshes = CoreMeshes::make(diag_sink);
 		if (!meshes)
-			return extract_unexpected(std::move(meshes));
+			return make_error(Errc::ResourceLoadingError, "CoreGraphicsInitSystem: Failed to "
+				"create core meshes");
 		runtime.add_part(*std::move(meshes));
 
 		return {};

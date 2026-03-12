@@ -343,15 +343,13 @@ struct ErrB {
 auto make_diagnostic_handler(
 	std::vector<fr::DiagnosticTypeId>& error_ids,
 	std::vector<fr::DiagnosticTypeId>& warning_ids,
-	bool expect_context
+	size_t expected_context
 ) {
-	return [&, expect_context](fr::Diagnostic diag) -> fr::ControlFlow {
-		if (expect_context) {
-			CHECK(diag.parent() != nullptr);
-		}
-		else {
-			CHECK(diag.parent() == nullptr);
-		}
+	return [&, expected_context](
+		fr::Diagnostic diag,
+		std::span<const fr::Diagnostic> context
+	) -> fr::ControlFlow {
+		CHECK(context.size() == expected_context);
 		if (diag.severity() == fr::DiagnosticSeverity::Error) {
 			error_ids.push_back(diag.type_id());
 			return fr::ControlFlow::Break;
@@ -376,12 +374,15 @@ TEST_CASE("DiagnosticSink", "[u][engine][core][error_handling]") {
 	auto error_ids = std::vector<fr::DiagnosticTypeId>();
 	auto warning_ids = std::vector<fr::DiagnosticTypeId>();
 
-	auto sink = fr::DiagnosticSink{[](fr::Diagnostic) -> fr::ControlFlow {
+	auto sink = fr::DiagnosticSink{[](
+		fr::Diagnostic,
+		std::span<const fr::Diagnostic>
+	) -> fr::ControlFlow {
 		return fr::ControlFlow::Continue;
 	}};
 
 	SECTION("no context") {
-		sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, false));
+		sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, 0));
 
 		CHECK(sink.push(ErrA{}) == fr::ControlFlow::Break);
 		CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
@@ -403,7 +404,7 @@ TEST_CASE("DiagnosticSink", "[u][engine][core][error_handling]") {
 		CHECK(sink.error_count() == 2);
 	}
 	SECTION("with context") {
-		sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, true));
+		sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, 1));
 		const auto ctx_a = sink.make_frame(fr::StringContext{[] { return "CtxA"; }});
 
 		CHECK(sink.push(ErrA{}) == fr::ControlFlow::Break);
@@ -417,6 +418,7 @@ TEST_CASE("DiagnosticSink", "[u][engine][core][error_handling]") {
 		});
 
 		{
+			sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, 2));
 			const auto ctx_b = sink.make_frame(fr::StringContext{[] { return "CtxB"; }});
 			const auto obs = sink.make_observer();
 

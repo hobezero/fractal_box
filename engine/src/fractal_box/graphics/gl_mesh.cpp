@@ -20,24 +20,23 @@ size_t GlAttribBlock::calc_data_size() const noexcept {
 auto GlVertexBuffer::make(
 	GlBufferLayout layout,
 	GlBufferUsage usage,
-	IDiagnosticSink& error_sink
-) -> std::optional<GlVertexBuffer> {
+	DiagnosticSink& error_sink
+) -> Status<GlVertexBuffer> {
 	GlObjectId oid = null_native_id;
 	glGenBuffers(1, &oid);
-	if (const auto error_flags = get_all_gl_error_flags()) {
-		error_sink.push(fmt::format("Can't make GlVertexBuffer: failed to create "
-			"array buffer object (OpenGL error '{}')", error_flags));
-		return std::nullopt;
+	if (const auto error_flags = get_all_gl_error_flags(); error_flags || oid == null_native_id) {
+		error_sink.push(MakeGlVertexBufferGenBuffersError{error_flags});
+		return from_error;
 	}
-	return GlVertexBuffer{adopt, oid, std::move(layout), usage, 0};
+	return {in_place, adopt, oid, std::move(layout), usage, 0};
 }
 
 auto GlVertexBuffer::make_from_raw_data(
 	std::span<const std::byte> data,
 	GlBufferLayout layout,
 	GlBufferUsage usage,
-	IDiagnosticSink& error_sink
-) -> std::optional<GlVertexBuffer> {
+	DiagnosticSink& error_sink
+) -> Status<GlVertexBuffer> {
 	auto buffer = make(std::move(layout), usage, error_sink);
 	if (!buffer)
 		return buffer;
@@ -46,16 +45,15 @@ auto GlVertexBuffer::make_from_raw_data(
 	FR_DEFER [] { GlVertexBuffer::unbind(); };
 
 	if (data.size() > size_t{std::numeric_limits<GLsizeiptr>::max()}) {
-		error_sink.push("Can't make GlVertexBuffer: too much data");
-		buffer = std::nullopt; // Make NRVO happy
+		error_sink.push(MakeGlVertexBufferTooMuchDataError{});
+		buffer = from_error; // Make NRVO happy
 		return buffer;
 	}
 	glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(data.size()), data.data(),
 		to_underlying(usage));
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		error_sink.push(fmt::format("Can't make GlVertexBuffer: failed to send data "
-			"(OpenGL error '{}')", error_flags));
-		buffer = std::nullopt;
+		error_sink.push(MakeGlVertexBufferFailedToSendError{error_flags});
+		buffer = from_error;
 		return buffer;
 	}
 	buffer->_data_size = data.size();
@@ -71,11 +69,11 @@ GlVertexBuffer::GlVertexBuffer(
 	GlBufferLayout layout,
 	GlBufferUsage usage,
 	size_t dataSize
-) noexcept
-	: _oid{oid}
-	, _layout{std::move(layout)}
-	, _usage{usage}
-	, _data_size{dataSize}
+) noexcept:
+	_oid{oid},
+	_layout{std::move(layout)},
+	_usage{usage},
+	_data_size{dataSize}
 { }
 
 GlVertexBuffer& GlVertexBuffer::operator=(GlVertexBuffer&& other) noexcept {
@@ -135,15 +133,15 @@ void GlVertexBuffer::unbind() noexcept {
 	bind_by_id(null_native_id);
 }
 
-auto GlIndexBuffer::make(IDiagnosticSink& error_sink) -> std::optional<GlIndexBuffer> {
+auto GlIndexBuffer::make(DiagnosticSink& error_sink) -> Status<GlIndexBuffer> {
 	GlObjectId oid = null_native_id;
 	glGenBuffers(1, &oid);
-	if (oid == null_native_id) {
-		error_sink.push("Can't make GlIndexBuffer: failed to create index buffer object");
-		return std::nullopt;
+	if (const auto error_flags = get_all_gl_error_flags(); error_flags || oid == null_native_id) {
+		error_sink.push(MakeGlIndexBufferGenBuffersError{error_flags});
+		return from_error;
 	}
 
-	return GlIndexBuffer{adopt, oid, nullGlIndexType, 0};
+	return {in_place, adopt, oid, null_gl_indexType, 0};
 }
 
 GlIndexBuffer::GlIndexBuffer(
@@ -213,22 +211,21 @@ auto GlMesh::make(
 	std::vector<GlMeshAttribInfo> attributes,
 	std::shared_ptr<GlIndexBuffer> index_buffer,
 	GlIndexRange index_range,
-	IDiagnosticSink& error_sink
-) -> std::optional<GlMesh> {
-	DiagnosticSinkSlice myErrors{error_sink, [](const OldDiagnostic& error) {
-		return fmt::format("Can't make GlMesh: {}", error);
-	}};
+	DiagnosticSink& error_sink
+) -> Status<GlMesh> {
+	const auto err_frame = error_sink.make_frame(StringContext{[] {
+		return "While making GlMesh:";
+	}});
 
 	GlObjectId oid = null_native_id;
 	glGenVertexArrays(1, &oid);
-	if (const auto error_flags = get_all_gl_error_flags()) {
-		myErrors.push(fmt::format("failed to create vertex array object (OpenGL error '{}')",
-			error_flags));
-		return std::nullopt;
+	if (const auto error_flags = get_all_gl_error_flags(); error_flags || oid == null_native_id) {
+		error_sink.push(GenVertexArraysError{error_flags});
+		return from_error;
 	}
 
-	if (!GlMeshAttribInfo::validate(attributes, vertex_buffers, myErrors))
-		return std::nullopt;
+	if (!GlMeshAttribInfo::validate(attributes, vertex_buffers, error_sink))
+		return from_error;
 
 	auto mesh = GlMesh{
 		adopt,
@@ -262,8 +259,8 @@ auto GlMesh::make(
 	}
 
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		myErrors.push(fmt::format("failed to bind attributes (OpenGL error '{}')", error_flags));
-		return std::nullopt;
+		error_sink.push(AttribBindError{error_flags});
+		return from_error;
 	}
 
 	if (mesh._index_buffer) {
@@ -271,8 +268,8 @@ auto GlMesh::make(
 	}
 
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		myErrors.push(fmt::format("failed to bind index buffer (OpenGL error '{}')", error_flags));
-		return std::nullopt;
+		error_sink.push(IndexBufferBindError{error_flags});
+		return from_error;
 	}
 
 	return mesh;
@@ -292,7 +289,7 @@ GlMesh::GlMesh(AdoptInit,
 	, _index_buffer{std::move(index_buffer)}
 	, _attributes(std::move(attributes))
 	, _index_range{index_range}
-	, _total_vertex_count{index_buffer ? index_buffer->vertexCount() : unknown_gl_vertex_count}
+	, _total_vertex_count{index_buffer ? index_buffer->vertex_count() : unknown_gl_vertex_count}
 { }
 
 GlMesh& GlMesh::operator=(GlMesh&& other) noexcept {
@@ -372,8 +369,8 @@ void GlMesh::draw_with_bound_shader() {
 		glDrawElements(
 			to_underlying(*_primitive),
 			_index_range->count,
-			to_underlying(_index_buffer->indexType()),
-			gl_index_offset_ptr(_index_buffer->indexType(), _index_range->first_index)
+			to_underlying(_index_buffer->index_type()),
+			gl_index_offset_ptr(_index_buffer->index_type(), _index_range->first_index)
 		);
 		// glDrawRangeElements: same as glDrawElements, with a potential optimization
 		// (vertex indices pointed by (indices, count) lie between [start, end] (inclusive)

@@ -30,9 +30,9 @@ struct ActionSetupSystem {
 
 struct ResourceLoadingSystem {
 	static
-	auto run(fr::Runtime& runtime) -> fr::ErrorOr<> {
+	auto run(fr::Runtime& runtime, fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<> {
 		auto rsc = GameResources{};
-		auto result = rsc.init();
+		auto result = rsc.init(diag_sink);
 		runtime.add_part(std::move(rsc));
 		return result;
 	}
