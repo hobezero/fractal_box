@@ -47,13 +47,13 @@ auto GameResources::init(fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<> {
 	// Textures
 	const auto fs = cmrc::aster::get_filesystem();
 	const auto params = fr::GlTextureParams{.autogen_mipmaps = false};
-	try_init_texture(this->tex_spaceship, fs, "textures/spaceship.png", params, errors);
-	try_init_texture(this->tex_bullet, fs, "textures/bullet.png", params, errors);
-	try_init_texture(this->tex_asteroids[0], fs, "textures/asteroid_00.png", params, errors);
-	try_init_texture(this->tex_asteroids[1], fs, "textures/asteroid_01.png", params, errors);
-	try_init_texture(this->tex_asteroids[2], fs, "textures/asteroid_02.png", params, errors);
-	try_init_texture(this->tex_asteroids[3], fs, "textures/asteroid_03.png", params, errors);
-	try_init_texture(this->tex_plume, fs, "textures/plume.png", params, errors);
+	try_init_texture(this->tex_spaceship, fs, "textures/spaceship.png", params, diag_sink);
+	try_init_texture(this->tex_bullet, fs, "textures/bullet.png", params, diag_sink);
+	try_init_texture(this->tex_asteroids[0], fs, "textures/asteroid_00.png", params, diag_sink);
+	try_init_texture(this->tex_asteroids[1], fs, "textures/asteroid_01.png", params, diag_sink);
+	try_init_texture(this->tex_asteroids[2], fs, "textures/asteroid_02.png", params, diag_sink);
+	try_init_texture(this->tex_asteroids[3], fs, "textures/asteroid_03.png", params, diag_sink);
+	try_init_texture(this->tex_plume, fs, "textures/plume.png", params, diag_sink);
 
 	if (const auto error_flags = fr::get_all_gl_error_flags()) {
 		errors.push(fmt::format("Failed to initialize resources: OpenGL error {}",

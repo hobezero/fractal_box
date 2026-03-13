@@ -64,8 +64,8 @@ private:
 
 auto read_raw_image_data(
 	std::span<const std::byte> buffer,
-	IDiagnosticSink& error_sink
-) -> std::optional<RawImageData> {
+	DiagnosticSink& error_sink
+) -> Status<RawImageData> {
 	glm::ivec2 size;
 	int channel_count {};
 	// Always zero. Any non-zero value will force the number of channels in the output buffer
@@ -76,8 +76,8 @@ auto read_raw_image_data(
 		&channel_count, desired_channels
 	))};
 	if (!handle) {
-		error_sink.push(stbi_failure_reason());
-		return std::nullopt;
+		error_sink.push(StbFailure{stbi_failure_reason()});
+		return from_error;
 	}
 	return RawImageData{std::move(handle), size, channel_count};
 }
@@ -88,30 +88,26 @@ auto make_texture2d_from_resources(
 	cmrc::embedded_filesystem assets_fs,
 	const std::string& file_name,
 	const GlTextureParams& texture_params,
-	IDiagnosticSink& error_sink
-) -> std::optional<GlTexture2d> {
-	DiagnosticSinkSlice loading_errors {error_sink, [&] (const OldDiagnostic& error) {
-		return fmt::format("Failed to load texture asset '{}': {}", file_name, error);
-	}};
+	DiagnosticSink& diag_sink
+) -> Status<GlTexture2d> {
+	auto frame = diag_sink.make_frame(LoadingTextureAsset{file_name});
 	const auto file_data = try_get_resource_data(assets_fs, file_name);
 	if (!file_data) {
-		loading_errors.push("file not found");
-		return std::nullopt;
+		diag_sink.push(FileNotFoundError{file_name});
+		return from_error;
 	}
-
-	DiagnosticSinkSlice decoding_errors {error_sink, [&] (const OldDiagnostic& error) {
-		return fmt::format("Failed to load texture asset '{}': can't decode image: {}",
-			file_name, error);
-	}};
-	auto raw_img_data = read_raw_image_data(std::as_bytes(*file_data), decoding_errors);
+	auto decoding_frame = diag_sink.make_frame(StringContext{[] {
+		return "While decoding image:";
+	}});
+	auto raw_img_data = read_raw_image_data(std::as_bytes(*file_data), diag_sink);
 	if (!raw_img_data)
-		return std::nullopt;
+		return from_error;
 	const auto pixel_format = raw_img_data->pixel_format();
 	if (!pixel_format) {
-		decoding_errors.push(fmt::format("unsupported number of channels ({})",
-		raw_img_data->channel_count()));
-		return std::nullopt;
+		diag_sink.push(UnsupportedImageChannelsError{raw_img_data->channel_count()});
+		return from_error;
 	}
+	decoding_frame.finish();
 
 	return GlTexture2d::make_from_raw_data(
 		texture_params,
@@ -119,7 +115,7 @@ auto make_texture2d_from_resources(
 		raw_img_data->dimensions(),
 		*pixel_format,
 		raw_img_data->pixel_data_type(),
-		loading_errors
+		diag_sink
 	);
 }
 

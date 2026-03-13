@@ -23,7 +23,7 @@ public:
 /// @todo TODO: Ban mutable access to members
 class Offscreen {
 public:
-	auto try_init(glm::ivec2 dimensions, IDiagnosticSink& errors) -> ErrorOr<>;
+	auto try_init(glm::ivec2 dimensions, DiagnosticSink& diag_sink) -> Status<>;
 
 	auto depth_stencil_buffer() const noexcept -> const GlRenderbuffer& {
 		return _depth_stencil_buffer;

@@ -402,8 +402,8 @@ public:
 	FunctionRef(NonType<F>, U&& obj) noexcept
 	requires (!std::is_rvalue_reference_v<U&&> && is_invocable_using<decltype((F)), CvRef<T>>):
 		_thunk{[](Storage this_, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
-			CvRef<T> obj = *get<T>(this_);
-			return std::invoke_r<R>(F, obj, static_cast<decltype(args)>(args)...);
+			CvRef<T> o = *get<T>(this_);
+			return std::invoke_r<R>(F, o, static_cast<decltype(args)>(args)...);
 		}},
 		_obj{std::addressof(obj)}
 	{

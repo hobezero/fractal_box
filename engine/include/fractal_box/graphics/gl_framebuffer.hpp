@@ -101,18 +101,38 @@ enum class GlRenderbufferFormat: GLenum {
 	RGB565 = GL_RGB565,
 };
 
+class MakeGlRenderBufferStorageError: public ErrorBase {
+public:
+	explicit
+	MakeGlRenderBufferStorageError(GlErrorFlags error_flags) noexcept:
+		_flags{error_flags}
+	{ }
+
+	friend
+	auto to_string(MakeGlRenderBufferStorageError self) -> std::string {
+		return fmt::format("Can't make GlRenderbuffer: failed to allocate storage "
+			"(OpenGL error '{}')", self._flags);
+	}
+
+	auto flags() const noexcept -> GlErrorFlags { return _flags; }
+
+private:
+	GlErrorFlags _flags;
+};
+
 class GlRenderbuffer {
 public:
 	static constexpr auto null_native_id = GlObjectId{0};
 
 	static
-	auto make() noexcept -> ErrorOr<GlRenderbuffer>;
+	auto make(DiagnosticSink& diag_sink) noexcept -> Status<GlRenderbuffer>;
 
 	static
 	auto make_with_storage(
 		GlRenderbufferFormat format,
-		glm::ivec2 dimensions
-	) noexcept -> ErrorOr<GlRenderbuffer>;
+		glm::ivec2 dimensions,
+		DiagnosticSink& diag_sink
+	) noexcept -> Status<GlRenderbuffer>;
 
 	GlRenderbuffer() = default;
 
@@ -247,12 +267,98 @@ private:
 	GLenum _value = 0;
 };
 
+} // namespace fr
+
+template<>
+struct fmt::formatter<fr::GlAttachmentKind>: formatter<fmt::string_view> {
+	auto format(fr::GlAttachmentKind kind, auto& ctx) const {
+		return formatter<fmt::string_view>::format(fr::to_string_view(kind), ctx);
+	}
+};
+
+template<>
+struct fmt::formatter<fr::GlAttachmentPoint>: formatter<fmt::string_view> {
+	auto format(fr::GlAttachmentPoint point, auto& ctx) const {
+		using Base = formatter<fmt::string_view>;
+		if (point.is_depth())
+			return Base::format("DEPTH", ctx);
+		else if (point.is_stencil())
+			return Base::format("STENCIL", ctx);
+		else if (point.is_depth_stencil())
+			return Base::format("DEPTH_STENCIL", ctx);
+		else if (auto idx = point.color_idx())
+			return fmt::format_to(ctx.out(), "COLOR{}", *idx);
+		else
+			FR_UNREACHABLE();
+	}
+};
+
+namespace fr {
+
+class GlFramebufferAttachmentOccupiedError: public ErrorBase {
+public:
+	explicit
+	GlFramebufferAttachmentOccupiedError(
+		GlAttachmentPoint point,
+		GlAttachmentKind kind,
+		GlObjectId object_id
+	) noexcept:
+		_point{point},
+		_kind{kind},
+		_object_id{object_id}
+	{ }
+
+	friend
+	auto to_string(GlFramebufferAttachmentOccupiedError self) -> std::string {
+		return fmt::format("GlFramebuffer: attachment point {} already occupied by a {} with "
+			"id = {}", self._point, self._kind, self._object_id);
+	}
+
+	auto point() const noexcept -> GlAttachmentPoint { return _point; }
+	auto kind() const noexcept -> GlAttachmentKind { return _kind; }
+	auto object_id() const noexcept -> GlObjectId { return _object_id; }
+
+private:
+	GlAttachmentPoint _point;
+	GlAttachmentKind _kind;
+	GlObjectId _object_id;
+};
+
+class GlFramebufferAttachmentError: public ErrorBase {
+public:
+	explicit
+	GlFramebufferAttachmentError(GlAttachmentKind kind, GlErrorFlags error_flags) noexcept:
+		_kind{kind},
+		_flags{error_flags}
+	{ }
+
+	friend
+	auto to_string(GlFramebufferAttachmentError self) -> std::string {
+		return fmt::format("GlFramebuffer: failed to attach {} (OpenGL error '{}')", self._kind,
+			self._flags);
+	}
+
+	auto kind() const noexcept -> GlAttachmentKind { return _kind; }
+	auto flags() const noexcept -> GlErrorFlags { return _flags; }
+
+private:
+	GlAttachmentKind _kind;
+	GlErrorFlags _flags;
+};
+
+struct GlFramebufferCompletionError: public ErrorBase {
+	friend
+	auto to_string(GlFramebufferCompletionError) -> std::string {
+		return "GlFramebuffer failed to complete";
+	}
+};
+
 class GlFramebuffer {
 public:
 	static constexpr auto null_native_id = GlObjectId{0};
 
 	static
-	auto make() noexcept -> ErrorOr<GlFramebuffer>;
+	auto make(DiagnosticSink& diag_sink) noexcept -> Status<GlFramebuffer>;
 
 	GlFramebuffer() = default;
 
@@ -277,10 +383,19 @@ public:
 
 	void destroy();
 
-	auto attach(GlAttachmentPoint point, const GlRenderbuffer& renderbuffer) -> ErrorOr<>;
-	auto attach(GlAttachmentPoint point, const GlTexture2d& texture) -> ErrorOr<>;
+	auto attach(
+		GlAttachmentPoint point,
+		const GlRenderbuffer& renderbuffer,
+		DiagnosticSink& diag_sink
+	) -> Status<>;
 
-	auto complete() -> ErrorOr<>;
+	auto attach(
+		GlAttachmentPoint point,
+		const GlTexture2d& texture,
+		DiagnosticSink& diag_sink
+	) -> Status<>;
+
+	auto complete(DiagnosticSink& diag_sink) -> Status<>;
 
 	static
 	void bind_default();
@@ -316,29 +431,4 @@ private:
 };
 
 } // namespace fr
-
-template<>
-struct fmt::formatter<fr::GlAttachmentPoint>: formatter<fmt::string_view> {
-	auto format(fr::GlAttachmentPoint point, auto& ctx) const {
-		using Base = formatter<fmt::string_view>;
-		if (point.is_depth())
-			return Base::format("DEPTH", ctx);
-		else if (point.is_stencil())
-			return Base::format("STENCIL", ctx);
-		else if (point.is_depth_stencil())
-			return Base::format("DEPTH_STENCIL", ctx);
-		else if (auto idx = point.color_idx())
-			return fmt::format_to(ctx.out(), "COLOR{}", *idx);
-		else
-			FR_UNREACHABLE();
-	}
-};
-
-template<>
-struct fmt::formatter<fr::GlAttachmentKind>: formatter<fmt::string_view> {
-	auto format(fr::GlAttachmentKind kind, auto& ctx) const {
-		return formatter<fmt::string_view>::format(fr::to_string_view(kind), ctx);
-	}
-};
-
 #endif

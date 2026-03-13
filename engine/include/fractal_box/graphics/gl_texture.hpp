@@ -3,13 +3,13 @@
 
 #include <cstddef>
 
-#include <optional>
 #include <span>
 
 #include <glm/vec2.hpp>
 
 #include "fractal_box/core/default_utils.hpp"
 #include "fractal_box/core/error_handling/diagnostic.hpp"
+#include "fractal_box/core/error_handling/status.hpp"
 #include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/graphics/gl_common.hpp"
 
@@ -214,6 +214,63 @@ struct GlTextureParams {
 	bool autogen_mipmaps = true;
 };
 
+class MakeGlTexture2dGenTexturesError: public ErrorBase {
+public:
+	explicit
+	MakeGlTexture2dGenTexturesError(GlErrorFlags error_flags) noexcept:
+		_flags{error_flags}
+	{ }
+
+	friend
+	auto to_string(MakeGlTexture2dGenTexturesError self) -> std::string {
+		return fmt::format("Can't make GlTexture2d: failed to create texture object "
+			"(OpenGL error '{}')", self._flags);
+	}
+
+	auto flags() const noexcept -> GlErrorFlags { return _flags; }
+
+private:
+	GlErrorFlags _flags;
+};
+
+class MakeGlTexture2dDataSendingError: public ErrorBase {
+public:
+	explicit
+	MakeGlTexture2dDataSendingError(GlErrorFlags error_flags) noexcept:
+		_flags{error_flags}
+	{ }
+
+	friend
+	auto to_string(MakeGlTexture2dDataSendingError self) -> std::string {
+		return fmt::format("Can't make GlTexture2d: failed to send data (OpenGL error '{}')",
+			self._flags);
+	}
+
+	auto flags() const noexcept -> GlErrorFlags { return _flags; }
+
+private:
+	GlErrorFlags _flags;
+};
+
+class MakeGlTexture2dMipmapError: public ErrorBase {
+public:
+	explicit
+	MakeGlTexture2dMipmapError(GlErrorFlags error_flags) noexcept:
+		_flags{error_flags}
+	{ }
+
+	friend
+	auto to_string(MakeGlTexture2dMipmapError self) -> std::string {
+		return fmt::format("Can't make GlTexture2d: failed to generate mipmaps (OpenGL error '{}')",
+			self._flags);
+	}
+
+	auto flags() const noexcept -> GlErrorFlags { return _flags; }
+
+private:
+	GlErrorFlags _flags;
+};
+
 class GlTexture2d {
 public:
 	static constexpr auto type_target = GlTextureType::T2d;
@@ -230,7 +287,7 @@ public:
 	) noexcept;
 
 	static
-	auto make(IDiagnosticSink& error_sink) noexcept -> std::optional<GlTexture2d>;
+	auto make(DiagnosticSink& error_sink) noexcept -> Status<GlTexture2d>;
 
 	static
 	auto make_from_raw_data(
@@ -239,8 +296,8 @@ public:
 		glm::ivec2 src_dimensions,
 		GlPixelFormat src_format,
 		GlPixelDataType src_data_type,
-		IDiagnosticSink& error_sink
-	) noexcept -> std::optional<GlTexture2d>;
+		DiagnosticSink& error_sink
+	) noexcept -> Status<GlTexture2d>;
 
 	static
 	auto make_empty(
@@ -248,8 +305,8 @@ public:
 		glm::ivec2 src_dimensions,
 		GlPixelFormat src_format,
 		GlPixelDataType src_data_type,
-		IDiagnosticSink& error_sink
-	) noexcept -> std::optional<GlTexture2d>;
+		DiagnosticSink& error_sink
+	) noexcept -> Status<GlTexture2d>;
 
 	GlTexture2d(const GlTexture2d& other) = delete;
 	auto operator=(const GlTexture2d& other) -> GlTexture2d& = delete;

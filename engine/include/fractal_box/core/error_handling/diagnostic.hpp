@@ -29,6 +29,11 @@ enum class DiagnosticSeverity: uint8_t {
 	Error,
 };
 
+struct ContextBase {
+	static constexpr
+	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Context; }
+};
+
 struct WarningBase {
 	static constexpr
 	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Warning; }
@@ -525,7 +530,9 @@ public:
 	DiagnosticFrame(DiagnosticFrame&&) = delete;
 	auto operator=(DiagnosticFrame&&) -> DiagnosticFrame& = delete;
 
-	~DiagnosticFrame();
+	~DiagnosticFrame() { finish(); }
+
+	void finish() noexcept;
 
 	auto warning_count() const noexcept -> size_t;
 	auto error_count() const noexcept -> size_t;
@@ -635,18 +642,24 @@ DiagnosticFrame::DiagnosticFrame(DiagnosticSink& sink) noexcept:
 
 inline
 auto DiagnosticFrame::warning_count() const noexcept -> size_t {
+	FR_ASSERT(_sink);
 	return _sink->warning_count() - _init_warning_count;
 }
 
 inline
 auto DiagnosticFrame::error_count() const noexcept -> size_t {
+	FR_ASSERT(_sink);
 	return _sink->error_count() - _init_error_count;
 }
 
 inline
-DiagnosticFrame::~DiagnosticFrame() {
-	_sink->pop_frame();
+void DiagnosticFrame::finish() noexcept {
+	if (_sink) {
+		_sink->pop_frame();
+		_sink = nullptr;
+	}
 }
+
 
 inline
 DiagnosticObserver::DiagnosticObserver(const DiagnosticSink& sink) noexcept:

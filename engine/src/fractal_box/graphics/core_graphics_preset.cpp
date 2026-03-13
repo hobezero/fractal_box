@@ -36,19 +36,26 @@ auto CoreMeshes::make(DiagnosticSink& diag_sink) -> Status<CoreMeshes> {
 	return meshes;
 }
 
-auto Offscreen::try_init(glm::ivec2 dimensions, IDiagnosticSink& errors) -> ErrorOr<> {
+auto Offscreen::try_init(glm::ivec2 dimensions, DiagnosticSink& diag_sink) -> Status<> {
 	if (_color_texture.dimensions() == dimensions)
 		return {};
 
-	auto fb = GlFramebuffer::make();
+	auto fb = GlFramebuffer::make(diag_sink);
 	if (!fb)
-		return extract_unexpected(std::move(fb));
+		return from_error;
+
 	auto depth_stencil = GlRenderbuffer::make_with_storage(
 		GlRenderbufferFormat::Depth24Stencil8,
-		dimensions
+		dimensions,
+		diag_sink
 	);
 	if (!depth_stencil)
-		return extract_unexpected(std::move(depth_stencil));
+		return from_error;
+
+
+	auto frm = diag_sink.make_frame(StringContext{[] {
+		return "While creating texture for offscreen framebuffer";
+	}});
 
 	auto color_tex = GlTexture2d::make_from_raw_data(
 		GlTextureParams{
@@ -62,16 +69,19 @@ auto Offscreen::try_init(glm::ivec2 dimensions, IDiagnosticSink& errors) -> Erro
 		dimensions,
 		GlPixelFormat::RGB,
 		GlPixelDataType::UByte,
-		errors
+		diag_sink
 	);
 	if (!color_tex)
-		return make_error(Errc::OpenGlError,
-			"CoreGraphicsInitSystem: Failed to create texture for ofscreen framebuffer");
+		return from_error;
+
 	fb->bind();
-	fb->attach(GlAttachmentPoint::color(0), *color_tex);
-	fb->attach(GlAttachmentPoint::depth_stencil(), *depth_stencil);
-	fb->complete();
+	fb->attach(GlAttachmentPoint::color(0), *color_tex, diag_sink);
+	fb->attach(GlAttachmentPoint::depth_stencil(), *depth_stencil, diag_sink);
+	fb->complete(diag_sink);
 	fb->unbind();
+
+	if (frm.has_errors())
+		return from_error;
 
 	_depth_stencil_buffer = *std::move(depth_stencil);
 	_color_texture = *std::move(color_tex);
@@ -87,9 +97,9 @@ struct CoreGraphicsInitSystem {
 		auto warnings = DiagnosticStore{};
 
 		auto offscreen = Offscreen{};
-		if (auto res = offscreen.try_init(sdl.framebuffer_size, errors); !res)
-			return res;
-		FR_LOG_INFO_MSG("CoreGraphicsPreset: Created offscreen buffer");
+		if (auto res = offscreen.try_init(sdl.framebuffer_size, diag_sink); !res)
+			return make_error(Errc::OpenGlError, "Failed to create offscreen buffer");
+		FR_LOG_INFO_MSG("CoreGraphicsInitSystem: Created offscreen buffer");
 		runtime.add_part(std::move(offscreen));
 
 		auto screen_quad_shader = ScreenQuadShader::make(errors, warnings);
@@ -113,12 +123,15 @@ struct CoreGraphicsInitSystem {
 
 struct ResizeOffscreenSystem {
 	static
-	auto run(Offscreen& offscreen, MessageReader<WindowResized>& messages) -> ErrorOr<> {
-		auto errors = DiagnosticStore{};
+	auto run(
+		Offscreen& offscreen,
+		MessageReader<WindowResized>& messages,
+		DiagnosticSink& diag_sink
+	) -> ErrorOr<> {
 		auto result = ErrorOr<>{};
 		messages.for_last([&](const WindowResized& msg) {
-			if (auto tmp = offscreen.try_init(msg.framebuffer_size, errors); !tmp) {
-				result = std::move(tmp);
+			if (auto tmp = offscreen.try_init(msg.framebuffer_size, diag_sink); !tmp) {
+				result = make_error(Errc::OpenGlError, "Failed to create offscreen buffer");
 			}
 		});
 		return result;

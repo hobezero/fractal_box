@@ -137,7 +137,7 @@ public:
 			"(OpenGL error '{}')", self._flags);
 	}
 
-	auto flags() const noexcept ->GlErrorFlags { return _flags; }
+	auto flags() const noexcept -> GlErrorFlags { return _flags; }
 
 private:
 	GlErrorFlags _flags;
@@ -164,7 +164,7 @@ public:
 			self._flags);
 	}
 
-	auto flags() const noexcept ->GlErrorFlags { return _flags; }
+	auto flags() const noexcept -> GlErrorFlags { return _flags; }
 
 private:
 	GlErrorFlags _flags;
@@ -282,7 +282,7 @@ public:
 			"(OpenGL error '{}')", self._flags);
 	}
 
-	auto flags() const noexcept ->GlErrorFlags { return _flags; }
+	auto flags() const noexcept -> GlErrorFlags { return _flags; }
 
 private:
 	GlErrorFlags _flags;

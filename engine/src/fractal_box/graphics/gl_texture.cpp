@@ -8,15 +8,14 @@
 
 namespace fr {
 
-auto GlTexture2d::make(IDiagnosticSink& error_sink) noexcept -> std::optional<GlTexture2d> {
+auto GlTexture2d::make(DiagnosticSink& error_sink) noexcept -> Status<GlTexture2d> {
 	GlObjectId oid = null_native_id;
 	glGenTextures(1, &oid);
-	if (const auto error_flags = get_all_gl_error_flags()) {
-		error_sink.push(fmt::format("Can't make GlTexture2d: failed to create texture object "
-			"(OpenGL error '{}')", error_flags));
-		return std::nullopt;
+	if (const auto error_flags = get_all_gl_error_flags(); error_flags || oid == null_native_id) {
+		error_sink.push(MakeGlTexture2dGenTexturesError{error_flags});
+		return from_error;
 	}
-	return GlTexture2d{adopt, oid, GlTextureParams{}, {}};
+	return {in_place, adopt, oid, GlTextureParams{}, glm::ivec2{}};
 }
 
 auto GlTexture2d::make_from_raw_data(
@@ -25,8 +24,8 @@ auto GlTexture2d::make_from_raw_data(
 	glm::ivec2 src_dimensions,
 	GlPixelFormat src_format,
 	GlPixelDataType src_data_type,
-	IDiagnosticSink& error_sink
-) noexcept -> std::optional<GlTexture2d> {
+	DiagnosticSink& error_sink
+) noexcept -> Status<GlTexture2d> {
 	auto texture = make(error_sink);
 	if (!texture)
 		return texture;
@@ -52,9 +51,8 @@ auto GlTexture2d::make_from_raw_data(
 		src_data.data()
 	);
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		error_sink.push(fmt::format("Can't make GlTexture2d: failed to send data "
-			"(OpenGL error '{}')", error_flags));
-		texture = std::nullopt; // Opt into NRVO
+		error_sink.push(MakeGlTexture2dDataSendingError{error_flags});
+		texture = from_error; // Opt into NRVO
 		return texture;
 	}
 	texture->_dimensions = src_dimensions;
@@ -70,9 +68,8 @@ auto GlTexture2d::make_from_raw_data(
 	if (params.autogen_mipmaps && params.num_mipmap_levels > 1) {
 		glGenerateMipmap(type);
 		if (const auto error_flags = get_all_gl_error_flags()) {
-			error_sink.push(fmt::format("Can't make GlTexture2d: failed to generate mipmaps "
-				"(OpenGL error '{}')", error_flags));
-			texture = std::nullopt;
+			error_sink.push(MakeGlTexture2dMipmapError{error_flags});
+			texture = from_error;
 			return texture;
 		}
 	}
@@ -87,8 +84,8 @@ auto GlTexture2d::make_empty(
 	glm::ivec2 src_dimensions,
 	GlPixelFormat src_format,
 	GlPixelDataType src_data_type,
-	IDiagnosticSink& error_sink
-) noexcept -> std::optional<GlTexture2d> {
+	DiagnosticSink& error_sink
+) noexcept -> Status<GlTexture2d> {
 	return make_from_raw_data(
 		params,
 		std::span<const std::byte>{},
