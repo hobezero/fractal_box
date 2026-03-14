@@ -5,8 +5,8 @@
 #include <string>
 #include <string_view>
 
-#include <SDL2/SDL_events.h>
-#include <SDL2/SDL_video.h>
+#include <SDL3/SDL_events.h>
+#include <SDL3/SDL_video.h>
 #include <glm/vec2.hpp>
 
 #include "fractal_box/core/default_utils.hpp"
@@ -41,10 +41,10 @@ auto to_string_view(SwapInterval swap_interval) noexcept -> std::string_view {
 	FR_UNREACHABLE();
 }
 
-enum class SdlWindowFlag: std::underlying_type_t<SDL_WindowFlags> {
+enum class SdlWindowFlag: SDL_WindowFlags {
 	Fullscreen = SDL_WINDOW_FULLSCREEN,
 	OpenGl = SDL_WINDOW_OPENGL,
-	Shown = SDL_WINDOW_SHOWN,
+	Occluded = SDL_WINDOW_OCCLUDED,
 	Hidden = SDL_WINDOW_HIDDEN,
 	Borderless = SDL_WINDOW_BORDERLESS,
 	Resizable = SDL_WINDOW_RESIZABLE,
@@ -53,25 +53,25 @@ enum class SdlWindowFlag: std::underlying_type_t<SDL_WindowFlags> {
 	MouseGrabbed = SDL_WINDOW_MOUSE_GRABBED,
 	InputFocus = SDL_WINDOW_INPUT_FOCUS,
 	MouseFocus = SDL_WINDOW_MOUSE_FOCUS,
-	FullscreenDesktop = SDL_WINDOW_FULLSCREEN_DESKTOP,
-	Foreign = SDL_WINDOW_FOREIGN,
-	AllowHighDpi = SDL_WINDOW_ALLOW_HIGHDPI,
+	External = SDL_WINDOW_EXTERNAL,
+	Modal = SDL_WINDOW_MODAL,
+	HighPixelDensity = SDL_WINDOW_HIGH_PIXEL_DENSITY,
 	MouseCapture = SDL_WINDOW_MOUSE_CAPTURE,
+	MouseRelativeMode = SDL_WINDOW_MOUSE_RELATIVE_MODE,
 	AlwaysOnTop = SDL_WINDOW_ALWAYS_ON_TOP,
-	SkipTaskbar = SDL_WINDOW_SKIP_TASKBAR,
 	Utility = SDL_WINDOW_UTILITY,
 	Tooltip = SDL_WINDOW_TOOLTIP,
 	PopupMenu = SDL_WINDOW_POPUP_MENU,
 	KeyboardGrabbed = SDL_WINDOW_KEYBOARD_GRABBED,
 	Vulkan = SDL_WINDOW_VULKAN,
 	Metal = SDL_WINDOW_METAL,
-	InputGrabbed = SDL_WINDOW_INPUT_GRABBED,
+	Transparent = SDL_WINDOW_TRANSPARENT,
+	NotFocusable = SDL_WINDOW_NOT_FOCUSABLE,
 };
 
 using SdlWindowFlags = Flags<SdlWindowFlag>;
 
-inline constexpr auto default_sdl_window_flags = SdlWindowFlags{{SdlWindowFlag::Shown,
-	SdlWindowFlag::OpenGl}};
+inline constexpr auto default_sdl_window_flags = SdlWindowFlags{SdlWindowFlag::OpenGl};
 
 struct SdlOptions {
 	std::string window_title;
@@ -86,7 +86,7 @@ struct SdlOptions {
 
 using SdlWindowHandle = std::unique_ptr<SDL_Window, FuncLifter<&SDL_DestroyWindow>>;
 using SdlGlContextHandle = std::unique_ptr<std::remove_pointer_t<SDL_GLContext>,
-	FuncLifter<&SDL_GL_DeleteContext>>;
+	FuncLifter<&SDL_GL_DestroyContext>>;
 
 #if 0 // TODO: Implement
 enum class SdlSubsystemFlag {

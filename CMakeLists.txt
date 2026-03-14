@@ -147,9 +147,10 @@ if(FR_INSTALL)
 			fractal_box_sanitizer_options
 			fractal_box_default_compile_options
 			fractal_box_wrapped_glm
+			fractal_box_wrapped_sdl
 			imgui_backends_opengl3
 			imgui_backends_common
-			imgui_backends_sdl2
+			imgui_backends_sdl3
 			cmrc-base
 			glad
 		EXPORT fractal_box_targets

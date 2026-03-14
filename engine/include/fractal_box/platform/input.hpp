@@ -8,7 +8,7 @@
 #include <optional>
 #include <vector>
 
-#include <SDL2/SDL_events.h>
+#include <SDL3/SDL_events.h>
 #include <glm/vec2.hpp>
 
 #include "fractal_box/core/containers/linear_flat_set.hpp"
@@ -30,21 +30,21 @@ struct KeyEvent {
 
 struct MouseClickEvent {
 	MouseButton button;
-	glm::ivec2 pos;
+	glm::vec2 pos;
 	int click_count;
 	KeyModifiers modifiers;
 };
 
 struct MouseMoveEvent {
-	glm::ivec2 pos;
-	glm::ivec2 relative_pos;
+	glm::vec2 pos;
+	glm::vec2 relative_pos;
 	MouseButtonFlags buttons;
 	KeyModifiers modifiers;
 };
 
 struct MouseScrollEvent {
 	glm::vec2 offset;
-	std::optional<glm::ivec2> pos;
+	std::optional<glm::vec2> pos;
 	KeyModifiers modifers;
 };
 
@@ -138,24 +138,24 @@ public:
 
 	void clear() noexcept;
 
-	auto was_moved() const noexcept -> bool { return _relativePosition != glm::ivec2{}; }
-	auto was_scrolled() const noexcept -> bool { return _scrollOffset != glm::vec2{}; }
+	auto was_moved() const noexcept -> bool { return _relative_position != glm::vec2{}; }
+	auto was_scrolled() const noexcept -> bool { return _scroll_offset != glm::vec2{}; }
 
-	auto position() const noexcept -> glm::ivec2 { return _position; }
-	void set_position(glm::ivec2 position) noexcept { _position = position; }
+	auto position() const noexcept -> glm::vec2 { return _position; }
+	void set_position(glm::vec2 position) noexcept { _position = position; }
 
-	auto relative_position() const noexcept -> glm::ivec2 { return _relativePosition; }
-	void set_relative_position(glm::ivec2 position) noexcept { _relativePosition = position; }
+	auto relative_position() const noexcept -> glm::vec2 { return _relative_position; }
+	void set_relative_position(glm::vec2 position) noexcept { _relative_position = position; }
 
-	auto scroll_offset() const noexcept -> glm::vec2 { return _scrollOffset; }
-	void set_scroll_offset(glm::vec2 offset) noexcept { _scrollOffset = offset; }
+	auto scroll_offset() const noexcept -> glm::vec2 { return _scroll_offset; }
+	void set_scroll_offset(glm::vec2 offset) noexcept { _scroll_offset = offset; }
 
 private:
 	/// @brief Cursor position in window pixel coordinates
-	glm::ivec2 _position {};
+	glm::vec2 _position {};
 	/// @brief Change in cursor position in window pixel coordinates
-	glm::ivec2 _relativePosition {};
-	glm::vec2 _scrollOffset {};
+	glm::vec2 _relative_position {};
+	glm::vec2 _scroll_offset {};
 };
 
 /// @brief Generic representation of states and state transitions of binary switches
@@ -163,7 +163,7 @@ private:
 enum class SwitchEvent: uint8_t {
 //	/// @brief Switch is in OFF state. Fired every frame
 //	Up,
-	/// @brief The switch is in ON state. Fired every frame the button is down
+	/// @brief The switch is in ON state. Fired every frame while the button is down
 	Down,
 	/// @brief The switch has just changed its state from OFF to ON. Fired once
 	JustPressed,
@@ -198,9 +198,9 @@ public:
 	auto accept_event(const SDL_Event &event) -> bool;
 	void accept_key_press_event(ScanCode key);
 	void accept_key_release_event(ScanCode key);
-	void accept_mouse_press_event(MouseButton button, glm::ivec2 position);
-	void accept_mouse_release_event(MouseButton button, glm::ivec2 position);
-	void accept_mouse_move_event(glm::ivec2 position, glm::ivec2 relative_position);
+	void accept_mouse_press_event(MouseButton button, glm::vec2 position);
+	void accept_mouse_release_event(MouseButton button, glm::vec2 position);
+	void accept_mouse_move_event(glm::vec2 position, glm::vec2 relative_position);
 	void accept_mouse_scroll_event(glm::vec2 scroll_offset);
 
 	void release_keys() noexcept;

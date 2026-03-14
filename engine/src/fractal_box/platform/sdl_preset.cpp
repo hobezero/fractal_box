@@ -1,8 +1,8 @@
 #include "fractal_box/platform/sdl_preset.hpp"
 
 #include <glad/glad.h> // DO NOT REORDER
-#include <SDL2/SDL_opengl.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL_opengl.h>
+#include <SDL3/SDL.h>
 
 #include "fractal_box/core/enum_utils.hpp"
 #include "fractal_box/core/logging.hpp"
@@ -27,12 +27,12 @@ auto query_framebuffer_size(SDL_Window* window) noexcept -> glm::ivec2 {
 	FR_ASSERT(window);
 	auto fb_width = int{};
 	auto fb_height = int{};
-	SDL_GL_GetDrawableSize(window, &fb_width, &fb_height);
+	SDL_GetWindowSizeInPixels(window, &fb_width, &fb_height);
 	return {fb_width, fb_height};
 }
 
 auto SdlGuard::make(uint32_t init_flags) -> ErrorOr<SdlGuard> {
-	if (SDL_Init(init_flags) != 0)
+	if (!SDL_Init(init_flags))
 		return make_error_fmt(Errc::SdlError, "Failed to initialize SDL: {}", SDL_GetError());
 	FR_LOG_INFO_MSG("SDL initialized");
 	return SdlGuard{adopt, init_flags};
@@ -99,7 +99,6 @@ struct SdlInitSystem {
 
 		auto window = SdlWindowHandle{SDL_CreateWindow(
 			options.window_title.c_str(),
-			SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
 			options.window_size.x, options.window_size.y,
 			options.window_flags.raw_value()
 		)};
@@ -122,7 +121,7 @@ struct SdlInitSystem {
 		FR_LOG_INFO("Loaded OpenGL function pointers. Context version: OpenGL {}.{}",
 			GLVersion.major, GLVersion.minor);
 
-		if (SDL_GL_SetSwapInterval(to_underlying(options.swap_interval)) == -1) {
+		if (!SDL_GL_SetSwapInterval(to_underlying(options.swap_interval))) {
 			FR_LOG_ERROR("Failed to set swap interval to {}",
 				to_string_view(options.swap_interval));
 			if (options.swap_interval == SwapInterval::AdaptiveVSync) {
@@ -160,17 +159,16 @@ struct SdlPollEventsSystem {
 		MessageListWriter<ReqLoopQuit, WindowMessages>& generic_messages
 	) {
 		SDL_Event event;
-		while (SDL_PollEvent(&event) == SDL_TRUE) {
+		while (SDL_PollEvent(&event)) {
 			switch (event.type) {
-				case SDL_QUIT: {
+				case SDL_EVENT_QUIT: {
 					generic_messages.push(ReqLoopQuit{});
 					break;
 				}
-				case SDL_WINDOWEVENT: {
-					handle_win_event(event.window, sdl, generic_messages);
-					break;
-				}
 				default: break;
+			}
+			if (SDL_EVENT_WINDOW_FIRST <= event.type && event.type <= SDL_EVENT_WINDOW_LAST) {
+				handle_win_event(event.window, sdl, generic_messages);
 			}
 
 			sdl_messages.push(event);
@@ -186,8 +184,8 @@ private:
 		SdlData& sdl,
 		MessageListWriter<ReqLoopQuit, WindowMessages>& messages
 	) {
-		switch (event.event) {
-			case SDL_WINDOWEVENT_SIZE_CHANGED: {
+		switch (event.type) {
+			case SDL_EVENT_WINDOW_PIXEL_SIZE_CHANGED: {
 				sdl.window_size = query_window_size(sdl.window.get());
 				sdl.framebuffer_size = query_framebuffer_size(sdl.window.get());
 				FR_LOG_INFO("SDL: Window resized to ({}, {})", sdl.window_size.x,
@@ -198,8 +196,8 @@ private:
 				});
 				break;
 			}
-			// TODO: Decide what to do with `SDL_WINDOWEVENT_CLOSE` (hint: consider multiple
-			// windows)
+			// TODO: Decide what to do with `SDL_EVENT_WINDOW_CLOSE_REQUESTED` (hint: consider
+			// multiple windows)
 			default: break;
 		}
 	}

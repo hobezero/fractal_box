@@ -1,9 +1,9 @@
 #include "fractal_box/ui/dimgui_preset.hpp"
 
-#include <SDL2/SDL.h>
+#include <SDL3/SDL.h>
 #include <imgui.h>
 #include <imgui_backends/imgui_impl_opengl3.h>
-#include <imgui_backends/imgui_impl_sdl2.h>
+#include <imgui_backends/imgui_impl_sdl3.h>
 
 #include "fractal_box/core/logging.hpp"
 #include "fractal_box/platform/sdl_preset.hpp"
@@ -37,7 +37,7 @@ private:
 		auto& io = ImGui::GetIO();
 		io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard;
 
-		ImGui_ImplSDL2_InitForOpenGL(sdl.window.get(), sdl.gl_context.get());
+		ImGui_ImplSDL3_InitForOpenGL(sdl.window.get(), sdl.gl_context.get());
 		// NOTE: `gl_shader_version_line` actually returns a null-terminated string
 		ImGui_ImplOpenGL3_Init(gl_shader_version_line(sdl.gl_version).data());
 
@@ -61,7 +61,7 @@ private:
 	void kill_context(ImGuiContext* context) {
 		ImGui::SetCurrentContext(context);
 		ImGui_ImplOpenGL3_Shutdown();
-		ImGui_ImplSDL2_Shutdown();
+		ImGui_ImplSDL3_Shutdown();
 		ImGui::DestroyContext(context);
 	}
 };
@@ -76,17 +76,17 @@ struct DImGuiFrameStartSystemBase {
 		auto& io = ImGui::GetIO();
 
 		messages.for_each([&] (const SDL_Event& event){
-			ImGui_ImplSDL2_ProcessEvent(&event);
+			ImGui_ImplSDL3_ProcessEvent(&event);
 			switch (event.type) {
-				case SDL_MOUSEMOTION:
-				case SDL_MOUSEBUTTONDOWN:
-				case SDL_MOUSEBUTTONUP:
-				case SDL_MOUSEWHEEL:
+				case SDL_EVENT_MOUSE_MOTION:
+				case SDL_EVENT_MOUSE_BUTTON_DOWN:
+				case SDL_EVENT_MOUSE_BUTTON_UP:
+				case SDL_EVENT_MOUSE_WHEEL:
 					if (io.WantCaptureMouse)
 						return true;
 					break;
-				case SDL_KEYDOWN:
-				case SDL_KEYUP:
+				case SDL_EVENT_KEY_DOWN:
+				case SDL_EVENT_KEY_UP:
 					if (io.WantCaptureKeyboard)
 						return true;
 					break;
@@ -96,7 +96,7 @@ struct DImGuiFrameStartSystemBase {
 		});
 
 		ImGui_ImplOpenGL3_NewFrame();
-		ImGui_ImplSDL2_NewFrame();
+		ImGui_ImplSDL3_NewFrame();
 		ImGui::NewFrame();
 	}
 };

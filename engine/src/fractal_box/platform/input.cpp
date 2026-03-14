@@ -17,8 +17,8 @@ MouseState::MouseState(size_t reserved_size)
 void MouseState::clear() noexcept {
 	Base::clear();
 	_position = {};
-	_relativePosition = {};
-	_scrollOffset = {};
+	_relative_position = {};
+	_scroll_offset = {};
 }
 
 struct Input::Impl {
@@ -64,30 +64,30 @@ void Input::unmap(MouseButton button, SwitchEvent mode) {
 
 auto Input::accept_event(const SDL_Event &event) -> bool {
 	switch (event.type) {
-		case SDL_KEYDOWN: {
-			accept_key_press_event(static_cast<ScanCode>(event.key.keysym.scancode));
+		case SDL_EVENT_KEY_DOWN: {
+			accept_key_press_event(static_cast<ScanCode>(event.key.scancode));
 			return true;
 		}
-		case SDL_KEYUP: {
-			accept_key_release_event(static_cast<ScanCode>(event.key.keysym.scancode));
+		case SDL_EVENT_KEY_UP: {
+			accept_key_release_event(static_cast<ScanCode>(event.key.scancode));
 			return true;
 		}
-		case SDL_MOUSEMOTION: {
+		case SDL_EVENT_MOUSE_MOTION: {
 			const auto& e = event.motion;
 			accept_mouse_move_event({e.x, e.y}, {e.xrel, e.yrel});
 			return true;
 		}
-		case SDL_MOUSEBUTTONDOWN: {
+		case SDL_EVENT_MOUSE_BUTTON_DOWN: {
 			const auto& e = event.button;
 			accept_mouse_press_event(static_cast<MouseButton>(e.button), {e.x, e.y});
 			return true;
 		}
-		case SDL_MOUSEBUTTONUP: {
+		case SDL_EVENT_MOUSE_BUTTON_UP: {
 			const auto& e = event.button;
 			accept_mouse_release_event(static_cast<MouseButton>(e.button), {e.x, e.y});
 			return true;
 		}
-		case SDL_MOUSEWHEEL: {
+		case SDL_EVENT_MOUSE_WHEEL: {
 			const auto& e = event.wheel;
 			accept_mouse_scroll_event({e.x, e.y});
 			return true;
@@ -117,7 +117,7 @@ void Input::accept_key_release_event(ScanCode key) {
 	}
 }
 
-void Input::accept_mouse_press_event(MouseButton button, glm::ivec2 position) {
+void Input::accept_mouse_press_event(MouseButton button, glm::vec2 position) {
 	if (_mouse.is_up(button)) {
 		const auto input = SwitchInput{Impl::to_switch_id(button), SwitchEvent::JustPressed};
 		if (const auto action_it = _input_map.find(input); action_it != _input_map.end()) {
@@ -128,7 +128,7 @@ void Input::accept_mouse_press_event(MouseButton button, glm::ivec2 position) {
 	_mouse.set_position(position);
 }
 
-void Input::accept_mouse_release_event(MouseButton button, glm::ivec2 position) {
+void Input::accept_mouse_release_event(MouseButton button, glm::vec2 position) {
 	if (_mouse.is_down(button)) {
 		const auto input = SwitchInput{Impl::to_switch_id(button), SwitchEvent::JustReleased};
 		if (const auto action_it = _input_map.find(input); action_it != _input_map.end()) {
@@ -139,7 +139,7 @@ void Input::accept_mouse_release_event(MouseButton button, glm::ivec2 position) 
 	_mouse.set_position(position);
 }
 
-void Input::accept_mouse_move_event(glm::ivec2 position, glm::ivec2 relative_position) {
+void Input::accept_mouse_move_event(glm::vec2 position, glm::vec2 relative_position) {
 	_mouse.set_position(position);
 	_mouse.set_relative_position(relative_position);
 }

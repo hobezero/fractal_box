@@ -6,32 +6,39 @@ class KeplerWarsConan(ConanFile):
 
     default_options = {
         "fmt/*:header_only": True,
-        "sdl/*:shared": False,
-        "sdl/*:fPIC": True,
-        "sdl/*:alsa": False,
-        "sdl/*:jack": False,
-        "sdl/*:pulse": False,
-        "sdl/*:sndio": False,
-        "sdl/*:nas": False,
-        "sdl/*:esd": False,
-        "sdl/*:arts": False,
+        "sdl/*:gpu": True,
         "sdl/*:x11": True,
-        "sdl/*:xcursor": True,
-        "sdl/*:xinerama": True,
+        "sdl/*:alsa": False,
+        "sdl/*:dbus": False,
+        "sdl/*:tray": False,
+        "sdl/*:xdbe": True,
+        "sdl/*:audio": False,
+        "sdl/*:power": True,
+        "sdl/*:sndio": False,
+        "sdl/*:video": True,
+        "sdl/*:xsync": True,
+        "sdl/*:camera": False,
+        "sdl/*:dialog": True,
+        "sdl/*:haptic": False,
+        "sdl/*:hidapi": True,
+        "sdl/*:libusb": False,
+        "sdl/*:opengl": True,
+        "sdl/*:render": False,
+        "sdl/*:sensor": False,
+        "sdl/*:shared": False,
+        "sdl/*:vulkan": True,
+        "sdl/*:xfixes": True,
         "sdl/*:xinput": True,
         "sdl/*:xrandr": True,
-        "sdl/*:xscrnsaver": False,
-        "sdl/*:xshape": False,
-        "sdl/*:xvm": True,
+        "sdl/*:xshape": True,
+        "sdl/*:libudev": True,
         "sdl/*:wayland": False,
-        "sdl/*:directfb": False,
-        "sdl/*:iconv": False,
-        "sdl/*:video_rpi": False,
-        "sdl/*:sdl2main": False,
-        "sdl/*:opengl": True,
-        "sdl/*:opengles": False,
-        "sdl/*:vulkan": False,
-        "sdl/*:libunwind": False,
+        "sdl/*:xcursor": True,
+        "sdl/*:joystick": True,
+        "sdl/*:libiconv": False,
+        "sdl/*:opengles": True,
+        "sdl/*:pulseaudio": False,
+        "sdl/*:xscrnsaver": False,
         "imgui/*:shared": False,
     }
 
@@ -41,9 +48,9 @@ class KeplerWarsConan(ConanFile):
         self.requires("sfl/2.0.0")
         self.requires("glm/1.0.1")
         self.requires("cityhash/cci.20130801")
-        self.requires("sdl/2.32.10")
+        self.requires("sdl/3.4.0")
         self.requires("stb/cci.20240531")
-        self.requires("imgui/1.91.0")
+        self.requires("imgui/1.92.5")
         # TODO: make test dependencies optional
         self.requires("catch2/3.7.0")
         self.requires("nanobench/4.3.11")

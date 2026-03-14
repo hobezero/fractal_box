@@ -1,8 +1,8 @@
 #include "asteroids/graphics_systems.hpp"
 
 #include <glad/glad.h>
-#include <SDL2/SDL_opengl.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL_opengl.h>
+#include <SDL3/SDL.h>
 
 #include "fractal_box/graphics/debug_draw_preset.hpp"
 #include "fractal_box/graphics/gl_common.hpp"

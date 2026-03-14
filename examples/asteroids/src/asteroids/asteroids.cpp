@@ -1,8 +1,8 @@
 #include "asteroids/asteroids.hpp"
 
 #include <glad/glad.h>
-#include <SDL2/SDL_opengl.h>
-#include <SDL2/SDL.h>
+#include <SDL3/SDL_opengl.h>
+#include <SDL3/SDL.h>
 
 #include "fractal_box/core/random.hpp"
 #include "fractal_box/core/assert_fmt.hpp"

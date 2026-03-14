@@ -9,25 +9,30 @@ find_package(fmt 12.1 REQUIRED)
 find_package(sfl 2.0 REQUIRED)
 find_package(glm 1.0 REQUIRED)
 find_package(cityhash REQUIRED)
-find_package(SDL2 2.32 REQUIRED)
+find_package(SDL3 3.4 REQUIRED)
 find_package(stb REQUIRED)
-find_package(imgui 1.91 REQUIRED)
+find_package(imgui 1.92 REQUIRED)
 
 add_library(fractal_box_wrapped_glm INTERFACE)
 add_library(fractal_box::wrapped_glm ALIAS fractal_box_wrapped_glm)
 target_link_libraries(fractal_box_wrapped_glm INTERFACE glm::glm)
 target_compile_definitions(fractal_box_wrapped_glm INTERFACE GLM_ENABLE_EXPERIMENTAL)
 
+add_library(fractal_box_wrapped_sdl INTERFACE)
+add_library(fractal_box::wrapped_sdl ALIAS fractal_box_wrapped_sdl)
+target_link_libraries(fractal_box_wrapped_sdl INTERFACE sdl::sdl)
+target_compile_definitions(fractal_box_wrapped_sdl INTERFACE SDL_FUNCTION_POINTER_IS_VOID_POINTER)
+
 target_link_libraries(fractal_box_engine
 	PUBLIC
 		fractal_box::assets
-		imgui_backends::sdl2
+		imgui_backends::sdl3
 		imgui_backends::opengl3
 		imgui::imgui
 		glad::glad
 		cmrc::base
 		stb::stb
-		SDL2::SDL2
+		fractal_box::wrapped_sdl
 		cityhash::cityhash
 		fractal_box::wrapped_glm
 		sfl::sfl
