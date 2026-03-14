@@ -1,8 +1,6 @@
 #ifndef FRACTAL_BOX_GRAPHICS_CORE_SHADERS_HPP
 #define FRACTAL_BOX_GRAPHICS_CORE_SHADERS_HPP
 
-#include <optional>
-
 #include "fractal_box/graphics/gl_shader_program.hpp"
 #include "fractal_box/graphics/gl_texture.hpp"
 
@@ -13,9 +11,7 @@ class ScreenQuadShader final: public GlShaderProgram {
 
 public:
 	static
-	auto make(
-		IDiagnosticSink& error_sink, IDiagnosticSink& warning_sink
-	) -> std::optional<ScreenQuadShader>;
+	auto make(DiagnosticSink& diag_sink) -> Status<ScreenQuadShader>;
 
 	explicit
 	ScreenQuadShader() = default;

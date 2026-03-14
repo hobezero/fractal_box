@@ -28,9 +28,7 @@ public:
 	};
 
 	static
-	auto make(
-		fr::IDiagnosticSink& error_sink, fr::IDiagnosticSink& warning_sink
-	) -> std::optional<ColorShader>;
+	auto make(fr::DiagnosticSink& diag_sink) -> fr::Status<ColorShader>;
 
 	explicit
 	ColorShader() = default;
@@ -70,9 +68,7 @@ public:
 	};
 
 	static
-	auto make(
-		fr::IDiagnosticSink& error_sink, fr::IDiagnosticSink& warning_sink
-	) -> std::optional<SpriteShader>;
+	auto make(fr::DiagnosticSink& diag_sink) -> fr::Status<SpriteShader>;
 
 	explicit
 	SpriteShader() = default;

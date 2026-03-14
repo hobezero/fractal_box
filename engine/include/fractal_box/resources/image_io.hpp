@@ -16,17 +16,17 @@ namespace fr {
 class LoadingTextureAsset: public ContextBase {
 public:
 	explicit
-	LoadingTextureAsset(std::string_view file_name) noexcept: _file_name{file_name} { }
+	LoadingTextureAsset(std::string file_name) noexcept: _file_name(std::move(file_name)) { }
 
 	friend
 	auto to_string(LoadingTextureAsset self) -> std::string {
 		return fmt::format("While loading texture asset '{}':", self._file_name);
 	}
 
-	auto file_name() const noexcept -> std::string_view { return _file_name; }
+	auto file_name() const noexcept -> const std::string& { return _file_name; }
 
 private:
-	std::string_view _file_name;
+	std::string _file_name;
 };
 
 class StbFailure: public ErrorBase {

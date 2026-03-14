@@ -13,22 +13,18 @@ using namespace std::string_view_literals;
 
 namespace {
 
-std::string_view strOr(const auto& str, std::string_view fallback = "UNNAMED") {
-	return str.empty() ? fallback : str;
-}
 
 } // namespace
 
 auto GlShader::make(
-	GlShaderType type, std::string name, IDiagnosticSink& error_sink
-) -> std::optional<GlShader> {
+	GlShaderType type, std::string name, DiagnosticSink& diag_sink
+) -> Status<GlShader> {
 	const auto oid = glCreateShader(to_underlying(type));
 	if (oid == null_native_id) {
-		error_sink.push(fmt::format("Can't make GlShader '{}': failed to create shader object",
-			strOr(name)));
-		return std::nullopt;
+		diag_sink(MakeGlShaderCreateError{std::string(str_or(name))});
+		return from_error;
 	}
-	return GlShader{adopt, oid, type, {},
+	return {in_place, adopt, oid, type, std::vector<std::string>{},
 		(name.empty() ? fmt::format("#{}", oid) : std::move(name))};
 }
 
@@ -88,7 +84,7 @@ void GlShader::do_destroy() noexcept {
 	}
 }
 
-void GlShader::setSources(GlVersion version, std::vector<std::string> sources) {
+void GlShader::set_sources(GlVersion version, std::vector<std::string> sources) {
 	FR_ASSERT(!sources.empty());
 	if (version != GlVersion::Unspecified) {
 		sources.emplace(sources.begin(), gl_shader_version_line(version));
@@ -97,28 +93,19 @@ void GlShader::setSources(GlVersion version, std::vector<std::string> sources) {
 	_sources = std::move(sources);
 }
 
-bool GlShader::compile(
-	std::span<Ref<GlShader>> shaders,
-	IDiagnosticSink& error_sink,
-	IDiagnosticSink& warning_sink
-) {
+auto GlShader::compile(std::span<Ref<GlShader>> shaders, DiagnosticSink& diag_sink) -> Status<> {
 #if FR_ASSERT_ENABLED
 	FR_ASSERT_CHECK(!shaders.empty());
 	for (Ref<GlShader> shader : shaders)
 		FR_ASSERT_CHECK(!shader->_sources.empty());
 #endif
-	DiagnosticSinkSlice myErrors{error_sink};
-	const auto addError = [&error_sink] (Ref<GlShader> shader, std::string_view message) {
-		error_sink.push(fmt::format("Compilation of {} shader '{}' failed: {}",
-			to_string_view(shader->type()), strOr(shader->name()), strOr(message, "unknown error")
-		));
-	};
-
-	const auto addWarning = [&warning_sink] (Ref<GlShader> shader, std::string_view message) {
-		warning_sink.push(fmt::format("Warning while compiling {} shader '{}': {}",
-			to_string_view(shader->type()), strOr(shader->name()), strOr(message, "unknown warning")
-		));
-	};
+	// DiagnosticSinkSlice myErrors{error_sink};
+	// const auto addError = [&error_sink] (Ref<GlShader> shader, std::string_view message) {
+	// 	error_sink.push(fmt::format("Compilation of {} shader '{}' failed: {}",
+	// 		to_string_view(shader->type()), str_or(shader->name()), str_or(message, "unknown error")
+	// 	));
+	// };
+	const auto obs = diag_sink.make_observer();
 
 	const size_t max_num_parts = std::ranges::max_element(shaders,
 		[](Ref<GlShader> lhs, Ref<GlShader> rhs) {
@@ -130,7 +117,7 @@ bool GlShader::compile(
 	std::vector<GLint> sizes(max_num_parts);
 
 	for (Ref<GlShader> shader : shaders) {
-		const size_t num_parts = shader->_sources.size();
+		const auto frm = diag_sink.make_frame(WhileCompilingShader{shader});		const size_t num_parts = shader->_sources.size();
 		FR_ASSERT(num_parts <= static_cast<size_t>(std::numeric_limits<GLsizei>::max()));
 		for (size_t i = 0; i < num_parts; ++i) {
 			pointers[i] = static_cast<const GLchar*>(shader->_sources[i].data());
@@ -148,13 +135,16 @@ bool GlShader::compile(
 	}
 
 	for (Ref<GlShader> shader : shaders) {
+		const auto frm = diag_sink.make_frame(WhileCompilingShader{shader});
 		GLint success = GL_FALSE;
 		GLint log_length = 0;
 		glGetShaderiv(shader->native_id(), GL_COMPILE_STATUS, &success);
 		glGetShaderiv(shader->native_id(), GL_INFO_LOG_LENGTH, &log_length);
 		if (log_length < 0) {
-			addWarning(shader, fmt::format("failed to retrieve info log: "
-				"negative length {} reported", log_length));
+			diag_sink(StringWarning{[log_length] {
+				return fmt::format("Failed to retrieve info log: negative length {} reported",
+					log_length);
+			}});
 			log_length = 0;
 		}
 
@@ -165,54 +155,49 @@ bool GlShader::compile(
 		}
 
 		if (success == GL_TRUE) {
-			if (!message.empty())
-				addWarning(shader, message);
+			if (!message.empty()) {
+				diag_sink(StringWarning{[m = std::move(message)] { return m; }});
+			}
 		}
 		else {
-			addError(shader, message);
+			// Add an error even if the message is empty
+			diag_sink(GlShaderCompilationError{std::move(message)});
 		}
 	}
 
-	return myErrors.empty();
+	return obs.status();
 }
 
-auto GlShaderProgram::make(
-	std::string name, IDiagnosticSink& error_sink
-) -> std::optional<GlShaderProgram> {
+auto GlShaderProgram::make(std::string name, DiagnosticSink& diag_sink) -> Status<GlShaderProgram> {
 	const auto oid = glCreateProgram();
 	if (oid == null_native_id) {
-		error_sink.push(fmt::format("Can't make GlShaderProgram '{}': failed to create "
-			"shader program object", strOr(name)));
-		return std::nullopt;
+		diag_sink(MakeGlShaderProgramCreateError{std::move(name)});
+		return from_error;
 	}
-	return GlShaderProgram{adopt, oid,
+	return {in_place, adopt, oid,
 		(name.empty() ? fmt::format("#{}", oid) : std::move(name))};
 }
 
 auto GlShaderProgram::make_linked(
 	std::string name,
 	std::span<GlShader::Params> params,
-	IDiagnosticSink& error_sink,
-	IDiagnosticSink& warning_sink
-) -> std::optional<GlShaderProgram> {
-	DiagnosticSinkSlice myErrors{error_sink, [&](const OldDiagnostic& diagnostic) {
-		return fmt::format("Can't make GlShaderProgram '{}': {}", strOr(name), diagnostic);
-	}};
-	DiagnosticSinkSlice myWarnings{warning_sink, [&](const OldDiagnostic& diagnostic) {
-		return fmt::format("Warning while making GlShaderProgram '{}': {}", strOr(name), diagnostic);
-	}};
+	DiagnosticSink& diag_sink
+) -> Status<GlShaderProgram> {
+	const auto frm = diag_sink.make_frame(StringContext([name] {
+		return fmt::format("While making GlShaderProgram '{}'", name);
+	}));
 
 	const size_t num_shaders = params.size();
 	std::vector<GlShader> shaders(num_shaders);
 	for (size_t i = 0; i < num_shaders; ++i) {
-		auto result = GlShader::make(*params[i].type, *std::move(params[i].name), myErrors);
+		auto result = GlShader::make(*params[i].type, *std::move(params[i].name), diag_sink);
 		if (!result)
 			continue;
 		shaders[i] = *std::move(result);
-		shaders[i].setSources(*params[i].version, *std::move(params[i].sources));
+		shaders[i].set_sources(*params[i].version, *std::move(params[i].sources));
 	}
-	if (!myErrors.empty())
-		return std::nullopt;
+	if (frm.has_errors())
+		return from_error;
 
 	// TODO: remove this allocation
 	std::vector<Ref<GlShader>> shader_refs;
@@ -220,22 +205,22 @@ auto GlShaderProgram::make_linked(
 	for (size_t i = 0; i < num_shaders; ++i)
 		shader_refs.push_back(Ref{shaders[i]});
 
-	auto compRes = GlShader::compile(shader_refs, myErrors, myWarnings);
-	if (!compRes)
-		return std::nullopt;
+	auto comp_res = GlShader::compile(shader_refs, diag_sink);
+	if (!comp_res)
+		return from_error;
 
-	auto program = make(std::move(name), error_sink);
+	auto program = make(std::move(name), diag_sink);
 	if (!program)
-		return std::nullopt;
+		return from_error;
 
 	for (auto& shader : shaders)
 		program->attach_shader(shader);
 
-	auto linkRes = program->link(myErrors, myWarnings);
-	if (!linkRes)
-		return std::nullopt;
+	auto link_res = program->link(diag_sink);
+	if (!link_res)
+		return from_error;
 
-	FR_ASSERT(program->isValid());
+	FR_ASSERT(program->is_valid());
 	return std::move(*program);
 }
 
@@ -250,7 +235,7 @@ GlShaderProgram& GlShaderProgram::operator=(GlShaderProgram&& other) noexcept {
 	_oid = std::move(other._oid);
 	_name = std::move(other._name);
 
-	FR_ASSERT(!other.isValid());
+	FR_ASSERT(!other.is_valid());
 	return *this;
 }
 
@@ -299,36 +284,29 @@ void GlShaderProgram::detach_shader(GlShader& shader) {
 
 auto GlShaderProgram::link(
 	std::span<Ref<GlShaderProgram>> programs,
-	IDiagnosticSink& error_sink,
-	IDiagnosticSink& warning_sink
-) -> bool {
+	DiagnosticSink& diag_sink
+) -> Status<> {
 	FR_ASSERT(!programs.empty());
 
-	DiagnosticSinkSlice myErrors{error_sink};
-	const auto addError = [&error_sink] (Ref<GlShaderProgram> program, std::string_view message) {
-		error_sink.push(fmt::format("Linking of GlShaderProgram '{}' failed: {}",
-			strOr(program->name()), strOr(message, "unknown error")
-		));
-	};
-	const auto addWarning = [&warning_sink] (Ref<GlShaderProgram> program, std::string_view message) {
-		warning_sink.push(fmt::format("Warning while linking GlShaderProgram '{}': {}",
-			strOr(program->name()), strOr(message, "unknown warning")
-		));
-	};
-
+	const auto obs = diag_sink.make_observer();
 	for (Ref<GlShaderProgram> program : programs) {
 		glLinkProgram(program->oid());
 	}
 
 	for (Ref<GlShaderProgram> program : programs) {
+		const auto frm = diag_sink.make_frame(StringContext{[program] {
+			return fmt::format("While linking GlShaderProgram '{}':", str_or(program->name()));
+		}});
 		GLint success = GL_FALSE;
 		GLint log_length = 0;
 		glGetProgramiv(program->oid(), GL_LINK_STATUS, &success);
 		glGetProgramiv(program->oid(), GL_INFO_LOG_LENGTH, &log_length);
 
 		if (log_length < 0) {
-			addWarning(program, fmt::format("failed to retrieve info log: "
-				"negative length {} reported", log_length));
+			diag_sink(StringWarning{[log_length] {
+				return fmt::format("Failed to retrieve info log: negative length {} reported",
+					log_length);
+			}});
 			log_length = 0;
 		}
 
@@ -339,44 +317,43 @@ auto GlShaderProgram::link(
 		}
 
 		if (success == GL_TRUE) {
-			if (!message.empty())
-				addWarning(program, message);
+			if (!message.empty()) {
+				diag_sink(StringWarning{[m = std::move(message)] { return m; }});
+			}
 		}
 		else {
 			// Add an error even if the message is empty
-			addError(program, message);
+			diag_sink(GlShaderProgramLinkingError{std::move(message)});
 		}
 	}
 
-	return myErrors.empty();
+	return obs.status();
 }
 
 auto GlShaderProgram::get_uniform_location(
-	const char* uniform_name, IDiagnosticSink& error_sink
-) const -> std::optional<GlUniformLocation> {
+	const char* uniform_name, DiagnosticSink& diag_sink
+) const -> Status<GlUniformLocation> {
 	FR_ASSERT(uniform_name);
 	FR_ASSERT(!_oid.is_default());
 
 	GlUniformLocation location = glGetUniformLocation(*_oid, uniform_name);
 	if (location == -1) {
-		error_sink.push(fmt::format("Failed to get location of uniform '{}' of GlShaderProgram '{}'",
-			uniform_name, _name));
-		return std::nullopt;
+		diag_sink(GlUniformLocationError{uniform_name, _name});
+		return from_error;
 	}
 	return location;
 }
 
 auto GlShaderProgram::get_attribute_location(
-	const char* attributeName, IDiagnosticSink& error_sink
-) const -> std::optional<GlUniformLocation> {
-	FR_ASSERT(attributeName);
+	const char* attribute_name, DiagnosticSink& diag_sink
+) const -> Status<GlAttribLocation> {
+	FR_ASSERT(attribute_name);
 	FR_ASSERT(!_oid.is_default());
 
-	GlAttribLocation location = glGetAttribLocation(*_oid, attributeName);
+	GlAttribLocation location = glGetAttribLocation(*_oid, attribute_name);
 	if (location == -1) {
-		error_sink.push(fmt::format("Failed to get location of attribute '{}' of GlShaderProgram '{}'",
-			attributeName, _name));
-		return std::nullopt;
+		diag_sink(GlAttribLocationError{attribute_name, _name});
+		return from_error;
 	}
 	return location;
 }

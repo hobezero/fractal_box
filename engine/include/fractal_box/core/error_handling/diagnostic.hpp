@@ -11,6 +11,7 @@
 
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/control_flow.hpp"
+#include "fractal_box/core/error_handling/status.hpp"
 #include "fractal_box/core/functional.hpp"
 #include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/platform.hpp"
@@ -46,7 +47,7 @@ struct ErrorBase {
 
 template<class T>
 concept c_diagnosticable
-	= c_nothrow_movable<T>
+	= c_nothrow_move_constructible<T>
 	&& (c_has_to_string<T> || fmt::formattable<T>)
 	&& requires(const T obj) {
 		{ obj.severity() } -> std::same_as<DiagnosticSeverity>;
@@ -84,18 +85,19 @@ concept c_diagnostic_sbo_suitable
 	&& (alignof(DiagnosticStorage) % alignof(T) == 0)
 ;
 
+/// @todo TODO: Uncomment move-assign and swap once lambdas become move-assignable
 struct DiagnosticVTable {
 	using GetPtrFn = auto (*)(const Diagnostic& dest) -> const void*;
 	using SeverityFn = auto (*)(const Diagnostic& dest) -> DiagnosticSeverity;
 	using FormatFn = auto (*)(const Diagnostic& dest) -> std::string;
 
 	using DestructiveMoveConstructFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
-	using DestructiveMoveAssignFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
+	// using DestructiveMoveAssignFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
 	using DestroyFn = void (*)(Diagnostic& dest) noexcept;
 
-	using SwapFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
-	using SwapWithHeapFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
-	using SwapWithSboFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
+	// using SwapFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
+	// using SwapWithHeapFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
+	// using SwapWithSboFn = void (*)(Diagnostic& dest, Diagnostic& src) noexcept;
 
 public:
 	GetPtrFn get_ptr_fn;
@@ -103,12 +105,12 @@ public:
 	FormatFn format_fn;
 
 	DestructiveMoveConstructFn destructive_move_construct_fn;
-	DestructiveMoveAssignFn destructive_move_assign_fn;
+	// DestructiveMoveAssignFn destructive_move_assign_fn;
 	DestroyFn destroy_fn;
 
-	SwapFn swap_fn;
-	SwapWithHeapFn swap_with_heap_fn;
-	SwapWithSboFn swap_with_sbo_fn;
+	// SwapFn swap_fn;
+	// SwapWithHeapFn swap_with_heap_fn;
+	// SwapWithSboFn swap_with_sbo_fn;
 };
 
 template<class T, class Derived>
@@ -171,32 +173,34 @@ public:
 		}
 	}
 
-	auto operator=(Diagnostic&& other) noexcept -> Diagnostic& {
-		if (&other == this)
-			return *this;
+	auto operator=(Diagnostic&&) noexcept -> Diagnostic& = delete;
 
-		if (_vptr && other._vptr) {
-			if (_vptr == other._vptr) {
-				_vptr->destructive_move_assign_fn(*this, other);
-				other._vptr = nullptr;
-			}
-			else {
-				_vptr->destroy_fn(*this);
-				other._vptr->destructive_move_construct_fn(*this, other);
-				_vptr = std::exchange(other._vptr, nullptr);
-			}
-		}
-		else if (_vptr) {
-			_vptr->destroy_fn(*this);
-			_vptr = nullptr;
-		}
-		else if (other._vptr) {
-			other._vptr->destructive_move_construct_fn(*this, other);
-			_vptr = std::exchange(other._vptr, nullptr);
-		}
+	// auto operator=(Diagnostic&& other) noexcept -> Diagnostic& {
+	// 	if (&other == this)
+	// 		return *this;
 
-		return *this;
-	}
+	// 	if (_vptr && other._vptr) {
+	// 		if (_vptr == other._vptr) {
+	// 			_vptr->destructive_move_assign_fn(*this, other);
+	// 			other._vptr = nullptr;
+	// 		}
+	// 		else {
+	// 			_vptr->destroy_fn(*this);
+	// 			other._vptr->destructive_move_construct_fn(*this, other);
+	// 			_vptr = std::exchange(other._vptr, nullptr);
+	// 		}
+	// 	}
+	// 	else if (_vptr) {
+	// 		_vptr->destroy_fn(*this);
+	// 		_vptr = nullptr;
+	// 	}
+	// 	else if (other._vptr) {
+	// 		other._vptr->destructive_move_construct_fn(*this, other);
+	// 		_vptr = std::exchange(other._vptr, nullptr);
+	// 	}
+
+	// 	return *this;
+	// }
 
 	~Diagnostic() {
 		if (_vptr) {
@@ -204,25 +208,25 @@ public:
 		}
 	}
 
-	friend
-	void swap(Diagnostic& lhs, Diagnostic& rhs) noexcept {
-		if (&lhs == &rhs)
-			return;
+	// friend
+	// void swap(Diagnostic& lhs, Diagnostic& rhs) noexcept {
+	// 	if (&lhs == &rhs)
+	// 		return;
 
-		if (lhs._vptr && rhs._vptr) {
-			lhs._vptr->swap_fn(lhs, rhs);
-			using std::swap;
-			swap(lhs._vptr, rhs._vptr);
-		}
-		else if (lhs._vptr) {
-			lhs._vptr->destructive_move_construct_fn(rhs, lhs);
-			rhs._vptr = std::exchange(lhs._vptr, nullptr);
-		}
-		else if (rhs._vptr) {
-			rhs._vptr->destructive_move_construct_fn(lhs, rhs);
-			lhs._vptr = std::exchange(rhs._vptr, nullptr);
-		}
-	}
+	// 	if (lhs._vptr && rhs._vptr) {
+	// 		lhs._vptr->swap_fn(lhs, rhs);
+	// 		using std::swap;
+	// 		swap(lhs._vptr, rhs._vptr);
+	// 	}
+	// 	else if (lhs._vptr) {
+	// 		lhs._vptr->destructive_move_construct_fn(rhs, lhs);
+	// 		rhs._vptr = std::exchange(lhs._vptr, nullptr);
+	// 	}
+	// 	else if (rhs._vptr) {
+	// 		rhs._vptr->destructive_move_construct_fn(lhs, rhs);
+	// 		lhs._vptr = std::exchange(rhs._vptr, nullptr);
+	// 	}
+	// }
 
 	void reset() noexcept {
 		if (_vptr) {
@@ -314,46 +318,46 @@ private:
 		dest._storage.ptr = src._storage.release_ptr();
 	}
 
-	static
-	void destructive_move_assign_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
-		FR_ASSERT_AUDIT(dest._vptr == src._vptr && dest._vptr == &vtable);
-		destroy(dest._storage);
-		dest._storage.ptr = src._storage.release_ptr();
-	}
+	// static
+	// void destructive_move_assign_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
+	// 	FR_ASSERT_AUDIT(dest._vptr == src._vptr && dest._vptr == &vtable);
+	// 	destroy(dest._storage);
+	// 	dest._storage.ptr = src._storage.release_ptr();
+	// }
 
 	static
 	void destroy_thunk(Diagnostic& dest) noexcept {
 		destroy(dest._storage);
 	}
 
-	static
-	void swap_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
-		FR_ASSERT_AUDIT(dest._vptr == &vtable);
-		if (src._vptr == &vtable) { // Same type
-			using std::swap;
-			swap(dest._storage.ptr, src._storage.ptr);
-		}
-		else {
-			// Double dispatch to account for all possibilities
-			src._vptr->swap_with_heap_fn(src, dest);
-		}
-	}
+	// static
+	// void swap_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
+	// 	FR_ASSERT_AUDIT(dest._vptr == &vtable);
+	// 	if (src._vptr == &vtable) { // Same type
+	// 		using std::swap;
+	// 		swap(dest._storage.ptr, src._storage.ptr);
+	// 	}
+	// 	else {
+	// 		// Double dispatch to account for all possibilities
+	// 		src._vptr->swap_with_heap_fn(src, dest);
+	// 	}
+	// }
 
-	static
-	void swap_with_heap_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
-		// Different types, but since both objects are on the heap, we can just swap ptrs
-		using std::swap;
-		swap(dest._storage.ptr, src._storage.ptr);
-	}
+	// static
+	// void swap_with_heap_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
+	// 	// Different types, but since both objects are on the heap, we can just swap ptrs
+	// 	using std::swap;
+	// 	swap(dest._storage.ptr, src._storage.ptr);
+	// }
 
-	static
-	void swap_with_sbo_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
-		// Before: dest contains Heap<T>, src contains SBO<Unknown>
-		// After: dest contains SBO<Unknown>, src contains Heap<T>
-		auto tmp = std::unique_ptr<T>{static_cast<T*>(dest._storage.release_ptr())};
-		src._vptr->destructive_move_construct_fn(dest, src);
-		src._storage.ptr = tmp.release();
-	}
+	// static
+	// void swap_with_sbo_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
+	// 	// Before: dest contains Heap<T>, src contains SBO<Unknown>
+	// 	// After: dest contains SBO<Unknown>, src contains Heap<T>
+	// 	auto tmp = std::unique_ptr<T>{static_cast<T*>(dest._storage.release_ptr())};
+	// 	src._vptr->destructive_move_construct_fn(dest, src);
+	// 	src._storage.ptr = tmp.release();
+	// }
 
 public:
 	static constexpr auto vtable = DiagnosticVTable{
@@ -361,11 +365,11 @@ public:
 		.severity_fn = &Base::severity_thunk,
 		.format_fn = &Base::format_thunk,
 		.destructive_move_construct_fn = &destructive_move_construct_thunk,
-		.destructive_move_assign_fn = &destructive_move_assign_thunk,
+		// .destructive_move_assign_fn = &destructive_move_assign_thunk,
 		.destroy_fn = &destroy_thunk,
-		.swap_fn = &swap_thunk,
-		.swap_with_heap_fn = &swap_with_heap_thunk,
-		.swap_with_sbo_fn = &swap_with_sbo_thunk,
+		// .swap_fn = &swap_thunk,
+		// .swap_with_heap_fn = &swap_with_heap_thunk,
+		// .swap_with_sbo_fn = &swap_with_sbo_thunk,
 	};
 
 	static FR_FORCE_INLINE
@@ -417,51 +421,51 @@ private:
 		destroy(src._storage);
 	}
 
-	static
-	void destructive_move_assign_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
-		FR_ASSERT_AUDIT(dest._vptr == src._vptr && dest._vptr == &vtable);
-		assign(dest._storage, std::move(*get_object(src._storage)));
-		destroy(src._storage);
-	}
+	// static
+	// void destructive_move_assign_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
+	// 	FR_ASSERT_AUDIT(dest._vptr == src._vptr && dest._vptr == &vtable);
+	// 	assign(dest._storage, std::move(*get_object(src._storage)));
+	// 	destroy(src._storage);
+	// }
 
 	static
 	void destroy_thunk(Diagnostic& dest) noexcept {
 		destroy(dest._storage);
 	}
 
-	static
-	void swap_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
-		FR_ASSERT_AUDIT(dest._vptr == &vtable);
-		if (src._vptr == &vtable) {
-			using std::swap;
-			swap(*get_object(dest._storage), *get_object(src._storage));
-		}
-		else {
-			src._vptr->swap_with_sbo_fn(src, dest);
-		}
-	}
+	// static
+	// void swap_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
+	// 	FR_ASSERT_AUDIT(dest._vptr == &vtable);
+	// 	if (src._vptr == &vtable) {
+	// 		using std::swap;
+	// 		swap(*get_object(dest._storage), *get_object(src._storage));
+	// 	}
+	// 	else {
+	// 		src._vptr->swap_with_sbo_fn(src, dest);
+	// 	}
+	// }
 
-	static
-	void swap_with_heap_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
-		// Before: dest contains SBO<T>, src contains Heap<Unknown>
-		// After: dest contains Heap<Unknown>, src contains SBO<T>
-		T tmp = std::move(*get_object(dest._storage));
-		destroy(dest._storage);
-		// TODO: Try to avoid triple dispatch to improve performance
-		src._vptr->destructive_move_construct_fn(dest, src);
-		create(src._storage, std::move(tmp));
-	}
+	// static
+	// void swap_with_heap_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
+	// 	// Before: dest contains SBO<T>, src contains Heap<Unknown>
+	// 	// After: dest contains Heap<Unknown>, src contains SBO<T>
+	// 	T tmp = std::move(*get_object(dest._storage));
+	// 	destroy(dest._storage);
+	// 	// TODO: Try to avoid triple dispatch to improve performance
+	// 	src._vptr->destructive_move_construct_fn(dest, src);
+	// 	create(src._storage, std::move(tmp));
+	// }
 
-	static
-	void swap_with_sbo_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
-		// Before: dest contains SBO<T>, src contains SBO<Unknown>
-		// After: dest contains SBO<Unknown>, src contains SBO<T>
-		T tmp = std::move(*get_object(dest._storage));
-		destroy(dest._storage);
-		// TODO: Try to avoid triple dispatch to improve performance
-		src._vptr->destructive_move_construct_fn(dest, src);
-		create(src._storage, std::move(tmp));
-	}
+	// static
+	// void swap_with_sbo_thunk(Diagnostic& dest, Diagnostic& src) noexcept {
+	// 	// Before: dest contains SBO<T>, src contains SBO<Unknown>
+	// 	// After: dest contains SBO<Unknown>, src contains SBO<T>
+	// 	T tmp = std::move(*get_object(dest._storage));
+	// 	destroy(dest._storage);
+	// 	// TODO: Try to avoid triple dispatch to improve performance
+	// 	src._vptr->destructive_move_construct_fn(dest, src);
+	// 	create(src._storage, std::move(tmp));
+	// }
 
 public:
 	static constexpr auto vtable = DiagnosticVTable{
@@ -469,11 +473,11 @@ public:
 		.severity_fn = &Base::severity_thunk,
 		.format_fn = &Base::format_thunk,
 		.destructive_move_construct_fn = &destructive_move_construct_thunk,
-		.destructive_move_assign_fn = &destructive_move_assign_thunk,
+		// .destructive_move_assign_fn = &destructive_move_assign_thunk,
 		.destroy_fn = &destroy_thunk,
-		.swap_fn = &swap_thunk,
-		.swap_with_heap_fn = &swap_with_heap_thunk,
-		.swap_with_sbo_fn = &swap_with_sbo_thunk,
+		// .swap_fn = &swap_thunk,
+		// .swap_with_heap_fn = &swap_with_heap_thunk,
+		// .swap_with_sbo_fn = &swap_with_sbo_thunk,
 	};
 
 	static FR_FORCE_INLINE
@@ -543,6 +547,13 @@ public:
 	FR_FORCE_INLINE
 	auto has_errors() const noexcept -> bool { return error_count() != 0zu; }
 
+	FR_FORCE_INLINE
+	auto status() const noexcept -> Status<> {
+		if (error_count() == 0zu)
+			return {};
+		return from_error;
+	}
+
 private:
 	DiagnosticSink* _sink;
 	size_t _init_warning_count;
@@ -562,6 +573,13 @@ public:
 
 	FR_FORCE_INLINE
 	auto has_errors() const noexcept -> bool { return error_count() != 0zu; }
+
+	FR_FORCE_INLINE
+	auto status() const noexcept -> Status<> {
+		if (error_count() == 0zu)
+			return {};
+		return from_error;
+	}
 
 private:
 	const DiagnosticSink* _sink;
@@ -584,6 +602,12 @@ public:
 	template<class T>
 	requires c_diagnosticable<std::remove_cvref_t<T>>
 	auto push(T&& diagnostic) -> ControlFlow {
+		return operator()(std::forward<T>(diagnostic));
+	}
+
+	template<class T>
+	requires c_diagnosticable<std::remove_cvref_t<T>>
+	auto operator()(T&& diagnostic) -> ControlFlow {
 		switch (diagnostic.severity()) {
 			case DiagnosticSeverity::Context:
 				FR_PANIC();
@@ -608,6 +632,7 @@ public:
 		return DiagnosticFrame{*this};
 	}
 
+	[[nodiscard]]
 	auto make_observer() const noexcept -> DiagnosticObserver {
 		return DiagnosticObserver{*this};
 	}
@@ -660,7 +685,6 @@ void DiagnosticFrame::finish() noexcept {
 	}
 }
 
-
 inline
 DiagnosticObserver::DiagnosticObserver(const DiagnosticSink& sink) noexcept:
 	_sink{&sink},
@@ -696,6 +720,44 @@ private:
 
 template<class F>
 StringContext(F&&) -> StringContext<std::remove_cvref_t<F>>;
+
+template<class Func>
+class StringWarning {
+public:
+	explicit constexpr
+	StringWarning(Func&& func): _func{std::move(func)} { }
+
+	static constexpr
+	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Warning; }
+
+	friend
+	auto to_string(const StringWarning& context) -> std::string { return context._func(); }
+
+private:
+	Func _func;
+};
+
+template<class F>
+StringWarning(F&&) -> StringWarning<std::remove_cvref_t<F>>;
+
+template<class Func>
+class StringError {
+public:
+	explicit constexpr
+	StringError(Func&& func): _func{std::move(func)} { }
+
+	static constexpr
+	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Warning; }
+
+	friend
+	auto to_string(const StringError& context) -> std::string { return context._func(); }
+
+private:
+	Func _func;
+};
+
+template<class F>
+StringError(F&&) -> StringError<std::remove_cvref_t<F>>;
 
 /// @todo
 ///   TODO: Support the ability to declare that only one error is possible

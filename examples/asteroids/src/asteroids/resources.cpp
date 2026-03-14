@@ -26,12 +26,10 @@ void try_assign_with(Target& target, Source&& source) {
 
 auto GameResources::init(fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<> {
 	auto obs = diag_sink.make_observer();
-	fr::DiagnosticStore errors;
-	fr::DiagnosticStore warnings;
 
 	// Shaders
-	try_assign_with(this->color_shader, ColorShader::make(errors, warnings));
-	try_assign_with(this->sprite_shader, SpriteShader::make(errors, warnings));
+	try_assign_with(this->color_shader, ColorShader::make(diag_sink));
+	try_assign_with(this->sprite_shader, SpriteShader::make(diag_sink));
 
 	// Meshes
 	try_init_mesh(this->mesh_line, fr::GlPrimitive::LineStrip, fr::mesh_line_data, diag_sink);
@@ -56,8 +54,9 @@ auto GameResources::init(fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<> {
 	try_init_texture(this->tex_plume, fs, "textures/plume.png", params, diag_sink);
 
 	if (const auto error_flags = fr::get_all_gl_error_flags()) {
-		errors.push(fmt::format("Failed to initialize resources: OpenGL error {}",
-			error_flags));
+		diag_sink(fr::StringError{[error_flags] {
+			return fmt::format("Failed to initialize resources: OpenGL error {}", error_flags);
+		}});
 	}
 
 	if (obs.has_errors()) {

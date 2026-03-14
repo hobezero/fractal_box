@@ -12,9 +12,7 @@ static constexpr auto gl_version = GlVersion::GlEs300;
 static constexpr auto gl_version = GlVersion::Gl330;
 #endif
 
-auto ScreenQuadShader::make(
-	IDiagnosticSink& error_sink, IDiagnosticSink& warning_sink
-) -> std::optional<ScreenQuadShader> {
+auto ScreenQuadShader::make(DiagnosticSink& diag_sink) -> Status<ScreenQuadShader> {
 	auto program = make_linked_shader_program_from_resources({
 		.name = "ScreenQuadShader",
 		.version = gl_version,
@@ -23,11 +21,10 @@ auto ScreenQuadShader::make(
 		.vertex_shader_name = "screen_quad.vert.glsl",
 		.fragment_shader_file_path = "shaders/screen_quad.frag.glsl",
 		.fragment_shader_name = "screen_quad.frag.glsl",
-		.error_sink = error_sink,
-		.warning_sink = warning_sink
+		.diag_sink = diag_sink,
 	});
 	if (!program)
-		return std::nullopt;
+		return from_error;
 
 	return ScreenQuadShader{adopt, *std::move(program)};
 }

@@ -1,7 +1,6 @@
 #ifndef KEPELR_GRAPHICS_GL_SHADER_PROGRAM_HPP
 #define KEPELR_GRAPHICS_GL_SHADER_PROGRAM_HPP
 
-#include <optional>
 #include <span>
 #include <string_view>
 
@@ -21,12 +20,18 @@
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/default_utils.hpp"
 #include "fractal_box/core/error_handling/diagnostic.hpp"
+#include "fractal_box/core/error_handling/status.hpp"
 #include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/ref.hpp"
 #include "fractal_box/graphics/gl_common.hpp"
 #include "fractal_box/graphics/gl_version.hpp"
 
 namespace fr {
+
+inline
+auto str_or(std::string_view str, std::string_view fallback = "UNNAMED") -> std::string_view {
+	return str.empty() ? fallback : str;
+}
 
 template<class T>
 class GlUniform;
@@ -64,6 +69,43 @@ auto to_string_view(GlShaderType type) noexcept -> std::string_view {
 	FR_UNREACHABLE();
 }
 
+class MakeGlShaderCreateError: public ErrorBase {
+public:
+	explicit
+	MakeGlShaderCreateError(std::string name): _name(std::move(name)) { }
+
+	friend
+	auto to_string(const MakeGlShaderCreateError& self) -> std::string {
+		return fmt::format("Can't make GlShader '{}': failed to create shader object", self._name);
+	}
+
+	auto name() const noexcept -> const std::string& { return _name; }
+
+private:
+	std::string _name;
+};
+
+class GlShaderCompilationError: public ErrorBase {
+public:
+	explicit
+	GlShaderCompilationError(std::string message): _message(std::move(message)) { }
+
+	friend
+	auto to_string(const GlShaderCompilationError& self) -> std::string {
+		return self._message;
+	}
+
+	friend
+	auto to_string(GlShaderCompilationError&& self) -> std::string {
+		return std::move(self)._message;
+	}
+
+	auto message() const noexcept -> const std::string& { return _message; }
+
+private:
+	std::string _message;
+};
+
 class GlShader: public GlObject {
 public:
 	struct Params {
@@ -78,12 +120,14 @@ public:
 
 	/// @brief Create a GlShader object
 	static
-	auto make(GlShaderType type, std::string name, IDiagnosticSink& error_sink)
-		-> std::optional<GlShader>;
+	auto make(GlShaderType type, std::string name, DiagnosticSink& diag_sink)
+		-> Status<GlShader>;
 
-	explicit GlShader() noexcept = default;
+	explicit
+	GlShader() noexcept = default;
 
-	explicit GlShader(
+	explicit
+	GlShader(
 		AdoptInit,
 		GLuint oid,
 		GlShaderType type,
@@ -107,22 +151,20 @@ public:
 	void destroy() noexcept;
 
 	/// @pre `!sources.empty()`
-	void setSources(GlVersion version, std::vector<std::string> sources);
+	void set_sources(GlVersion version, std::vector<std::string> sources);
 
-	[[nodiscard]] bool compile(IDiagnosticSink& error_sink, IDiagnosticSink& warning_sink) {
-		return compile(to_span<Ref<GlShader>>({*this}), error_sink, warning_sink);
+	[[nodiscard]]
+	auto compile(DiagnosticSink& diag_sink) -> Status<> {
+		return compile(to_span<Ref<GlShader>>({*this}), diag_sink);
 	}
 
 	/// @brief Compile a set of shaders. The compilation is potentionally parallel and is more
 	/// efficient than compiling each shader separately
 	/// @pre `!shaders.empty()`
-	[[nodiscard]] static bool compile(
-		std::span<Ref<GlShader>> shaders,
-		IDiagnosticSink& error_sink,
-		IDiagnosticSink& warning_sink
-	);
+	[[nodiscard]] static
+	auto compile(std::span<Ref<GlShader>> shaders, DiagnosticSink& diag_sink) -> Status<>;
 
-	[[nodiscard]] bool isValid() const noexcept { return !_oid.is_default(); }
+	bool is_valid() const noexcept { return !_oid.is_default(); }
 
 	GlObjectId native_id() const noexcept { return *_oid; }
 	GlShaderType type() const noexcept { return *_type; }
@@ -138,24 +180,129 @@ private:
 	std::string _name;
 };
 
+class WhileCompilingShader: public ContextBase {
+public:
+	explicit
+	WhileCompilingShader(const GlShader& shader):
+		_shader{&shader}
+	{ }
+
+	friend
+	auto to_string(WhileCompilingShader self) -> std::string {
+		return fmt::format("While compiling {} shader '{}':", to_string_view(self._shader->type()),
+			str_or(self._shader->name()));
+	}
+
+	auto shader() const noexcept -> const GlShader& { return *_shader; }
+
+private:
+	const GlShader* _shader;
+};
+
+class MakeGlShaderProgramCreateError: public ErrorBase {
+public:
+	explicit
+	MakeGlShaderProgramCreateError(std::string name): _name(std::move(name)) { }
+
+	friend
+	auto to_string(const MakeGlShaderProgramCreateError& self) -> std::string {
+		return fmt::format("Can't make GlShaderProgram '{}': failed to create shader prrogram "
+			"object", str_or(self._name));
+	}
+
+	auto name() const noexcept -> const std::string& { return _name; }
+
+private:
+	std::string _name;
+};
+
+class GlShaderProgramLinkingError: public ErrorBase {
+public:
+	explicit
+	GlShaderProgramLinkingError(std::string message): _message(std::move(message)) { }
+
+	friend
+	auto to_string(const GlShaderProgramLinkingError& self) -> std::string {
+		return self._message;
+	}
+
+	friend
+	auto to_string(GlShaderProgramLinkingError&& self) -> std::string {
+		return std::move(self)._message;
+	}
+
+	auto message() const noexcept -> const std::string& { return _message; }
+
+private:
+	std::string _message;
+};
+
+class GlUniformLocationError: public ErrorBase {
+public:
+	explicit
+	GlUniformLocationError(std::string uniform_name, std::string program_name):
+		_uniform_name(std::move(uniform_name)),
+		_program_name(std::move(program_name))
+	{ }
+
+	friend
+	auto to_string(const GlUniformLocationError& self) -> std::string {
+		return fmt::format("Failed to get location of uniform '{}' of GlShaderProgram '{}'",
+			self._uniform_name, self._program_name);
+	}
+
+	auto uniform_name() const noexcept -> const std::string& { return _uniform_name; }
+	auto program_name() const noexcept -> const std::string& { return _program_name; }
+
+private:
+	std::string _uniform_name;
+	std::string _program_name;
+};
+
+class GlAttribLocationError: public ErrorBase {
+public:
+	explicit
+	GlAttribLocationError(std::string attrib_name, std::string program_name):
+		_attrib_name(std::move(attrib_name)),
+		_program_name(std::move(program_name))
+	{ }
+
+	friend
+	auto to_string(const GlAttribLocationError& self) -> std::string {
+		return fmt::format("Failed to get location of attribute '{}' of GlShaderProgram '{}'",
+			self._attrib_name, self._program_name);
+	}
+
+	auto attrib_name() const noexcept -> const std::string& { return _attrib_name; }
+	auto program_name() const noexcept -> const std::string& { return _program_name; }
+
+private:
+	std::string _attrib_name;
+	std::string _program_name;
+};
+
 class GlShaderProgram: public GlObject {
 public:
 	static constexpr GlObjectId null_native_id = 0;
 
 	/// @brief Create a GlShaderProgram object
-	[[nodiscard]] static auto make(std::string name, IDiagnosticSink& error_sink)
-		-> std::optional<GlShaderProgram>;
+	static
+	auto make(std::string name, DiagnosticSink& diag_sink) -> Status<GlShaderProgram>;
 
-	/// @brief Create, compile, and link a GlShaderProgram object using the provided shader parameters
-	[[nodiscard]] static auto make_linked(
+	/// @brief Create, compile, and link a GlShaderProgram object using the provided shader
+	/// parameters
+	static
+	auto make_linked(
 		std::string name,
 		std::span<GlShader::Params> params,
-		IDiagnosticSink& error_sink,
-		IDiagnosticSink& warning_sink
-	) -> std::optional<GlShaderProgram>;
+		DiagnosticSink& diag_sink
+	) -> Status<GlShaderProgram>;
 
-	explicit GlShaderProgram() noexcept = default;
-	explicit GlShaderProgram(AdoptInit, GlObjectId oid, std::string name = {}) noexcept;
+	explicit
+	GlShaderProgram() noexcept = default;
+
+	explicit
+	GlShaderProgram(AdoptInit, GlObjectId oid, std::string name = {}) noexcept;
 
 	GlShaderProgram(const GlShaderProgram& other) = delete;
 	GlShaderProgram& operator=(const GlShaderProgram& other) = delete;
@@ -163,9 +310,11 @@ public:
 	GlShaderProgram(GlShaderProgram&& other) noexcept = default;
 	GlShaderProgram& operator=(GlShaderProgram&& other) noexcept;
 
-	virtual ~GlShaderProgram();
+	virtual
+	~GlShaderProgram();
 
-	friend void swap(GlShaderProgram& lhs, GlShaderProgram& rhs) noexcept;
+	friend
+	void swap(GlShaderProgram& lhs, GlShaderProgram& rhs) noexcept;
 
 	GlObjectId release() noexcept;
 	void destroy() noexcept;
@@ -174,8 +323,8 @@ public:
 	void detach_shader(GlShader& shader);
 
 	[[nodiscard]]
-	auto link(IDiagnosticSink& error_sink, IDiagnosticSink& warning_sink) -> bool {
-		return link(to_span<Ref<GlShaderProgram>>({*this}), error_sink, warning_sink);
+	auto link(DiagnosticSink& diag_sink) -> Status<> {
+		return link(to_span<Ref<GlShaderProgram>>({*this}), diag_sink);
 	}
 
 	/// @brief Link a set of programs. The linking is potentionally parallel and is more
@@ -184,14 +333,13 @@ public:
 	[[nodiscard]] static
 	auto link(
 		std::span<Ref<GlShaderProgram>> programs,
-		IDiagnosticSink& error_sink,
-		IDiagnosticSink& warning_sink
-	) -> bool;
+		DiagnosticSink& diag_sink
+	) -> Status<>;
 
-	auto get_uniform_location(const char* uniform_name, IDiagnosticSink& error_sink) const
-		-> std::optional<GlUniformLocation>;
-	auto get_attribute_location(const char* attribute_name, IDiagnosticSink& error_sink) const
-		-> std::optional<GlAttribLocation>;
+	auto get_uniform_location(const char* uniform_name, DiagnosticSink& diag_sink) const
+		-> Status<GlUniformLocation>;
+	auto get_attribute_location(const char* attribute_name, DiagnosticSink& diag_sink) const
+		-> Status<GlAttribLocation>;
 
 	static
 	void use_by_id(GlObjectId program_id) noexcept;
@@ -282,10 +430,11 @@ public:
 
 	void draw(GlMesh& mesh);
 
-	[[nodiscard]] bool isValid() const noexcept { return !_oid.is_default(); }
+	[[nodiscard]]
+	auto is_valid() const noexcept -> bool { return !_oid.is_default(); }
 
-	GlObjectId oid() const noexcept { return *_oid; }
-	const auto& name() const noexcept { return _name; }
+	auto oid() const noexcept -> GlObjectId { return *_oid; }
+	auto name() const noexcept -> const std::string& { return _name; }
 
 private:
 	void do_destroy() noexcept;
@@ -322,7 +471,7 @@ namespace detail {
 class GlLocationUnwrapper {
 public:
 	constexpr
-	GlLocationUnwrapper(GlShaderProgram& program, IDiagnosticSink& error_sink) noexcept:
+	GlLocationUnwrapper(GlShaderProgram& program, DiagnosticSink& error_sink) noexcept:
 		_program{&program},
 		_error_sink{&error_sink}
 	{ }
@@ -336,18 +485,19 @@ public:
 
 private:
 	GlShaderProgram* _program;
-	IDiagnosticSink* _error_sink;
+	DiagnosticSink* _error_sink;
 };
 
 } // namespace detail
 
-inline auto make_gl_uniforms_object(
-	GlShaderProgram& program, auto factory, IDiagnosticSink& error_sink
-) -> std::optional<decltype(factory(std::declval<detail::GlLocationUnwrapper>()))> {
-	DiagnosticSinkSlice myErrors{error_sink};
+inline
+auto make_gl_uniforms_object(
+	GlShaderProgram& program, auto factory, DiagnosticSink& error_sink
+) -> Status<decltype(factory(std::declval<detail::GlLocationUnwrapper>()))> {
+	const auto obs = error_sink.make_observer();
 	auto object = factory(detail::GlLocationUnwrapper{program, error_sink});
-	if (!myErrors.empty())
-		return std::nullopt;
+	if (obs.has_errors())
+		return from_error;
 	return object;
 }
 
@@ -357,12 +507,17 @@ public:
 	using Type = T;
 
 	GlUniform() = delete;
-	constexpr GlUniform(GlCheckedUniformLocation loc) noexcept: _location{loc.value()} { }
-	explicit constexpr GlUniform(AdoptInit, GlUniformLocation location) noexcept
-		: _location{location}
+
+	explicit(false) constexpr
+	GlUniform(GlCheckedUniformLocation loc) noexcept: _location{loc.value()} { }
+
+	explicit constexpr
+	GlUniform(AdoptInit, GlUniformLocation location) noexcept:
+		_location{location}
 	{ }
 
-	constexpr GlUniform(UninitializedInit) noexcept: _location{0} { }
+	explicit(false) constexpr
+	GlUniform(UninitializedInit) noexcept: _location{0} { }
 
 	auto location() const noexcept -> GlUniformLocation { return _location; }
 

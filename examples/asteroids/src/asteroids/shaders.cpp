@@ -15,9 +15,7 @@ static constexpr auto gl_version = fr::GlVersion::GlEs300;
 static constexpr auto gl_version = fr::GlVersion::Gl330;
 #endif
 
-auto ColorShader::make(
-	fr::IDiagnosticSink& error_sink, fr::IDiagnosticSink& warning_sink
-) -> std::optional<ColorShader> {
+auto ColorShader::make(fr::DiagnosticSink& diag_sink) -> fr::Status<ColorShader> {
 	auto program = fr::make_linked_shader_program_from_resources({
 		.name = "ColorShader",
 		.version = gl_version,
@@ -26,11 +24,10 @@ auto ColorShader::make(
 		.vertex_shader_name = "color.vert",
 		.fragment_shader_file_path = "shaders/color.frag",
 		.fragment_shader_name = "color.frag",
-		.error_sink = error_sink,
-		.warning_sink = warning_sink
+		.diag_sink = diag_sink,
 	});
 	if (!program)
-		return std::nullopt;
+		return fr::from_error;
 
 	auto u_pack = make_gl_uniforms_object(*program, [](auto unwrap) {
 		return Uniforms {
@@ -38,9 +35,9 @@ auto ColorShader::make(
 			.depth = unwrap("u_depth"),
 			.color = unwrap("u_color"),
 		};
-	}, error_sink);
+	}, diag_sink);
 	if (!u_pack)
-		return std::nullopt;
+		return fr::from_error;
 
 	return ColorShader{fr::adopt, std::move(*program), std::move(*u_pack)};
 }
@@ -55,9 +52,7 @@ void SpriteShader::bind_texture(const fr::GlTexture2d& texture) noexcept {
 	texture.bind();
 }
 
-auto SpriteShader::make(
-	fr::IDiagnosticSink& error_sink, fr::IDiagnosticSink& warning_sink
-) -> std::optional<SpriteShader> {
+auto SpriteShader::make(fr::DiagnosticSink& diag_sink) -> fr::Status<SpriteShader> {
 	auto program = fr::make_linked_shader_program_from_resources({
 		.name = "SpriteShader",
 		.version = gl_version,
@@ -66,20 +61,19 @@ auto SpriteShader::make(
 		.vertex_shader_name = "sprite.vert",
 		.fragment_shader_file_path = "shaders/sprite.frag",
 		.fragment_shader_name = "sprite.frag",
-		.error_sink = error_sink,
-		.warning_sink = warning_sink
+		.diag_sink = diag_sink,
 	});
 	if (!program)
-		return std::nullopt;
+		return fr::from_error;
 
 	auto u_pack = make_gl_uniforms_object(*program, [](auto unwrap) {
 		return Uniforms {
 			.view_proj_mat = unwrap("u_view_proj_mat"),
 			.depth = unwrap("u_depth")
 		};
-	}, error_sink);
+	}, diag_sink);
 	if (!u_pack)
-		return std::nullopt;
+		return fr::from_error;
 
 	return SpriteShader{fr::adopt, std::move(*program), std::move(*u_pack)};
 }

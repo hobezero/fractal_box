@@ -14,8 +14,7 @@ struct MakeLinkedShaderProgramParams {
 	NonDefault<std::string> vertex_shader_name;
 	const std::string& fragment_shader_file_path;
 	NonDefault<std::string> fragment_shader_name;
-	IDiagnosticSink& error_sink;
-	IDiagnosticSink& warning_sink;
+	DiagnosticSink& diag_sink;
 };
 
 /// @brief Helper function to create a GlShaderProgram from shader sources defined in the
@@ -25,19 +24,19 @@ struct MakeLinkedShaderProgramParams {
 inline
 auto make_linked_shader_program_from_resources(
 	MakeLinkedShaderProgramParams&& params
-) -> std::optional<GlShaderProgram> {
+) -> Status<GlShaderProgram> {
 	auto vertex_text = try_get_resource_string(
 		params.filesystem,
 		params.vertex_shader_file_path,
-		params.error_sink
+		params.diag_sink
 	);
 	auto fragment_text = try_get_resource_string(
 		params.filesystem,
 		params.fragment_shader_file_path,
-		params.error_sink
+		params.diag_sink
 	);
 	if (!vertex_text || !fragment_text)
-		return std::nullopt;
+		return from_error;
 
 	return GlShaderProgram::make_linked(
 		std::move(*params.name),
@@ -55,7 +54,7 @@ auto make_linked_shader_program_from_resources(
 				.name = std::move(*params.fragment_shader_name)
 			}
 		}),
-		params.error_sink, params.warning_sink
+		params.diag_sink
 	);
 }
 

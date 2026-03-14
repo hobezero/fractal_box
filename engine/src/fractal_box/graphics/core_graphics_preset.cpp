@@ -93,19 +93,14 @@ auto Offscreen::try_init(glm::ivec2 dimensions, DiagnosticSink& diag_sink) -> St
 struct CoreGraphicsInitSystem {
 	static
 	auto run(Runtime& runtime, const SdlData& sdl, DiagnosticSink& diag_sink) -> ErrorOr<> {
-		auto errors = DiagnosticStore{};
-		auto warnings = DiagnosticStore{};
-
 		auto offscreen = Offscreen{};
 		if (auto res = offscreen.try_init(sdl.framebuffer_size, diag_sink); !res)
 			return make_error(Errc::OpenGlError, "Failed to create offscreen buffer");
 		FR_LOG_INFO_MSG("CoreGraphicsInitSystem: Created offscreen buffer");
 		runtime.add_part(std::move(offscreen));
 
-		auto screen_quad_shader = ScreenQuadShader::make(errors, warnings);
+		auto screen_quad_shader = ScreenQuadShader::make(diag_sink);
 		if (!screen_quad_shader) {
-			for (auto e : errors.get_all())
-				FR_LOG_ERROR("{}", e);
 			return make_error(Errc::OpenGlError,
 				"CoreGraphicsInitSystem: Failed to create ScreenQuadShader");
 		}

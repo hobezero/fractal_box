@@ -39,16 +39,32 @@ auto get_resource_data(
 	return *file_data;
 }
 
+class ResourceNotFound: public ErrorBase {
+public:
+	explicit
+	ResourceNotFound(std::string file_name): _file_name(std::move(file_name)) { }
+
+	friend
+	auto to_string(const ResourceNotFound& self) -> std::string {
+		return fmt::format("Resource file '{}' not found", self._file_name);
+	}
+
+	auto file_name() const noexcept -> const std::string& { return _file_name; }
+
+private:
+	std::string _file_name;
+};
+
 inline
 auto try_get_resource_string(
 	cmrc::embedded_filesystem fs,
 	const std::string& file_name,
-	IDiagnosticSink& error_sink
-) -> std::optional<std::string> {
+	DiagnosticSink& diag_sink
+) -> Status<std::string> {
 	const auto file_data = try_get_resource_data(fs, file_name);
 	if (!file_data) {
-		error_sink.push(fmt::format("Asset file '{}' not found", file_name));
-		return std::nullopt;
+		diag_sink(ResourceNotFound{file_name});
+		return from_error;
 	}
 	return std::string(file_data->begin(), file_data->end());
 }
