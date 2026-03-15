@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 4.2)
 
 find_package(SDL3 3.4 REQUIRED)
-find_package(imgui REQUIRED) # TODO: Specify version once we move back to Conan
+find_package(imgui 1.92 REQUIRED)
 
 add_library(imgui_backends_common INTERFACE)
 add_library(imgui_backends::common ALIAS imgui_backends_common)

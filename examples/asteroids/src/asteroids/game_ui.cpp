@@ -60,10 +60,12 @@ struct GameUiInitSystem {
 		const auto fs = cmrc::aster::get_filesystem();
 		const auto scale = 1.f; // TODO: DPI scaling
 		const auto oxanium = fr::get_resource_data(fs, "fonts/Oxanium-SemiBold.ttf");
-		auto* hud_large_font = fr::make_im_font_from_data(oxanium, scale * consts.hud_large_font_size);
+		auto* hud_large_font = fr::make_im_font_from_data(oxanium, scale
+			* consts.hud_large_font_size);
 		auto* hud_medium_font = fr::make_im_font_from_data(oxanium,
 			scale * consts.hud_medium_font_size);
-		auto* hud_small_font = fr::make_im_font_from_data(oxanium, scale * consts.hud_small_font_size);
+		auto* hud_small_font = fr::make_im_font_from_data(oxanium, scale
+			* consts.hud_small_font_size);
 		if (!hud_large_font)
 			return make_error(fr::Errc::ImGuiError, "GameUi: failed to create large HUD font");
 		if (!hud_medium_font)
