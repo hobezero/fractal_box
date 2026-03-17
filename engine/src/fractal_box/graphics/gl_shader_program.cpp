@@ -101,7 +101,7 @@ auto GlShader::compile(std::span<Ref<GlShader>> shaders, DiagnosticSink& diag_si
 #endif
 	// DiagnosticSinkSlice myErrors{error_sink};
 	// const auto addError = [&error_sink] (Ref<GlShader> shader, std::string_view message) {
-	// 	error_sink.push(fmt::format("Compilation of {} shader '{}' failed: {}",
+	// 	error_sink(fmt::format("Compilation of {} shader '{}' failed: {}",
 	// 		to_string_view(shader->type()), str_or(shader->name()), str_or(message, "unknown error")
 	// 	));
 	// };

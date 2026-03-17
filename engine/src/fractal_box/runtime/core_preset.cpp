@@ -66,7 +66,7 @@ auto run_one_iter(
 	AppClock& app_clock,
 	FixedClock& fixed_clock,
 	bool& should_quit
-) -> ErrorOr<> {
+) -> Status<> {
 	tracer.trace_tick();
 	const auto trace_frame_guard = tracer.trace_stack_push(CorePreset::frame_iter_label,
 		TraceEventUserOpts{.semantics = TraceEventSemantics::Frame, .has_extras = true});
@@ -114,7 +114,7 @@ auto run_one_iter(
 		++update_count;
 	}
 
-	auto res = ErrorOr<>{}; // Forcing NRVO
+	auto res = Status<>{}; // Forcing NRVO
 	if (res = runtime.run_phase<FrameFirstPhase>(); !res) return res;
 	if (res = runtime.run_phase<FrameStartPhase>(); !res) return res;
 
@@ -167,9 +167,9 @@ auto BasicRunner::run(
 	Timeline& real_clock,
 	AppClock& app_clock,
 	FixedClock& fixed_clock
-) -> ErrorOr<> {
+) -> Status<> {
 	FR_LOG_INFO_MSG("BasicRunner: starting...");
-	auto res = ErrorOr<>{};
+	auto res = Status<>{};
 	if (res = runtime.run_phase<BuildPhase>(); !res) return res;
 	if (res = runtime.run_phase<SetupPhase>(); !res) return res;
 
@@ -201,39 +201,11 @@ auto BasicRunner::run(
 	return res;
 }
 
-static
-auto handle_diagnostic(Diagnostic diag, std::span<const Diagnostic> context) -> ControlFlow {
-	for (auto i = 0zu; i < context.size(); ++i) {
-		switch (diag.severity()) {
-			case DiagnosticSeverity::Context:
-				FR_PANIC();
-			case DiagnosticSeverity::Warning:
-				FR_LOG_WARN("{:>{}}{}", "", 2 * i, context[i].format());
-				break;
-			case DiagnosticSeverity::Error:
-				FR_LOG_ERROR("{:>{}}{}", "", 2 * i, context[i].format());
-				break;
-		}
-	}
-	switch (diag.severity()) {
-		case DiagnosticSeverity::Context:
-			FR_PANIC();
-		case DiagnosticSeverity::Warning:
-			FR_LOG_WARN("{:>{}}{}", "", 2 * context.size(), diag.format());
-			break;
-		case DiagnosticSeverity::Error:
-			FR_LOG_ERROR("{:>{}}{}", "", 2 * context.size(), diag.format());
-			break;
-	}
-	return ControlFlow::Continue;
-}
-
 void CorePreset::build(Runtime& runtime) {
 	runtime
 		.add_phases<OneShotPhases>()
 		.add_phases<LoopPhases>()
 		.try_add_part(ProfilerConfig::make())
-		.add_part(DiagnosticSink{&handle_diagnostic})
 		.add_part(Profiler{})
 		.add_part(LoopStatus::Flow)
 		.try_add_part(LoopConfig::make())

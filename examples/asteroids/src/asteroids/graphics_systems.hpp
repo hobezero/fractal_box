@@ -25,8 +25,9 @@ struct RenderSystem {
 	auto run(
 		World& world,
 		const MainCamera& camera,
-		GameResources& resources
-	) -> fr::ErrorOr<>;
+		GameResources& resources,
+		fr::DiagnosticSink& diag_sink
+	) -> fr::Status<>;
 };
 
 struct DebugDrawRenderSystem {
@@ -36,8 +37,9 @@ struct DebugDrawRenderSystem {
 		const fr::DebugDrawAdHocData& adhoc,
 		World& world,
 		const MainCamera& camera,
-		GameResources& resources
-	) -> fr::ErrorOr<>;
+		GameResources& resources,
+		fr::DiagnosticSink& diag_sink
+	) -> fr::Status<>;
 };
 
 struct VfxSystem {

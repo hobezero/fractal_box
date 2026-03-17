@@ -77,7 +77,12 @@ public:
 
 	FR_FORCE_INLINE constexpr
 	auto operator=(FromErrorInit) noexcept -> Status& {
-		_state = std::nullopt;
+		if constexpr (std::is_void_v<T>) {
+			_state = false;
+		}
+		else {
+			_state = std::nullopt;
+		}
 		return *this;
 	}
 

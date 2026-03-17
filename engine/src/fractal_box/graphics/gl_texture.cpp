@@ -12,7 +12,7 @@ auto GlTexture2d::make(DiagnosticSink& error_sink) noexcept -> Status<GlTexture2
 	GlObjectId oid = null_native_id;
 	glGenTextures(1, &oid);
 	if (const auto error_flags = get_all_gl_error_flags(); error_flags || oid == null_native_id) {
-		error_sink.push(MakeGlTexture2dGenTexturesError{error_flags});
+		error_sink(MakeGlTexture2dGenTexturesError{error_flags});
 		return from_error;
 	}
 	return {in_place, adopt, oid, GlTextureParams{}, glm::ivec2{}};
@@ -51,7 +51,7 @@ auto GlTexture2d::make_from_raw_data(
 		src_data.data()
 	);
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		error_sink.push(MakeGlTexture2dDataSendingError{error_flags});
+		error_sink(MakeGlTexture2dDataSendingError{error_flags});
 		texture = from_error; // Opt into NRVO
 		return texture;
 	}
@@ -68,7 +68,7 @@ auto GlTexture2d::make_from_raw_data(
 	if (params.autogen_mipmaps && params.num_mipmap_levels > 1) {
 		glGenerateMipmap(type);
 		if (const auto error_flags = get_all_gl_error_flags()) {
-			error_sink.push(MakeGlTexture2dMipmapError{error_flags});
+			error_sink(MakeGlTexture2dMipmapError{error_flags});
 			texture = from_error;
 			return texture;
 		}

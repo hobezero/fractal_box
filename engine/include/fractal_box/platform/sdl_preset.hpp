@@ -101,12 +101,40 @@ enum class SdlSubsystemFlag {
 };
 #endif
 
+struct SdlInitError: public ErrorBase {
+	friend
+	auto to_string(SdlInitError) -> std::string {
+		return fmt::format("Failed to initialize SDL: {}", SDL_GetError());
+	}
+};
+
+struct SdlOpenGlWindowError: public ErrorBase {
+	friend
+	auto to_string(SdlOpenGlWindowError) -> std::string {
+		return fmt::format("Failed to create OpenGL window: {}", SDL_GetError());
+	}
+};
+
+struct SdlOpenGlContextError: public ErrorBase {
+	friend
+	auto to_string(SdlOpenGlContextError) -> std::string {
+		return fmt::format("Failed to create OpenGL context: {}", SDL_GetError());
+	}
+};
+
+struct SdlOpenGlFuncsError: public ErrorBase {
+	friend
+	auto to_string(SdlOpenGlFuncsError) -> std::string {
+		return fmt::format("Failed to load OpenGL functions");
+	}
+};
+
 class SdlGuard {
 public:
 	SdlGuard() = default;
 
 	static
-	auto make(uint32_t init_flags) -> ErrorOr<SdlGuard>;
+	auto make(uint32_t init_flags, DiagnosticSink& diag_sink) -> Status<SdlGuard>;
 
 	SdlGuard(const SdlGuard&) = delete;
 	auto operator=(const SdlGuard&) = delete;

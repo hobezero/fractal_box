@@ -24,7 +24,7 @@ void try_assign_with(Target& target, Source&& source) {
 		target = *std::forward<Source>(source);
 }
 
-auto GameResources::init(fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<> {
+auto GameResources::init(fr::DiagnosticSink& diag_sink) -> fr::Status<> {
 	auto obs = diag_sink.make_observer();
 
 	// Shaders
@@ -62,7 +62,7 @@ auto GameResources::init(fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<> {
 	if (obs.has_errors()) {
 		FR_LOG_ERROR("While initializing core meshes: {} error(s), {} warning(s)",
 			obs.error_count(), obs.warning_count());
-		return fr::make_error(fr::Errc::ResourceLoadingError, "Failed to load game resources");
+		return fr::from_error;
 	}
 	else if (obs.has_warnings()) {
 		FR_LOG_WARN("While initializing core meshes: {} error(s), {} warning(s)",

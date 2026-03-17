@@ -92,24 +92,21 @@ auto Offscreen::try_init(glm::ivec2 dimensions, DiagnosticSink& diag_sink) -> St
 
 struct CoreGraphicsInitSystem {
 	static
-	auto run(Runtime& runtime, const SdlData& sdl, DiagnosticSink& diag_sink) -> ErrorOr<> {
+	auto run(Runtime& runtime, const SdlData& sdl, DiagnosticSink& diag_sink) -> Status<> {
 		auto offscreen = Offscreen{};
 		if (auto res = offscreen.try_init(sdl.framebuffer_size, diag_sink); !res)
-			return make_error(Errc::OpenGlError, "Failed to create offscreen buffer");
+			return from_error;
 		FR_LOG_INFO_MSG("CoreGraphicsInitSystem: Created offscreen buffer");
 		runtime.add_part(std::move(offscreen));
 
 		auto screen_quad_shader = ScreenQuadShader::make(diag_sink);
-		if (!screen_quad_shader) {
-			return make_error(Errc::OpenGlError,
-				"CoreGraphicsInitSystem: Failed to create ScreenQuadShader");
-		}
+		if (!screen_quad_shader)
+			return from_error;
 		runtime.add_part(*std::move(screen_quad_shader));
 
 		auto meshes = CoreMeshes::make(diag_sink);
 		if (!meshes)
-			return make_error(Errc::ResourceLoadingError, "CoreGraphicsInitSystem: Failed to "
-				"create core meshes");
+			return from_error;
 		runtime.add_part(*std::move(meshes));
 
 		return {};
@@ -122,11 +119,11 @@ struct ResizeOffscreenSystem {
 		Offscreen& offscreen,
 		MessageReader<WindowResized>& messages,
 		DiagnosticSink& diag_sink
-	) -> ErrorOr<> {
-		auto result = ErrorOr<>{};
+	) -> Status<> {
+		auto result = Status<>{};
 		messages.for_last([&](const WindowResized& msg) {
 			if (auto tmp = offscreen.try_init(msg.framebuffer_size, diag_sink); !tmp) {
-				result = make_error(Errc::OpenGlError, "Failed to create offscreen buffer");
+				result = Status<>{from_error};
 			}
 		});
 		return result;

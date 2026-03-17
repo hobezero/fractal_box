@@ -13,11 +13,12 @@ namespace fr {
 
 struct DImGuiInitSystem {
 	static
-	auto run(Runtime& runtime, const SdlData& sdl) -> ErrorOr<> {
+	auto run(Runtime& runtime, const SdlData& sdl, DiagnosticSink& diag_sink) -> Status<> {
 		// On failure, `IMGUI_CHECKVERSION()` either crashes or returns `false` depending on
 		// whether `IM_ASSERT`s are enabled
-		if (!IMGUI_CHECKVERSION())
-			return make_error_fmt(Errc::ImGuiError, "Incompatible Dear ImGui version");
+		if (!IMGUI_CHECKVERSION()) {
+			diag_sink(StringError{[] { return "Incompatible Dear ImGui version"; }});
+		}
 
 		runtime.add_part(DImGuiData{
 			.app_context = make_context(sdl),

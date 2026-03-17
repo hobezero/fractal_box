@@ -338,19 +338,28 @@ private:
 
 struct DevUiInitSystem {
 	static
-	auto run(Runtime& runtime, Input& input, const DevUiConsts& consts) -> ErrorOr<> {
+	auto run(
+		Runtime& runtime,
+		Input& input,
+		const DevUiConsts& consts,
+		DiagnosticSink& diag_sink
+	) -> Status<> {
 		auto fs = cmrc::fr::get_filesystem();
 		const auto scale = 1.f; // TODO: DPI scaling
 		const auto inconsolata = get_resource_data(fs, "fonts/Inconsolata-Medium.otf");
 
 		auto* main_font = make_im_font_from_data(inconsolata, scale * consts.main_font_size);
+		if (!main_font) {
+			diag_sink(StringError{[] { return "DevUi: failed to create main font"; }});
+			return from_error;
+		}
+
 		auto* metrics_font = make_im_font_from_data(inconsolata, scale
 			* consts.metrics_font_size);
-
-		if (!main_font)
-			return make_error(Errc::ImGuiError, "DevUi: failed to create main font");
-		if (!metrics_font)
-			return make_error(Errc::ImGuiError, "DevUi: failed to create metrics font");
+		if (!metrics_font) {
+			diag_sink(StringError{[] { return "DevUi: failed to create metrics font"; }});
+			return from_error;
+		}
 
 		DevUi tools;
 		tools.window_shown = false;
@@ -408,7 +417,7 @@ struct DevUiUpdateSystem {
 		const DImGuiData& imgui,
 		LoopStatus loop,
 		MessageListWriter<LoopRequests>& messages
-	) -> ErrorOr<> {
+	) -> Status<> {
 		ImGui::SetCurrentContext(imgui.dev_context);
 
 		ImGui::StyleColorsDark();
@@ -418,7 +427,7 @@ struct DevUiUpdateSystem {
 			tools_window(runtime, dev, loop, messages);
 
 		if (auto res = runtime.run_phase<DevToolsUiPhase>(); !res)
-			return res;
+			return from_error;
 		return {};
 	}
 

@@ -76,7 +76,7 @@ auto read_raw_image_data(
 		&channel_count, desired_channels
 	))};
 	if (!handle) {
-		error_sink.push(StbFailure{stbi_failure_reason()});
+		error_sink(StbFailure{stbi_failure_reason()});
 		return from_error;
 	}
 	return RawImageData{std::move(handle), size, channel_count};
@@ -93,7 +93,7 @@ auto make_texture2d_from_resources(
 	auto frame = diag_sink.make_frame(LoadingTextureAsset{file_name});
 	const auto file_data = try_get_resource_data(assets_fs, file_name);
 	if (!file_data) {
-		diag_sink.push(FileNotFoundError{file_name});
+		diag_sink(FileNotFoundError{file_name});
 		return from_error;
 	}
 	auto decoding_frame = diag_sink.make_frame(StringContext{[] {
@@ -104,7 +104,7 @@ auto make_texture2d_from_resources(
 		return from_error;
 	const auto pixel_format = raw_img_data->pixel_format();
 	if (!pixel_format) {
-		diag_sink.push(UnsupportedImageChannelsError{raw_img_data->channel_count()});
+		diag_sink(UnsupportedImageChannelsError{raw_img_data->channel_count()});
 		return from_error;
 	}
 	decoding_frame.finish();

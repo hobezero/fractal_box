@@ -31,9 +31,11 @@ auto query_framebuffer_size(SDL_Window* window) noexcept -> glm::ivec2 {
 	return {fb_width, fb_height};
 }
 
-auto SdlGuard::make(uint32_t init_flags) -> ErrorOr<SdlGuard> {
-	if (!SDL_Init(init_flags))
-		return make_error_fmt(Errc::SdlError, "Failed to initialize SDL: {}", SDL_GetError());
+auto SdlGuard::make(uint32_t init_flags, DiagnosticSink& diag_sink) -> Status<SdlGuard> {
+	if (!SDL_Init(init_flags)) {
+		diag_sink(SdlInitError{});
+		return from_error;
+	}
 	FR_LOG_INFO_MSG("SDL initialized");
 	return SdlGuard{adopt, init_flags};
 }
@@ -77,12 +79,13 @@ void GLAPIENTRY gl_message_callback(
 
 struct SdlInitSystem {
 	static
-	auto run(const SdlOptions& options, Runtime& runtime) -> ErrorOr<> {
+	auto run(const SdlOptions& options, Runtime& runtime) -> Status<> {
 		// Based on https://github.com/Sibras/OpenGL4-Tutorials/blob/main/Tutorial1/Main.cpp
 
-		auto sdl = SdlGuard::make(SDL_INIT_VIDEO);
+		auto& diag_sink = runtime.diagnostic_sink();
+		auto sdl = SdlGuard::make(SDL_INIT_VIDEO, diag_sink);
 		if (!sdl)
-			return extract_unexpected(std::move(sdl));
+			return from_error;
 		FR_LOG_INFO("Initialized SDL with subsystem flags: {:#x}", sdl->subsystem_flags());
 
 		const auto gl_version_requested = GlVersionPair{options.gl_version};
@@ -102,22 +105,26 @@ struct SdlInitSystem {
 			options.window_size.x, options.window_size.y,
 			options.window_flags.raw_value()
 		)};
-		if (!window)
-			return make_error_fmt(Errc::SdlError, "Failed to create OpenGL window: {}",
-				SDL_GetError());
+		if (!window) {
+			diag_sink(SdlOpenGlWindowError{});
+			return from_error;
+		}
 		FR_LOG_INFO("Created SDL window. Title: '{}', size: {}x{}, flags: {:#x}",
 			options.window_title, options.window_size.x, options.window_size.y,
 			options.window_flags.raw_value());
 
 		auto gl_context = SdlGlContextHandle{SDL_GL_CreateContext(window.get())};
-		if (!gl_context)
-			return make_error_fmt(Errc::SdlError, "Failed to create OpenGL context: {}",
-				SDL_GetError());
+		if (!gl_context) {
+			diag_sink(SdlOpenGlContextError{});
+			return from_error;
+		}
 		SDL_GL_MakeCurrent(window.get(), gl_context.get());
 
 		auto ok = gladLoadGLLoader(&SDL_GL_GetProcAddress);
-		if (ok == 0)
-			return make_error_fmt(Errc::GladError, "Failed to load OpenGL functions");
+		if (ok == 0) {
+			diag_sink(SdlOpenGlFuncsError{});
+			return from_error;
+		}
 		FR_LOG_INFO("Loaded OpenGL function pointers. Context version: OpenGL {}.{}",
 			GLVersion.major, GLVersion.minor);
 

@@ -25,7 +25,7 @@ auto GlVertexBuffer::make(
 	GlObjectId oid = null_native_id;
 	glGenBuffers(1, &oid);
 	if (const auto error_flags = get_all_gl_error_flags(); error_flags || oid == null_native_id) {
-		error_sink.push(MakeGlVertexBufferGenBuffersError{error_flags});
+		error_sink(MakeGlVertexBufferGenBuffersError{error_flags});
 		return from_error;
 	}
 	return {in_place, adopt, oid, std::move(layout), usage, 0};
@@ -45,14 +45,14 @@ auto GlVertexBuffer::make_from_raw_data(
 	FR_DEFER [] { GlVertexBuffer::unbind(); };
 
 	if (data.size() > size_t{std::numeric_limits<GLsizeiptr>::max()}) {
-		error_sink.push(MakeGlVertexBufferTooMuchDataError{});
+		error_sink(MakeGlVertexBufferTooMuchDataError{});
 		buffer = from_error; // Make NRVO happy
 		return buffer;
 	}
 	glBufferData(GL_ARRAY_BUFFER, static_cast<GLsizeiptr>(data.size()), data.data(),
 		to_underlying(usage));
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		error_sink.push(MakeGlVertexBufferFailedToSendError{error_flags});
+		error_sink(MakeGlVertexBufferFailedToSendError{error_flags});
 		buffer = from_error;
 		return buffer;
 	}
@@ -137,7 +137,7 @@ auto GlIndexBuffer::make(DiagnosticSink& error_sink) -> Status<GlIndexBuffer> {
 	GlObjectId oid = null_native_id;
 	glGenBuffers(1, &oid);
 	if (const auto error_flags = get_all_gl_error_flags(); error_flags || oid == null_native_id) {
-		error_sink.push(MakeGlIndexBufferGenBuffersError{error_flags});
+		error_sink(MakeGlIndexBufferGenBuffersError{error_flags});
 		return from_error;
 	}
 
@@ -220,7 +220,7 @@ auto GlMesh::make(
 	GlObjectId oid = null_native_id;
 	glGenVertexArrays(1, &oid);
 	if (const auto error_flags = get_all_gl_error_flags(); error_flags || oid == null_native_id) {
-		error_sink.push(GenVertexArraysError{error_flags});
+		error_sink(GenVertexArraysError{error_flags});
 		return from_error;
 	}
 
@@ -259,7 +259,7 @@ auto GlMesh::make(
 	}
 
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		error_sink.push(AttribBindError{error_flags});
+		error_sink(AttribBindError{error_flags});
 		return from_error;
 	}
 
@@ -268,7 +268,7 @@ auto GlMesh::make(
 	}
 
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		error_sink.push(IndexBufferBindError{error_flags});
+		error_sink(IndexBufferBindError{error_flags});
 		return from_error;
 	}
 

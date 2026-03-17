@@ -29,8 +29,9 @@ void ClearFramebufferSystem::run(const GameConsts& consts) {
 auto RenderSystem::run(
 	World& world,
 	const MainCamera& camera,
-	GameResources& resources
-) -> fr::ErrorOr<> {
+	GameResources& resources,
+	fr::DiagnosticSink& diag_sink
+) -> fr::Status<> {
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -54,8 +55,10 @@ auto RenderSystem::run(
 	});
 
 	if (const auto error_flags = fr::get_all_gl_error_flags()) {
-		return make_error_fmt(fr::Errc::OpenGlError, "RenderSystem failed: OpenGL error ({})",
-			error_flags);
+		diag_sink(fr::StringError{[error_flags] {
+			return fmt::format("RenderSystem failed: OpenGL error ({})", error_flags);
+		}});
+		return fr::from_error;
 	}
 
 	return {};
@@ -66,8 +69,9 @@ auto DebugDrawRenderSystem::run(
 	const fr::DebugDrawAdHocData& adhoc,
 	World& world,
 	const MainCamera& camera,
-	GameResources& resources
-) -> fr::ErrorOr<> {
+	GameResources& resources,
+	fr::DiagnosticSink& diag_sink
+) -> fr::Status<> {
 	if (!config.master_enabled)
 		return {};
 
@@ -230,8 +234,10 @@ auto DebugDrawRenderSystem::run(
 	glEnable(GL_DEPTH_TEST);
 
 	if (const auto error_flags = fr::get_all_gl_error_flags()) {
-		return make_error_fmt(fr::Errc::OpenGlError,
-			"DebugDrawRenderSystem failed: OpenGL error ({})", error_flags);
+		diag_sink(fr::StringError{[error_flags] {
+			return fmt::format("DebugDrawRenderSystem failed: OpenGL error ({})", error_flags);
+		}});
+		return fr::from_error;
 	}
 	return {};
 }

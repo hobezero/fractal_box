@@ -4,6 +4,75 @@
 
 namespace fr {
 
+auto handle_diagnostic(Diagnostic diag, std::span<const Diagnostic> context) -> ControlFlow {
+	for (auto i = 0zu; i < context.size(); ++i) {
+		switch (diag.severity()) {
+			case DiagnosticSeverity::Context:
+				FR_PANIC();
+			case DiagnosticSeverity::Warning:
+				FR_LOG_WARN("{:>{}}{}", "", 2 * i, context[i].format());
+				break;
+			case DiagnosticSeverity::Error:
+				FR_LOG_ERROR("{:>{}}{}", "", 2 * i, context[i].format());
+				break;
+		}
+	}
+	switch (diag.severity()) {
+		case DiagnosticSeverity::Context:
+			FR_PANIC();
+		case DiagnosticSeverity::Warning:
+			FR_LOG_WARN("{:>{}}{}", "", 2 * context.size(), diag.format());
+			break;
+		case DiagnosticSeverity::Error:
+			FR_LOG_ERROR("{:>{}}{}", "", 2 * context.size(), diag.format());
+			break;
+	}
+	return ControlFlow::Continue;
+}
+
+auto AnySystem::invoke_run(Runtime &runtime) -> Status<> {
+	FR_ASSERT(_run_fn);
+
+	for (auto i = 0uz; i < _pre_run_hooks.size(); ++i) {
+		const auto frm = runtime.diagnostic_sink().make_frame(StringContext{[&] {
+			return fmt::format("While running pre-run-hook #{} of system '{}':",
+				std::to_underlying(_pre_run_hooks.keys()[i]), _name.str());
+		}});
+		FR_IGNORE(_pre_run_hooks.values()[i](runtime, *this));
+	}
+
+	const auto result = _run_fn(runtime, *this);
+
+	for (auto i = 0uz; i < _post_run_hooks.size(); ++i) {
+		const auto frm = runtime.diagnostic_sink().make_frame(StringContext{[&] {
+			return fmt::format("While running pre-run-hook #{} of system '{}':",
+				std::to_underlying(_post_run_hooks.keys()[i]), _name.str());
+		}});
+		FR_IGNORE(_post_run_hooks.values()[i](runtime, *this));
+	}
+	return result;
+}
+
+void AnyPhase::invoke_pre_run_hooks(Runtime& runtime) {
+	for (auto i = 0uz; i < _pre_run_hooks.size(); ++i) {
+		const auto frm = runtime.diagnostic_sink().make_frame(StringContext{[&] {
+			return fmt::format("While running pre-run-hook #{} of phase '{}':",
+				std::to_underlying(_pre_run_hooks.keys()[i]), _name.str());
+		}});
+		FR_IGNORE(_pre_run_hooks.values()[i](runtime, *this));
+	}
+}
+
+void AnyPhase::invoke_post_run_hooks(Runtime& runtime) {
+	for (auto i = 0uz; i < _post_run_hooks.size(); ++i) {
+		const auto frm = runtime.diagnostic_sink().make_frame(StringContext{[&] {
+			return fmt::format("While running post-run-hook #{} of phase '{}':",
+				std::to_underlying(_post_run_hooks.keys()[i]), _name.str());
+		}});
+		FR_IGNORE(_post_run_hooks.values()[i](runtime, *this));
+	}
+}
+
 Runtime::Runtime(int argc, char* argv[]) {
 	add_part(ProcessArgs{.argv = {argv, static_cast<size_t>(argc)}});
 }
@@ -39,7 +108,7 @@ auto Runtime::add_system(PhaseToken phase_token, AnySystem system) -> Runtime& {
 	return *this;
 }
 
-auto Runtime::run_system(SystemToken token, const RunSystemConfig& cfg) -> ErrorOr<bool> {
+auto Runtime::run_system(SystemToken token, const RunSystemConfig& cfg) -> Status<bool> {
 	auto& system = get_system(token);
 	if (!system.is_enabled() || !system.should_run(*this))
 		return false;
@@ -58,12 +127,12 @@ auto Runtime::run_system(SystemToken token, const RunSystemConfig& cfg) -> Error
 	};
 
 	if (auto result = system.invoke_run(*this); !result)
-		return extract_unexpected(std::move(result));
+		return from_error;
 
 	return true;
 }
 
-auto Runtime::run_phase(PhaseToken token) -> ErrorOr<> {
+auto Runtime::run_phase(PhaseToken token) -> Status<> {
 	auto& phase = get_phase(token);
 
 	const auto trace_guard = _tracer.trace_stack_push(phase.type_info().name_id(),
@@ -83,14 +152,14 @@ auto Runtime::run_phase(PhaseToken token) -> ErrorOr<> {
 	const auto run_cfg = RunSystemConfig{.log_enabled = phase.is_one_shot()};
 	for (const auto system_token : phase.systems()) {
 		if (auto result = run_system(system_token, run_cfg); !result)
-			return extract_unexpected(std::move(result));
+			return from_error;
 	}
 	phase.invoke_post_run_hooks(*this);
 
 	return {};
 }
 
-auto Runtime::run() -> ErrorOr<> {
+auto Runtime::run() -> Status<> {
 	FR_PANIC_CHECK_MSG(_runner.has_value(), "Runtime: runner has not been set");
 	_tracer.start();
 	return _runner->invoke_run(*this);

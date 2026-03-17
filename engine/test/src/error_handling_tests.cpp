@@ -384,17 +384,17 @@ TEST_CASE("DiagnosticSink", "[u][engine][core][error_handling]") {
 	SECTION("no context") {
 		sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, 0));
 
-		CHECK(sink.push(ErrA{}) == fr::ControlFlow::Break);
+		CHECK(sink(ErrA{}) == fr::ControlFlow::Break);
 		CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
 			fr::Diagnostic::type_id_for<ErrA>()
 		});
 
-		CHECK(sink.push(WarnA{}) == fr::ControlFlow::Continue);
+		CHECK(sink(WarnA{}) == fr::ControlFlow::Continue);
 		CHECK(warning_ids == std::vector<fr::DiagnosticTypeId>{
 			fr::Diagnostic::type_id_for<WarnA>()
 		});
 
-		CHECK(sink.push(ErrB{}) == fr::ControlFlow::Break);
+		CHECK(sink(ErrB{}) == fr::ControlFlow::Break);
 		CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
 			fr::Diagnostic::type_id_for<ErrA>(),
 			fr::Diagnostic::type_id_for<ErrB>()
@@ -407,12 +407,12 @@ TEST_CASE("DiagnosticSink", "[u][engine][core][error_handling]") {
 		sink.set_handler(make_diagnostic_handler(error_ids, warning_ids, 1));
 		const auto ctx_a = sink.make_frame(fr::StringContext{[] { return "CtxA"; }});
 
-		CHECK(sink.push(ErrA{}) == fr::ControlFlow::Break);
+		CHECK(sink(ErrA{}) == fr::ControlFlow::Break);
 		CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
 			fr::Diagnostic::type_id_for<ErrA>()
 		});
 
-		CHECK(sink.push(WarnA{}) == fr::ControlFlow::Continue);
+		CHECK(sink(WarnA{}) == fr::ControlFlow::Continue);
 		CHECK(warning_ids == std::vector<fr::DiagnosticTypeId>{
 			fr::Diagnostic::type_id_for<WarnA>()
 		});
@@ -422,7 +422,7 @@ TEST_CASE("DiagnosticSink", "[u][engine][core][error_handling]") {
 			const auto ctx_b = sink.make_frame(fr::StringContext{[] { return "CtxB"; }});
 			const auto obs = sink.make_observer();
 
-			CHECK(sink.push(ErrB{}) == fr::ControlFlow::Break);
+			CHECK(sink(ErrB{}) == fr::ControlFlow::Break);
 			CHECK(error_ids == std::vector<fr::DiagnosticTypeId>{
 				fr::Diagnostic::type_id_for<ErrA>(),
 				fr::Diagnostic::type_id_for<ErrB>()

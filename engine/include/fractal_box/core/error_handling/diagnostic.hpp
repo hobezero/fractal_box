@@ -601,12 +601,6 @@ public:
 
 	template<class T>
 	requires c_diagnosticable<std::remove_cvref_t<T>>
-	auto push(T&& diagnostic) -> ControlFlow {
-		return operator()(std::forward<T>(diagnostic));
-	}
-
-	template<class T>
-	requires c_diagnosticable<std::remove_cvref_t<T>>
 	auto operator()(T&& diagnostic) -> ControlFlow {
 		switch (diagnostic.severity()) {
 			case DiagnosticSeverity::Context:
@@ -864,7 +858,7 @@ inline  bool sinkErrors(IDiagnosticSink& sink, T&&... results) {
 	// ...
 	// (ok = ok && resultN, resultN) || (sink.add(std::move(resultN.error()), false));
 	(static_cast<void>(
-		((ok = ok && results) || results) || (sink.push(std::move(results).error()), false)),
+		((ok = ok && results) || results) || (sink(std::move(results).error()), false)),
 	...);
 	return ok;
 }

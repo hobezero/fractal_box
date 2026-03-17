@@ -2,7 +2,6 @@
 #define ASTEROIDS_RESOURCES_HPP
 
 #include "asteroids/shaders.hpp"
-#include "fractal_box/core/error_handling/error.hpp"
 #include "fractal_box/graphics/gl_mesh.hpp"
 #include "fractal_box/graphics/gl_texture.hpp"
 
@@ -10,7 +9,7 @@ namespace aster {
 
 class GameResources {
 public:
-	auto init(fr::DiagnosticSink& diag_sink) -> fr::ErrorOr<>;
+	auto init(fr::DiagnosticSink& diag_sink) -> fr::Status<>;
 
 public:
 	// Shaders

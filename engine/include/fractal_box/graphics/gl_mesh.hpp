@@ -480,7 +480,7 @@ struct GlMeshAttribInfo {
 		if (!test_all_unique_small_reported(attributes.begin(), attributes.end(), EqualTo<>{},
 			[](const GlMeshAttribInfo& attrib) { return attrib.label.name; },
 			[&error_sink] (const GlMeshAttribInfo& attrib, const GlMeshAttribInfo&) {
-				error_sink.push(AttribIsNotUniqueError{attrib.label.name.str()});
+				error_sink(AttribIsNotUniqueError{attrib.label.name.str()});
 			})
 		) {
 			success = false;
@@ -490,7 +490,7 @@ struct GlMeshAttribInfo {
 		if (!test_all_unique_small_reported(attributes.begin(), attributes.end(), EqualTo<>{},
 			[](const GlMeshAttribInfo& attrib) { return attrib.location; },
 			[&error_sink] (const GlMeshAttribInfo& attrib1, const GlMeshAttribInfo& attrib2) {
-				error_sink.push(AttribLocationMultiUseError{attrib1.location,
+				error_sink(AttribLocationMultiUseError{attrib1.location,
 					attrib1.label.name.str(), attrib2.label.name.str()});
 			})
 		) {
@@ -503,7 +503,7 @@ struct GlMeshAttribInfo {
 		if (!test_all_unique_small_reported(vertex_buffers.begin(), vertex_buffers.end(),
 			EqualTo<>{}, [](const auto& buffer) { return buffer->native_id(); },
 			[&error_sink] (const auto& buffer, const auto&) {
-				error_sink.push(VertexBufferIsNotUniqueError{buffer->native_id()});
+				error_sink(VertexBufferIsNotUniqueError{buffer->native_id()});
 			})
 		) {
 			success = false;
@@ -519,7 +519,7 @@ struct GlMeshAttribInfo {
 			// Each attribute should refer to one of the buffers
 			const auto buffer = std::ranges::find_if(vertex_buffers, cmp_by_id);
 			if (buffer == vertex_buffers.end()) {
-				error_sink.push(AttribDoesntReferToBuffersError{attrib.label.name.str(),
+				error_sink(AttribDoesntReferToBuffersError{attrib.label.name.str(),
 					attrib.array_buffer_id});
 				success = false;
 				continue;
@@ -529,13 +529,13 @@ struct GlMeshAttribInfo {
 			const auto* const buffer_attrib_label = detail::find_gl_attrib_in_layout(
 				(*buffer)->layout(), attrib.label);
 			if (!buffer_attrib_label) {
-				error_sink.push(AttribIsntOwnedByBufferrsError{attrib.label.name.str()});
+				error_sink(AttribIsntOwnedByBufferrsError{attrib.label.name.str()});
 				success = false;
 				continue;
 			}
 
 			if (*buffer_attrib_label != attrib.label) {
-				error_sink.push(AttribDoesntMatchError{attrib.label.name.str(),
+				error_sink(AttribDoesntMatchError{attrib.label.name.str(),
 					(*buffer)->native_id()});
 				success = false;
 				continue;

@@ -34,7 +34,7 @@ auto GlRenderbuffer::make_with_storage(
 	);
 
 	if (const auto error_flags = get_all_gl_error_flags()) {
-		diag_sink.push(MakeGlRenderBufferStorageError{error_flags});
+		diag_sink(MakeGlRenderBufferStorageError{error_flags});
 		renderbuffer = from_error;
 		return renderbuffer;
 	}
@@ -152,7 +152,7 @@ auto GlFramebuffer::attach(
 		.object_id = renderbuffer.native_id(),
 	});
 	if (!result) {
-		diag_sink.push(GlFramebufferAttachmentOccupiedError{point, result.where->kind,
+		diag_sink(GlFramebufferAttachmentOccupiedError{point, result.where->kind,
 			result.where->object_id});
 		return from_error;
 	}
@@ -161,7 +161,7 @@ auto GlFramebuffer::attach(
 		renderbuffer.native_id());
 	if (const auto error_flags = get_all_gl_error_flags()) {
 		_attachments.erase(result.where);
-		diag_sink.push(GlFramebufferAttachmentError{GlAttachmentKind::Renderbuffer, error_flags});
+		diag_sink(GlFramebufferAttachmentError{GlAttachmentKind::Renderbuffer, error_flags});
 		return from_error;
 	}
 
@@ -179,7 +179,7 @@ auto GlFramebuffer::attach(
 		.object_id = texture.native_id(),
 	});
 	if (!result) {
-		diag_sink.push(GlFramebufferAttachmentOccupiedError{point, result.where->kind,
+		diag_sink(GlFramebufferAttachmentOccupiedError{point, result.where->kind,
 			result.where->object_id});
 		return from_error;
 	}
@@ -188,7 +188,7 @@ auto GlFramebuffer::attach(
 	glFramebufferTexture(GL_FRAMEBUFFER, point.value(), texture.native_id(), mip_map_level);
 	if (const auto error_flags = get_all_gl_error_flags()) {
 		_attachments.erase(result.where);
-		diag_sink.push(GlFramebufferAttachmentError{GlAttachmentKind::Texture, error_flags});
+		diag_sink(GlFramebufferAttachmentError{GlAttachmentKind::Texture, error_flags});
 		return from_error;
 	}
 
@@ -197,7 +197,7 @@ auto GlFramebuffer::attach(
 
 auto GlFramebuffer::complete(DiagnosticSink& diag_sink) -> Status<> {
 	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) {
-		diag_sink.push(GlFramebufferCompletionError{});
+		diag_sink(GlFramebufferCompletionError{});
 		return from_error;
 	}
 	return {};

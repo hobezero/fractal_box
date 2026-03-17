@@ -3,6 +3,7 @@
 #include <cmrc/cmrc.hpp>
 #include <imgui.h>
 
+#include "fractal_box/core/error_handling/diagnostic.hpp"
 #include "fractal_box/resources/resource_utils.hpp"
 #include "fractal_box/runtime/core_preset.hpp"
 #include "fractal_box/ui/dimgui_preset.hpp"
@@ -56,22 +57,35 @@ struct GameUiData {
 
 struct GameUiInitSystem {
 	static
-	auto run(fr::Runtime& runtime, const GameUiConsts& consts) -> fr::ErrorOr<> {
+	auto run(
+		fr::Runtime& runtime,
+		const GameUiConsts& consts,
+		fr::DiagnosticSink& diag_sink
+	) -> fr::Status<> {
 		const auto fs = cmrc::aster::get_filesystem();
 		const auto scale = 1.f; // TODO: DPI scaling
 		const auto oxanium = fr::get_resource_data(fs, "fonts/Oxanium-SemiBold.ttf");
+
 		auto* hud_large_font = fr::make_im_font_from_data(oxanium, scale
 			* consts.hud_large_font_size);
+		if (!hud_large_font) {
+			diag_sink(fr::StringError{[] { return "GameUi: failed to create large HUD font"; }});
+			return fr::from_error;
+		}
+
 		auto* hud_medium_font = fr::make_im_font_from_data(oxanium,
 			scale * consts.hud_medium_font_size);
+		if (!hud_medium_font) {
+			diag_sink(fr::StringError{[] { return "GameUi: failed to create medium HUD font"; }});
+			return fr::from_error;
+		}
+
 		auto* hud_small_font = fr::make_im_font_from_data(oxanium, scale
 			* consts.hud_small_font_size);
-		if (!hud_large_font)
-			return make_error(fr::Errc::ImGuiError, "GameUi: failed to create large HUD font");
-		if (!hud_medium_font)
-			return make_error(fr::Errc::ImGuiError, "GameUi: failed to create medium HUD font");
-		if (!hud_small_font)
-			return make_error(fr::Errc::ImGuiError, "GameUi: failed to create small HUD font");
+		if (!hud_small_font) {
+			diag_sink(fr::StringError{[] { return "GameUi: failed to create small HUD font"; }});
+			return fr::from_error;
+		}
 
 		runtime.add_part(GameUiData{
 			.hud_large_font = hud_large_font,

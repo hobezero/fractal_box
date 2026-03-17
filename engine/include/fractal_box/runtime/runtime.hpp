@@ -10,7 +10,7 @@
 #include "fractal_box/core/assert_fmt.hpp"
 #include "fractal_box/core/containers/sparse_set.hpp"
 #include "fractal_box/core/containers/type_object_map.hpp"
-#include "fractal_box/core/error_handling/error.hpp"
+#include "fractal_box/core/error_handling/diagnostic.hpp"
 #include "fractal_box/core/functional.hpp"
 #include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/logging.hpp"
@@ -21,6 +21,8 @@
 #include "fractal_box/runtime/tracer_profiler.hpp"
 
 namespace fr {
+
+auto handle_diagnostic(Diagnostic diag, std::span<const Diagnostic> context) -> ControlFlow;
 
 class Runtime;
 class AnySystem;
@@ -54,7 +56,7 @@ concept c_system_param_const
 ;
 
 template<class T>
-concept c_system_run_result = std::same_as<T, void> || std::same_as<T, ErrorOr<>>;
+concept c_system_run_result = std::same_as<T, void> || std::same_as<T, Status<>>;
 
 namespace detail {
 
@@ -104,8 +106,8 @@ struct SystemTypeIdxDomain: CustomTypeIndexDomainBase<> {
 
 using SystemTypeIdx = TypeIndex<SystemTypeIdxDomain>;
 
-using SystemRoutine = auto (*)(Runtime&, AnySystem&) -> ErrorOr<>;
-using PhaseRoutine = auto (*)(Runtime&, AnyPhase&) -> ErrorOr<>;
+using SystemRoutine = auto (*)(Runtime&, AnySystem&) -> Status<>;
+using PhaseRoutine = auto (*)(Runtime&, AnyPhase&) -> Status<>;
 using SystemPredicate = auto (*)(const Runtime&, const AnySystem&) -> bool;
 
 class SystemToken {
@@ -171,28 +173,7 @@ public:
 		return !_condition_fn || _condition_fn(runtime, *this);
 	}
 
-	auto invoke_run(Runtime& runtime) -> ErrorOr<> {
-		FR_ASSERT(_run_fn);
-
-		for (auto i = 0uz; i < _pre_run_hooks.size(); ++i) {
-			if (auto hook_result = _pre_run_hooks.values()[i](runtime, *this); !hook_result) {
-				FR_LOG_ERROR("System '{}': pre-run hook #{} failed. {}", _name.str(),
-					std::to_underlying(_pre_run_hooks.keys()[i]), hook_result.error());
-				// Ignore hook error
-			}
-		}
-
-		const auto result =  _run_fn(runtime, *this);
-
-		for (auto i = 0uz; i < _post_run_hooks.size(); ++i) {
-			if (auto hook_result = _post_run_hooks.values()[i](runtime, *this); !hook_result) {
-				FR_LOG_ERROR("System '{}': post-run hook #{} failed. {}", _name.str(),
-					std::to_underlying(_post_run_hooks.keys()[i]),  hook_result.error());
-				// Ignore hook error
-			}
-		}
-		return result;
-	}
+	auto invoke_run(Runtime& runtime) -> Status<>;
 
 	auto type_idx() const noexcept -> SystemTypeIdx { return _type_idx; }
 	auto type_info() const noexcept -> const TypeInfo& { return *_type_info; }
@@ -333,25 +314,9 @@ public:
 		_systems.push_back(system_token);
 	}
 
-	void invoke_pre_run_hooks(Runtime& runtime) {
-		for (auto i = 0uz; i < _pre_run_hooks.size(); ++i) {
-			if (auto hook_result = _pre_run_hooks.values()[i](runtime, *this); !hook_result) {
-				FR_LOG_ERROR("Phase '{}': pre-run hook #{} failed. {}", _name.str(),
-					std::to_underlying(_pre_run_hooks.keys()[i]), hook_result.error());
-				// Ignore hook error
-			}
-		}
-	}
+	void invoke_pre_run_hooks(Runtime& runtime);
 
-	void invoke_post_run_hooks(Runtime& runtime) {
-		for (auto i = 0uz; i < _post_run_hooks.size(); ++i) {
-			if (auto hook_result = _post_run_hooks.values()[i](runtime, *this); !hook_result) {
-				FR_LOG_ERROR("Phase '{}': post-run hook #{} failed. {}", _name.str(),
-					std::to_underlying(_post_run_hooks.keys()[i]),  hook_result.error());
-				// Ignore hook error
-			}
-		}
-	}
+	void invoke_post_run_hooks(Runtime& runtime);
 
 	[[nodiscard]] constexpr
 	auto empty() const noexcept { return _systems.empty(); }
@@ -578,11 +543,11 @@ public:
 		return *this;
 	}
 
-	auto run_system(SystemToken token, const RunSystemConfig& cfg = {}) -> ErrorOr<bool>;
-	auto run_phase(PhaseToken token) -> ErrorOr<>;
+	auto run_system(SystemToken token, const RunSystemConfig& cfg = {}) -> Status<bool>;
+	auto run_phase(PhaseToken token) -> Status<>;
 
 	template<c_phase Phase>
-	auto run_phase() -> ErrorOr<> {
+	auto run_phase() -> Status<> {
 		return run_phase(PhaseToken::make<Phase>());
 	}
 
@@ -596,7 +561,7 @@ public:
 		return self._curr_phase ? &self.get_phase(self._curr_phase) : nullptr;
 	}
 
-	auto run() -> ErrorOr<>;
+	auto run() -> Status<>;
 
 	template<const auto& Callback>
 	static constexpr
@@ -719,6 +684,9 @@ public:
 		return *system;
 	}
 
+	auto diagnostic_sink() const noexcept -> const DiagnosticSink& { return _diagnostic_sink; }
+	auto diagnostic_sink() noexcept -> DiagnosticSink& { return _diagnostic_sink; }
+
 	auto message_manager() const noexcept -> const MessageManager& { return _message_manager; }
 	auto message_manager() noexcept -> MessageManager& { return _message_manager; }
 
@@ -736,6 +704,7 @@ private:
 	std::optional<AnySystem> _runner;
 	PhaseTypeIdx _curr_phase;
 	SystemTypeIdx _curr_system;
+	DiagnosticSink _diagnostic_sink{&handle_diagnostic};
 	MessageManager _message_manager;
 	Tracer _tracer;
 	Timeline _real_clock;
@@ -791,6 +760,15 @@ struct RoutineParamTraits<AnyPhase> {
 	static FR_FORCE_INLINE
 	auto get(TRuntime&, TAnyPhase& phase) noexcept -> TAnyPhase& {
 		return phase;
+	}
+};
+
+template<>
+struct RoutineParamTraits<DiagnosticSink> {
+	template<c_maybe_const_of<Runtime> TRuntime>
+	static FR_FORCE_INLINE
+	auto get(TRuntime& runtime, auto&) noexcept -> CopyConst<DiagnosticSink, TRuntime>& {
+		return runtime.diagnostic_sink();
 	}
 };
 

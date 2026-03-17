@@ -173,7 +173,7 @@ struct BasicRunner {
 		Timeline& real_clock,
 		AppClock& app_clock,
 		FixedClock& fixed_clock
-	) -> ErrorOr<>;
+	) -> Status<>;
 };
 
 struct CorePreset {
