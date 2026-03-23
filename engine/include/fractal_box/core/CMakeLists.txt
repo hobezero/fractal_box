@@ -2,6 +2,7 @@ target_sources(fractal_box_engine PUBLIC FILE_SET HEADERS FILES
 	algorithm.hpp
 	alignment.hpp
 	angle.hpp
+	array_utils.hpp
 	assert.hpp
 	assert_fmt.hpp
 	assert_levels.hpp
@@ -41,4 +42,5 @@ target_sources(fractal_box_engine PUBLIC FILE_SET HEADERS FILES
 add_subdirectory(containers)
 add_subdirectory(error_handling)
 add_subdirectory(hashing)
+add_subdirectory(io)
 add_subdirectory(meta)

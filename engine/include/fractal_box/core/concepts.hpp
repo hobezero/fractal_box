@@ -139,6 +139,9 @@ concept c_pure_object = c_object<T> && !c_pointer<T> && !c_cv_qualified<T> && !c
 template<class T>
 concept c_arithmetic = std::integral<T> || std::floating_point<T>;
 
+template<class T, class U>
+concept c_similar_to = std::same_as<std::remove_cvref_t<T>, std::remove_cvref_t<U>>;
+
 /// @brief Check that `From` is either explicitly OR implictly convertible to `To`
 /// @note Naming convention is whack (implies `c_implicitly_convertible`) in order to be consistent
 /// with `std::convertible_to`

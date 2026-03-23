@@ -42,7 +42,7 @@ struct OpConvert {
 // concepts.hpp
 // ============
 
-TEST_CASE("c_explicitly_convertible_to") {
+TEST_CASE("c_explicitly_convertible_to", "[u][engine][core][concepts]") {
 	SECTION("operator conversion") {
 		STATIC_CHECK(fr::c_explicitly_convertible_to<void, void>);
 		STATIC_CHECK(fr::c_explicitly_convertible_to<volatile void, const void>);
@@ -68,7 +68,7 @@ TEST_CASE("c_explicitly_convertible_to") {
 	}
 }
 
-TEST_CASE("c_nothrow_explicitly_convertible_to") {
+TEST_CASE("c_nothrow_explicitly_convertible_to", "[u][engine][core][concepts]") {
 	SECTION("operator conversion") {
 		STATIC_CHECK(fr::c_nothrow_explicitly_convertible_to<void, void>);
 		STATIC_CHECK(fr::c_nothrow_explicitly_convertible_to<volatile void, const void>);

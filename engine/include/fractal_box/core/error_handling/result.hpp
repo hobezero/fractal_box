@@ -294,5 +294,23 @@ private:
 	State _state;
 };
 
+template<class T>
+inline constexpr auto is_result = false;
+
+template<class T, class... Errs>
+inline constexpr auto is_result<Result<T, Errs...>> = true;
+
+template<class T>
+concept c_result = is_result<T>;
+
+template<class T, class V>
+inline constexpr auto is_result_of = false;
+
+template<class V, class... Errs>
+inline constexpr auto is_result_of<Result<V, Errs...>, V> = true;
+
+template<class T, class V>
+concept c_result_of = is_result_of<T, V>;
+
 } // namespace fr
 #endif // include guard

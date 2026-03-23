@@ -10,6 +10,7 @@ target_sources(fractal_box_tests PRIVATE
 	hashing_tests.cpp
 	indexed_pool_tests.cpp
 	input_tests.cpp
+	io_tests.cpp
 	linear_flat_set_tests.cpp
 	math_tests.cpp
 	message_tests.cpp

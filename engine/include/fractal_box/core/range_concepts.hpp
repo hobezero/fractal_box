@@ -89,6 +89,16 @@ template<class C>
 concept c_constexpr_sized_container = c_container<C> && c_constexpr_sized_range<C>;
 
 template<class C>
+concept c_bidirectional_container = c_container<C> && std::ranges::bidirectional_range<C>;
+
+template<class C>
+concept c_random_access_container = c_bidirectional_container<C>
+	&& std::ranges::random_access_range<C>;
+
+template<class C>
+concept c_contiguous_container = c_random_access_container<C> && std::ranges::contiguous_range<C>;
+
+template<class C>
 concept c_std_array_like
 	= c_constexpr_sized_container<C>
 	&& requires(C container) {

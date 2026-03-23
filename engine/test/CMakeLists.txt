@@ -25,6 +25,7 @@ add_test(NAME test_error_handling COMMAND $<TARGET_FILE:fractal_box_tests>
 add_test(NAME test_functional COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][functional])
 add_test(NAME test_hashing COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][hashing])
 add_test(NAME test_input COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][input])
+add_test(NAME test_io COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][io])
 add_test(NAME test_math COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][math])
 add_test(NAME test_message COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][message])
 add_test(NAME test_meta COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][meta])
