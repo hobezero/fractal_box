@@ -1,5 +1,6 @@
-#include "fractal_box/core/io/span_io.hpp"
 #include "fractal_box/core/io/io_concepts.hpp"
+#include "fractal_box/core/io/span_io.hpp"
+#include "fractal_box/core/io/string_io.hpp"
 
 #include <array>
 
@@ -126,5 +127,79 @@ TEST_CASE("SpanReader", "[u][engine][core][io]") {
 		REQUIRE(res.has_value());
 		CHECK(*res == 6);
 		CHECK(chunk == padded_str<buf_size>("jklmno"));
+	}
+}
+
+TEST_CASE("StringWriter", "[u][engine][core][io]") {
+	SECTION("type properties") {
+		STATIC_CHECK(fr::c_writer<fr::StringWriter<std::string>>);
+		STATIC_CHECK(fr::c_writer<fr::StringWriter<std::u16string>>);
+
+		STATIC_CHECK_FALSE(std::is_copy_constructible_v<fr::StringWriter<std::string>>);
+		STATIC_CHECK_FALSE(std::is_copy_assignable_v<fr::StringWriter<std::string>>);
+
+		STATIC_CHECK(std::is_move_constructible_v<fr::StringWriter<std::string>>);
+		STATIC_CHECK(std::is_nothrow_move_constructible_v<fr::StringWriter<std::string>>);
+		STATIC_CHECK(std::is_move_assignable_v<fr::StringWriter<std::string>>);
+		STATIC_CHECK(std::is_nothrow_move_assignable_v<fr::StringWriter<std::string>>);
+
+		STATIC_CHECK(std::is_destructible_v<fr::StringWriter<std::string>>);
+		STATIC_CHECK(std::is_trivially_destructible_v<fr::StringWriter<std::string>>);
+	}
+
+	auto buf = std::string{};
+	auto writer = fr::StringWriter{buf};
+
+	CHECK(writer.buffer().empty());
+	{
+		const char chunk[] = {'a', 'b', 'c'};
+		CHECK(writer.write(chunk) == 3);
+		CHECK(buf == "abc");
+		CHECK(writer.buffer().empty());
+	}
+	{
+		const char chunk[] = {'d', 'e', 'f', 'g', 'h', 'i'};
+		CHECK(writer.write(chunk) == 6);
+		CHECK(buf == "abcdefghi");
+		CHECK(writer.buffer().empty());
+	}
+	{
+		INFO("write zero bytes");
+		CHECK(writer.write(std::span<const char>{}) == 0);
+		CHECK(buf == "abcdefghi");
+		CHECK(writer.buffer().empty());
+	}
+	{
+		INFO("commit from a buffer");
+		const char chunk[] = {'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w'};
+		writer.resize_buffer(std::size(chunk) + 3);
+		CHECK(writer.buffer().size() == std::size(chunk) + 3);
+		std::ranges::copy(chunk, writer.buffer().begin());
+		writer.commit_buffer(std::size(chunk));
+		CHECK(writer.buffer().size() == 3);
+	}
+	{
+		INFO("fill up the rest of the buffer");
+		const char chunk[] = {'x', 'y', 'z'};
+		std::ranges::copy(chunk, writer.buffer().begin());
+		writer.commit_buffer(std::size(chunk));
+		CHECK(buf == "abcdefghijklmnopqrstuvwxyz");
+		CHECK(writer.buffer().empty());
+	}
+	{
+		INFO("write after resizing buffer (buffer is larger)");
+		const char chunk[] = {'A', 'B', 'C'};
+		writer.resize_buffer(5);
+		writer.write(chunk);
+		CHECK(buf == "abcdefghijklmnopqrstuvwxyzABC");
+		CHECK(writer.buffer().empty());
+	}
+	{
+		INFO("write after resizing buffer (buffer is smaller)");
+		const char chunk[] = {'D', 'E', 'F'};
+		writer.resize_buffer(2);
+		writer.write(chunk);
+		CHECK(buf == "abcdefghijklmnopqrstuvwxyzABCDEF");
+		CHECK(writer.buffer().empty());
 	}
 }

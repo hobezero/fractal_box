@@ -5,6 +5,7 @@
 
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/io/io_concepts.hpp"
+#include "fractal_box/core/platform.hpp"
 #include "fractal_box/core/range_concepts.hpp"
 
 namespace fr {
@@ -16,7 +17,7 @@ public:
 	static constexpr auto is_buffered = true;
 	static constexpr auto is_buffer_resizable = false;
 
-	explicit constexpr
+	explicit FR_FORCE_INLINE constexpr
 	SpanWriter(std::span<CharType> buffer) noexcept: _buffer(buffer) { }
 
 	template<c_contiguous_container Cont>
@@ -26,7 +27,7 @@ public:
 	{ }
 
 	template<size_t N>
-	explicit constexpr
+	explicit FR_FORCE_INLINE constexpr
 	SpanWriter(CharType (&arr)[N]) noexcept: _buffer(arr, N) { }
 
 	SpanWriter(const SpanWriter&) = delete;
@@ -47,11 +48,13 @@ public:
 		return data.size();
 	}
 
-	constexpr
-	auto flush() noexcept { }
+	FR_FORCE_INLINE constexpr
+	void flush() noexcept { }
 
+	FR_FORCE_INLINE constexpr
 	auto buffer() noexcept -> std::span<CharType> { return _buffer; }
 
+	constexpr
 	auto commit_buffer(size_t size) -> size_t {
 		FR_ASSERT(size <= _buffer.size());
 		_buffer = _buffer.subspan(size);
@@ -76,7 +79,7 @@ struct SpanReader {
 	using CharType = Ch;
 	static constexpr auto is_buffered = true;
 
-	explicit constexpr
+	explicit FR_FORCE_INLINE constexpr
 	SpanReader(std::span<const CharType> buffer) noexcept: _buffer{buffer} { }
 
 	template<std::ranges::contiguous_range R>
@@ -86,7 +89,7 @@ struct SpanReader {
 	{ }
 
 	template<size_t N>
-	explicit constexpr
+	explicit FR_FORCE_INLINE constexpr
 	SpanReader(const CharType (&arr)[N]) noexcept: _buffer(arr, N) { }
 
 	SpanReader(const SpanReader&) = delete;
@@ -108,8 +111,10 @@ struct SpanReader {
 		return chunk_size;
 	}
 
-	auto buffer() const noexcept -> std::span<const CharType> { return _buffer; }
+	FR_FORCE_INLINE constexpr
+	auto buffer() noexcept -> std::span<const CharType> { return _buffer; }
 
+	constexpr
 	auto commit_buffer(size_t size) -> size_t {
 		FR_ASSERT(size <= _buffer.size());
 		_buffer = _buffer.subspan(size);
