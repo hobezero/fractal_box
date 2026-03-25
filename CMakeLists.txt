@@ -15,6 +15,7 @@ message(STATUS "FractalBox: Predefined module path: '${CMAKE_MODULE_PATH}'")
 option(FR_INSTALL "FractalBox: Enable install target" ON)
 option(FR_BUILD_TESTING "FractalBox: Build unit test targets" ${PROJECT_IS_TOP_LEVEL})
 option(FR_BUILD_BENCH "FractalBox: Build benchmarking targets" ${PROJECT_IS_TOP_LEVEL})
+option(FR_BUILD_EXAMPLES "FractalBox: Build example targets" ${PROJECT_IS_TOP_LEVEL})
 option(
 	FR_DEV_MODE
 	"FractalBox: Build with a developer-focused set of compile options and definitions"
@@ -105,7 +106,10 @@ add_subdirectory(deps/imgui_backends)
 # -----------
 
 add_subdirectory(engine)
-add_subdirectory(examples)
+
+if(FR_BUILD_EXAMPLES)
+	add_subdirectory(examples)
+endif()
 
 # Testing
 # -------
