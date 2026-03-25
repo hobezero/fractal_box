@@ -55,10 +55,9 @@ public:
 	auto buffer() noexcept -> std::span<CharType> { return _buffer; }
 
 	constexpr
-	auto commit_buffer(size_t size) -> size_t {
+	void commit_buffer(size_t size) noexcept {
 		FR_ASSERT(size <= _buffer.size());
 		_buffer = _buffer.subspan(size);
-		return size;
 	}
 
 private:
@@ -115,10 +114,9 @@ struct SpanReader {
 	auto buffer() noexcept -> std::span<const CharType> { return _buffer; }
 
 	constexpr
-	auto commit_buffer(size_t size) -> size_t {
+	void commit_buffer(size_t size) noexcept {
 		FR_ASSERT(size <= _buffer.size());
 		_buffer = _buffer.subspan(size);
-		return size;
 	}
 
 private:

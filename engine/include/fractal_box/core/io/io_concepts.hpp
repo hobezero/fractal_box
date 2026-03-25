@@ -35,9 +35,10 @@ concept c_writer
 		{ T::is_buffer_resizable } -> c_similar_to<bool>;
 		requires !T::is_buffered || requires {
 			{ obj.buffer() } -> std::same_as<std::span<typename T::CharType>>;
-			{ obj.commit_buffer(size) } -> c_size_or_result;
+			{ obj.commit_buffer(size) } -> c_void_or_result;
 		};
 		requires !T::is_buffer_resizable || requires {
+			// Returns new buffer size
 			{ obj.resize_buffer(size) } -> c_size_or_result;
 		};
 	};
@@ -47,12 +48,13 @@ concept c_reader
 	= c_user_object<T>
 	&& requires(T& obj, size_t size, std::span<typename T::CharType> mut_span) {
 		requires c_io_character<typename T::CharType>;
+
 		{ obj.read(mut_span) } -> c_size_or_result;
 
 		{ T::is_buffered } -> c_similar_to<bool>;
 		requires !T::is_buffered || requires {
 			{ obj.buffer() } -> std::same_as<std::span<const typename T::CharType>>;
-			{ obj.commit_buffer(size) } -> c_size_or_result;
+			{ obj.commit_buffer(size) } -> c_void_or_result;
 		};
 	};
 

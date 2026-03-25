@@ -1,7 +1,5 @@
-#ifndef FRACTAL_BOX_CORE_IO_STRING_IO_HPP
-#define FRACTAL_BOX_CORE_IO_STRING_IO_HPP
-
-#include <algorithm>
+#ifndef FRACTAL_BOX_CORE_IO_VECTOR_IO_HPP
+#define FRACTAL_BOX_CORE_IO_VECTOR_IO_HPP
 
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/platform.hpp"
@@ -9,36 +7,35 @@
 
 namespace fr {
 
-template<c_string_like Str>
-class StringWriter {
+template<c_vector_like Vec>
+class VectorWriter {
 public:
-	using CharType = typename Str::value_type;
+	using CharType = typename Vec::value_type;
 	static constexpr auto is_buffered = true;
 	static constexpr auto is_buffer_resizable = true;
 
 	explicit FR_FORCE_INLINE constexpr
-	StringWriter(Str& out) noexcept:
-		_out{&out},
-		_pos{out.size()}
+	VectorWriter(Vec& buffer) noexcept:
+		_out{&buffer},
+		_pos{buffer.size()}
 	{ }
 
-	StringWriter(const StringWriter&) = delete;
-	auto operator=(const StringWriter&) -> StringWriter& = delete;
+	VectorWriter(const VectorWriter&) = delete;
+	auto operator=(const VectorWriter&) -> VectorWriter& = delete;
 
-	StringWriter(StringWriter&&) = default;
-	auto operator=(StringWriter&&) -> StringWriter& = default;
+	VectorWriter(VectorWriter&&) = default;
+	auto operator=(VectorWriter&&) -> VectorWriter& = default;
 
-	~StringWriter() = default;
+	~VectorWriter() = default;
 
 	constexpr
 	auto write(std::span<const CharType> data) -> size_t {
 		if (data.empty())
 			return 0zu;
 
-		_out->resize_and_overwrite(_pos + data.size(), [&](CharType* buf, size_t n) {
-			std::ranges::copy(data, buf + _pos);
-			return n;
-		});
+		const auto pos_it = _out->begin() + static_cast<typename Vec::difference_type>(_pos);
+		_out->erase(pos_it, _out->end());
+		_out->insert_range(pos_it, data);
 		_pos += data.size();
 		return data.size();
 	}
@@ -62,17 +59,17 @@ public:
 		if (_pos + size <= _out->size())
 			return _out->size() - _pos;
 
-		_out->resize_and_overwrite(_pos + size, [](CharType*, size_t n) { return n; });
+		_out->resize(_pos + size);
 		return size;
 	}
 
 private:
-	Str* _out;
+	Vec* _out;
 	size_t _pos;
 };
 
-template<class Str>
-StringWriter(Str&) -> StringWriter<Str>;
+template<class Vec>
+VectorWriter(Vec&) -> VectorWriter<Vec>;
 
 } // namespace fr
 #endif // include guard
