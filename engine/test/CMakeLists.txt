@@ -35,6 +35,8 @@ add_test(NAME test_preprocessor COMMAND $<TARGET_FILE:fractal_box_tests> [u][eng
 add_test(NAME test_ref COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][ref])
 add_test(NAME test_reflection COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][reflection])
 add_test(NAME test_scope COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][scope])
+add_test(NAME test_serialization COMMAND $<TARGET_FILE:fractal_box_tests>
+	[u][engine][serialization])
 add_test(NAME test_type_index COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][type_index])
 add_test(NAME test_utils COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][utils])
 add_test(NAME test_world COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][world])

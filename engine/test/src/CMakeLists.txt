@@ -20,6 +20,7 @@ target_sources(fractal_box_tests PRIVATE
 	ref_tests.cpp
 	reflection_tests.cpp
 	scope_tests.cpp
+	serialization_tests.cpp
 	sparse_set_tests.cpp
 	type_index_tests.cpp
 	type_object_map_tests.cpp
