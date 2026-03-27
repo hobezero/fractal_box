@@ -13,16 +13,6 @@ template<class T>
 concept c_io_character = c_byte_like<T> || c_character<T>;
 
 template<class T>
-concept c_size_or_result
-	= std::same_as<T, size_t>
-	|| c_result_of<T, size_t>;
-
-template<class T>
-concept c_void_or_result
-	= std::same_as<T, void>
-	|| c_result_of<T, void>;
-
-template<class T>
 concept c_writer
 	= c_user_object<T>
 	&& requires(T& obj, size_t size, std::span<const typename T::CharType> const_span) {

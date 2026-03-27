@@ -14,7 +14,7 @@
 #include "fractal_box/core/functional.hpp"
 #include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/logging.hpp"
-#include "fractal_box/core/meta/reflection.hpp"
+#include "fractal_box/core/meta/type_info.hpp"
 #include "fractal_box/core/timeline.hpp"
 #include "fractal_box/core/type_index.hpp"
 #include "fractal_box/runtime/message_manager.hpp"

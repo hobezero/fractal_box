@@ -263,7 +263,7 @@ struct Catch::StringMaker<MyFlags> {
 	}
 };
 
-TEST_CASE("Flags", "[u][engine][utils][core]") {
+TEST_CASE("Flags", "[u][engine][core][utils]") {
 	using enum MyFlag;
 
 	SECTION("type properties") {

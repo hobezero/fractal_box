@@ -8,11 +8,12 @@ namespace fr {
 
 enum class HashableMode: uint8_t {
 	OptOut,
-	Default = OptOut,
 	OptIn,
 	/// @brief As a member of another class, type can be hashed as a sequence of bytes
 	AsBytes,
 	None,
+
+	Default = OptOut,
 };
 
 struct Hashable {

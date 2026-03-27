@@ -3,6 +3,7 @@ target_sources(fractal_box_engine PUBLIC FILE_SET HEADERS FILES
 	meta.hpp
 	meta_basics.hpp
 	reflection.hpp
+	type_info.hpp
 	type_name.hpp
 	visit_fields.hpp
 )

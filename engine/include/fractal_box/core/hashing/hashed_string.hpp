@@ -138,14 +138,14 @@ public:
 	explicit constexpr
 	operator bool() const noexcept { return _hash != 0; }
 
-protected:
-	Digest _hash = Digest{0};
-
 private:
 	FR_FORCE_INLINE constexpr
 	auto hvb_digest() const noexcept -> HasherVisitorBase::Digest<Digest> {
 		return {_hash};
 	}
+
+protected:
+	Digest _hash = Digest{0};
 };
 
 using StringId32 = BasicStringId<HashDigest32, char>;
@@ -402,8 +402,8 @@ auto operator==(
 
 // TODO: deduction guides
 // TODO: user-defined literals
-// TODO: comparison operatos: StringId == HashedString, ...
-// TODO: conversion operatos to hash and string types (?)
+// TODO: comparison operators: StringId == HashedString, ...
+// TODO: conversion operators to hash and string types (?)
 
 } // namespace fr
 #endif // include guard

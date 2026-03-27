@@ -10,7 +10,7 @@
 #include "fractal_box/core/in_place_args.hpp"
 #include "fractal_box/core/logging.hpp"
 #include "fractal_box/core/memory.hpp"
-#include "fractal_box/core/meta/reflection.hpp"
+#include "fractal_box/core/meta/type_info.hpp"
 #include "fractal_box/core/relocation.hpp"
 
 namespace fr {

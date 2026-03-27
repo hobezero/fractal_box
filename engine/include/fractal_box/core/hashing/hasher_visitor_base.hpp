@@ -307,15 +307,16 @@ inline constexpr auto is_hvb_wrapper_digest<HasherVisitorBase::Digest<D>> = true
 
 // Bytes
 // ^^^^^
+
 template<class T>
 inline constexpr auto is_hvb_wrapper_bytes = false;
 
 template<class B, class SizeType>
-inline constexpr auto is_hvb_wrapper_bytes<HasherVisitorBase::Bytes<B, SizeType>>
-	= true;
+inline constexpr auto is_hvb_wrapper_bytes<HasherVisitorBase::Bytes<B, SizeType>> = true;
 
 // FixedBytes
 // ^^^^^^^^^^
+
 template<class T>
 inline constexpr auto is_hvb_wrapper_fixed_bytes = false;
 
@@ -324,6 +325,7 @@ inline constexpr auto is_hvb_wrapper_fixed_bytes<HasherVisitorBase::FixedBytes<B
 
 // String
 // ^^^^^^
+
 template<class T>
 inline constexpr auto is_hvb_wrapper_string = false;
 
@@ -332,6 +334,7 @@ inline constexpr auto is_hvb_wrapper_string<HasherVisitorBase::String<Char, Size
 
 // FixedfString
 // ^^^^^^^^^^^^
+
 template<class T>
 inline constexpr auto is_hvb_wrapper_fixed_string = false;
 

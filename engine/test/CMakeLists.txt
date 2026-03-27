@@ -16,6 +16,7 @@ target_sources(fractal_box_tests
 )
 
 add_test(NAME test_assert COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][assert])
+add_test(NAME test_bit_manip COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][bit_manip])
 add_test(NAME test_collision COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][collision])
 add_test(NAME test_components COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][components])
 add_test(NAME test_concepts COMMAND $<TARGET_FILE:fractal_box_tests> [u][engine][concepts])

@@ -312,5 +312,15 @@ inline constexpr auto is_result_of<Result<V, Errs...>, V> = true;
 template<class T, class V>
 concept c_result_of = is_result_of<T, V>;
 
+template<class T>
+concept c_size_or_result
+	= std::same_as<T, size_t>
+	|| c_result_of<T, size_t>;
+
+template<class T>
+concept c_void_or_result
+	= std::same_as<T, void>
+	|| c_result_of<T, void>;
+
 } // namespace fr
 #endif // include guard

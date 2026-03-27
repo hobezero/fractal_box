@@ -19,12 +19,12 @@ struct DummyHasherVisitor: public HasherVisitorBase {
 } // namespace detail
 
 template<class T>
-concept c_has_custom_hash = requires(const T object, detail::DummyHasherVisitor visitor) {
+concept c_has_custom_hash = requires(const T& object, detail::DummyHasherVisitor& visitor) {
 	{ fr_custom_hash(object, visitor) };
 };
 
 template<class T, class Hasher>
-concept c_hashable_by = requires(const T object, Hasher hasher) {
+concept c_hashable_by = requires(const T& object, Hasher& hasher) {
 	hasher(object);
 };
 
@@ -81,7 +81,7 @@ auto get_hashability() noexcept -> Hashability;
 
 namespace detail {
 
-template<HashableMode mode, class Child>
+template<HashableMode Mode, class Child>
 inline consteval
 void verify_hashable_child() noexcept {
 
@@ -91,17 +91,17 @@ void verify_hashable_child() noexcept {
 		"HashableMode is not meant for fields and properties");
 
 	using Type = ReflFieldOrPropertyType<Child>;
-	if constexpr (mode == HashableMode::OptOut) {
+	if constexpr (Mode == HashableMode::OptOut) {
 		constexpr auto attr = refl_attribute_or<Child, Hashable, Hashable{true}>;
 		static_assert(!attr || get_hashability<Type>(),
 			"Unhashable field or property marked as hashable");
 	}
-	else if constexpr (mode == HashableMode::OptIn) {
+	else if constexpr (Mode == HashableMode::OptIn) {
 		constexpr auto attr = refl_attribute_or<Child, Hashable, Hashable{false}>;
 		static_assert(!attr || get_hashability<Type>(),
 			"Unhashable field or property marked as hashable");
 	}
-	else if constexpr (mode == HashableMode::AsBytes) {
+	else if constexpr (Mode == HashableMode::AsBytes) {
 		static_assert(refl_attribute_or<Child, Hashable, Hashable{true}>,
 			"Can't opt out from hashing a member of a byte-hashable class");
 		if constexpr (is_description_property<Child>) {
@@ -109,7 +109,7 @@ void verify_hashable_child() noexcept {
 				"Byte-hashable class can't have hashable properties");
 		}
 	}
-	else if constexpr (mode == HashableMode::None) {
+	else if constexpr (Mode == HashableMode::None) {
 		return;
 	}
 	else
@@ -193,7 +193,7 @@ auto get_hashability() noexcept -> Hashability {
 			static_assert(false);
 		}
 	}
-	else if constexpr(c_has_custom_hash<PT>) {
+	else if constexpr (c_has_custom_hash<PT>) {
 		return {Custom, Default};
 	}
 	else if constexpr (c_has_describe<PT>) {
@@ -264,12 +264,15 @@ auto get_hashability() noexcept -> Hashability {
 	}
 	else if constexpr (c_record_like<PT>) {
 		using Decomposed = ReflDecomposition<PT>;
-		if (mp_all_of<Decomposed, IsByteHashable> && has_unique_repr)
+		if constexpr (mp_all_of<Decomposed, IsByteHashable> && has_unique_repr) {
 			return {Record, AsBytes};
-		else if (mp_all_of<Decomposed, IsHashable>)
+		}
+		else if constexpr (mp_all_of<Decomposed, IsHashable>) {
 			return {Record, Default};
-		else
+		}
+		else {
 			return {Record, None};
+		}
 	}
 	else {
 		return {Unhashable, None};
