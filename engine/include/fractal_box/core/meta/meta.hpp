@@ -600,26 +600,26 @@ namespace detail {
 template<class VList>
 struct MpValuesToTypesImpl;
 
-template<template<class...> class TList>
-struct MpValuesToTypesImpl<TList<>> {
-	template<template<auto> class Proj, template<class...> class OList>
-	using Type = OList<>;
-};
-
 template<template<auto...> class VList, auto... Vs>
 struct MpValuesToTypesImpl<VList<Vs...>> {
-	template<template<auto> class Proj, template<class...> class OList>
-	using Type = OList<Proj<Vs>...>;
+	using Type = MpList<MpTypeOfValue<Vs>...>;
+};
+
+template<class VList>
+struct MpWrapValuesImpl;
+
+template<template<auto...> class VList, auto... Vs>
+struct MpWrapValuesImpl<VList<Vs...>> {
+	using Type = MpList<MpValue<Vs>...>;
 };
 
 } // namespace detail
 
-template<
-	class VList,
-	template<auto> class Proj = MpTypeOfValue,
-	template<class...> class OList = MpList
->
-using MpValuesToTypes = typename detail::MpValuesToTypesImpl<VList>::template Type<Proj, OList>;
+template<class VList>
+using MpValuesToTypes = typename detail::MpValuesToTypesImpl<VList>::Type;
+
+template<class VList>
+using MpWrapValues = typename detail::MpWrapValuesImpl<VList>::Type;
 
 // MpFlatten
 // ^^^^^^^^^

@@ -1,7 +1,9 @@
 #ifndef FRACTAL_BOX_CORE_META_TYPE_INFO_HPP
 #define FRACTAL_BOX_CORE_META_TYPE_INFO_HPP
 
+#include "fractal_box/core/alignment.hpp"
 #include "fractal_box/core/hashing/hashed_string.hpp"
+#include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/meta/reflection.hpp"
 
 namespace fr {

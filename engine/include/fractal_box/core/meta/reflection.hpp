@@ -4,15 +4,12 @@
 /// @see https://github.com/sporacid/spore-meta
 
 #include <algorithm>
-#include <compare>
 #include <type_traits>
 
 #include "fractal_box/core/algorithm.hpp"
-#include "fractal_box/core/alignment.hpp"
 #include "fractal_box/core/concepts.hpp"
 #include "fractal_box/core/containers/simple_array.hpp"
 #include "fractal_box/core/functional.hpp"
-#include "fractal_box/core/init_tags.hpp"
 #include "fractal_box/core/interval.hpp"
 #include "fractal_box/core/meta/description_types.hpp"
 #include "fractal_box/core/meta/meta.hpp"
@@ -118,8 +115,8 @@ public:
 	auto check_field_ptrs() noexcept -> bool {
 		// We can't compare pointers of different types at compile time, so here is the algorithm:
 		// 1. Enumerate fields into type_hash/index pairs
-		// 2. Sort pairs by their type hash
-		// 3. Group pairs into consecutive same-hash chunks
+		// 2. Sort the pairs by their type hash
+		// 3. Group the pairs into consecutive same-hash chunks
 		// 4. Within each chunk, retrieve pointers by pair indexes and run `test_unique_small()`
 		if constexpr (mp_is_empty<Fields>) {
 			return true;
@@ -189,7 +186,7 @@ public:
 	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValueList<>,
 		AttributeList>;
 	using AttributeTypes = MpValuesToTypes<Attributes>;
-	using AttributeValues = MpValuesToTypes<Attributes, MpValue>;
+	using AttributeValues = MpWrapValues<Attributes>;
 
 	template<class A>
 	static constexpr auto has_attribute = mp_contains<AttributeTypes, A>;
@@ -249,7 +246,7 @@ public:
 	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValueList<>,
 		AttributeList>;
 	using AttributeTypes = MpValuesToTypes<Attributes>;
-	using AttributeValues = MpValuesToTypes<Attributes, MpValue>;
+	using AttributeValues = MpWrapValues<Attributes>;
 
 	template<class A>
 	static constexpr auto has_attribute = mp_contains<AttributeTypes, A>;
@@ -302,7 +299,7 @@ public:
 	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValueList<>,
 		AttributeList>;
 	using AttributeTypes = MpValuesToTypes<Attributes>;
-	using AttributeValues = MpValuesToTypes<Attributes, MpValue>;
+	using AttributeValues = MpWrapValues<Attributes>;
 
 	template<class A>
 	static constexpr auto has_attribute = mp_contains<AttributeTypes, A>;

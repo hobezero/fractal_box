@@ -132,6 +132,8 @@ set(clang_warnings
 	-Wimplicit-fallthrough
 	# Warn on redundant semicolons
 	-Wextra-semi
+	# DON'T warn on __COUNTER__ usage which makes Catch2 very noisy
+	-Wno-c2y-extensions
 )
 
 set(gcc_warnings
