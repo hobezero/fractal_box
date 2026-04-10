@@ -11,9 +11,27 @@
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "fractal_box/core/meta/reflection.hpp"
+#include "fractal_box/core/meta/type_name.hpp"
 
 namespace frt {
+
+#define FRT_CHECK(...) do { \
+	if consteval { \
+		FR_PANIC_CHECK((__VA_ARGS__)); \
+	} \
+	else { \
+		CHECK(__VA_ARGS__); \
+	} \
+} while(false)
+
+#define FRT_REQUIRE(...) do { \
+	if consteval { \
+		FR_PANIC_CHECK((__VA_ARGS__)); \
+	} \
+	else { \
+		REQUIRE(__VA_ARGS__); \
+	} \
+} while(false)
 
 inline constexpr char lorem_text[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
 	"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";

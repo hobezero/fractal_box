@@ -27,6 +27,26 @@ struct DummyReadArchive {
 	auto operator()(auto&...) noexcept { }
 };
 
+struct DummyWriter {
+	using CharType = std::byte;
+	static constexpr auto is_buffered = false;
+	static constexpr auto is_buffer_resizable = false;
+
+	constexpr
+	auto write(std::span<const std::byte>) noexcept -> size_t { return 0zu; }
+
+	constexpr
+	void flush() noexcept { }
+
+};
+
+struct DummyReader {
+	using CharType = std::byte;
+	static constexpr auto is_buffered = false;
+
+	constexpr auto read(std::span<std::byte>) noexcept -> size_t { return 0zu; }
+};
+
 } // namespace detail
 
 template<class T>
@@ -44,13 +64,13 @@ concept c_has_custom_serialize = requires(
 
 template<class T, class DataFormat>
 concept c_serializable_by = requires(
+	detail::DummyWriter& writer,
+	detail::DummyReader& reader,
 	const T& const_obj,
-	T& mut_obj,
-	typename DataFormat::Writer df_writer,
-	typename DataFormat::Reader df_reader
+	T& mut_obj
 ) {
-	df_writer(const_obj);
-	df_reader(mut_obj);
+	{ DataFormat::encode(writer, const_obj) } -> c_void_or_result;
+	{ DataFormat::decode(reader, mut_obj) } -> c_void_or_result;
 };
 
 enum class SerializableCategory: uint8_t {
@@ -66,7 +86,6 @@ enum class SerializableCategory: uint8_t {
 	Map,
 	Set,
 	Variant,
-	Tuple,
 	Record,
 };
 
@@ -127,10 +146,10 @@ auto get_serializability() noexcept -> Serializability {
 
 	using enum SerializableMode;
 	using enum SerializableCategory;
-	static constexpr auto has_unique_repr = std::has_unique_object_representations_v<PT>;
 
 	if constexpr (std::is_fundamental_v<PT>) {
-		if constexpr (std::is_arithmetic_v<PT> || std::is_same_v<PT, std::nullptr_t>) {
+		static_assert(!c_has_custom_serialize<PT>, "Can't customize serialization for primitives");
+		if constexpr (std::is_arithmetic_v<PT>) {
 			return {Primitive, Default};
 		}
 		else {
@@ -189,7 +208,7 @@ auto get_serializability() noexcept -> Serializability {
 	else if constexpr (c_vector_like<PT>) {
 		return {Vector, get_serializability<typename PT::value_type>().mode()};
 	}
-	// TODO: Map, Set, Tuple, Variant
+	// TODO: Map, Set, Variant
 	else if constexpr (c_record_like<PT>) {
 		using Decomposed = ReflDecomposition<PT>;
 		if constexpr (mp_all_of<Decomposed, IsSerializable>) {
