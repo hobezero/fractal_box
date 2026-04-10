@@ -26,9 +26,9 @@ inline constexpr
 auto read32_to_64(const unsigned char* p) noexcept -> uint64_t {
 	if consteval {
 		return static_cast<uint64_t>(p[0])
-		 | (static_cast<uint64_t>(p[1]) << 8)
-		 | (static_cast<uint64_t>(p[2]) << 16)
-		 | (static_cast<uint64_t>(p[3]) << 24);
+		 | (static_cast<uint64_t>(p[1]) << 8u)
+		 | (static_cast<uint64_t>(p[2]) << 16u)
+		 | (static_cast<uint64_t>(p[3]) << 24u);
 	}
 	else {
 		uint32_t v;
@@ -50,13 +50,13 @@ inline constexpr
 auto read64(const unsigned char* p) noexcept -> uint64_t {
 	if consteval {
 		return static_cast<uint64_t>(p[0])
-		 | (static_cast<uint64_t>(p[1]) << 8)
-		 | (static_cast<uint64_t>(p[2]) << 16)
-		 | (static_cast<uint64_t>(p[3]) << 24)
-		 | (static_cast<uint64_t>(p[4]) << 32)
-		 | (static_cast<uint64_t>(p[5]) << 40)
-		 | (static_cast<uint64_t>(p[6]) << 48)
-		 | (static_cast<uint64_t>(p[7]) << 56)
+		 | (static_cast<uint64_t>(p[1]) << 8u)
+		 | (static_cast<uint64_t>(p[2]) << 16u)
+		 | (static_cast<uint64_t>(p[3]) << 24u)
+		 | (static_cast<uint64_t>(p[4]) << 32u)
+		 | (static_cast<uint64_t>(p[5]) << 40u)
+		 | (static_cast<uint64_t>(p[6]) << 48u)
+		 | (static_cast<uint64_t>(p[7]) << 56u)
 		;
 	}
 	else {
@@ -129,20 +129,20 @@ void write_str_as_bytes(Target* dest, const Source* src, size_t src_size) noexce
 				dest[i] = static_cast<Target>(src[i]);
 			}
 			else if constexpr (sizeof(Source) == sizeof(char16_t)) {
-				dest[sizeof(Source) * i + 0zu] = static_cast<unsigned char>(
+				dest[sizeof(Source) * i + 0zu] = static_cast<Target>(
 					static_cast<uint32_t>(src[i]));
-				dest[sizeof(Source) * i + 1zu] = static_cast<unsigned char>(
-					static_cast<uint32_t>(src[i]) << 8);
+				dest[sizeof(Source) * i + 1zu] = static_cast<Target>(
+					static_cast<uint32_t>(src[i]) << 8u);
 			}
 			else if constexpr (sizeof(Source) == sizeof(char32_t)) {
-				dest[sizeof(Source) * i + 0zu] = static_cast<unsigned char>(
+				dest[sizeof(Source) * i + 0zu] = static_cast<Target>(
 					static_cast<uint32_t>(src[i]));
-				dest[sizeof(Source) * i + 1zu] = static_cast<unsigned char>(
-					static_cast<uint32_t>(src[i]) << 8);
-				dest[sizeof(Source) * i + 2zu] = static_cast<unsigned char>(
-					static_cast<uint32_t>(src[i]) << 16);
-				dest[sizeof(Source) * i + 3zu] = static_cast<unsigned char>(
-					static_cast<uint32_t>(src[i]) << 24);
+				dest[sizeof(Source) * i + 1zu] = static_cast<Target>(
+					static_cast<uint32_t>(src[i]) << 8u);
+				dest[sizeof(Source) * i + 2zu] = static_cast<Target>(
+					static_cast<uint32_t>(src[i]) << 16u);
+				dest[sizeof(Source) * i + 3zu] = static_cast<Target>(
+					static_cast<uint32_t>(src[i]) << 24u);
 			}
 			else
 				static_assert(false);
@@ -150,6 +150,35 @@ void write_str_as_bytes(Target* dest, const Source* src, size_t src_size) noexce
 	}
 	else {
 		std::memcpy(dest, src, sizeof(Source) * src_size);
+	}
+}
+
+template<c_character Target, c_byte_like Source>
+inline constexpr
+void read_str_from_bytes(Target* dest, size_t dest_size, const Source* src) noexcept {
+	if consteval {
+		for (auto i = 0zu; i < dest_size; ++i) {
+			if constexpr (sizeof(Source) == sizeof(Target)) {
+				dest[i] = static_cast<Target>(src[i]);
+			}
+			else if constexpr (sizeof(Target) == sizeof(char16_t)) {
+				dest[i] = static_cast<char16_t>(
+					static_cast<uint16_t>(src[2zu * i])
+					| static_cast<uint16_t>(src[2zu * i + 1zu]) << 8u
+				);
+			}
+			else if constexpr (sizeof(Target) == sizeof(char32_t)) {
+				dest[i] = static_cast<char32_t>(
+					static_cast<uint16_t>(src[4zu * i])
+					| static_cast<uint16_t>(src[4zu * i + 1zu]) << 8u
+					| static_cast<uint16_t>(src[4zu * i + 2zu]) << 16u
+					| static_cast<uint16_t>(src[4zu * i + 3zu]) << 24u
+				);
+			}
+		}
+	}
+	else {
+		std::memcpy(dest, src, sizeof(Target) * dest_size);
 	}
 }
 
