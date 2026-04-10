@@ -1,6 +1,8 @@
 #ifndef FRACTAL_BOX_CORE_IO_IO_CONCEPTS_HPP
 #define FRACTAL_BOX_CORE_IO_IO_CONCEPTS_HPP
 
+#include <cstddef>
+
 #include <span>
 
 #include "fractal_box/core/byte_utils.hpp"
@@ -34,12 +36,16 @@ concept c_writer
 	};
 
 template<class T>
+concept c_byte_writer = c_writer<T> && c_byte_like<typename T::CharType>;
+
+template<class T>
 concept c_reader
 	= c_user_object<T>
 	&& requires(T& obj, size_t size, std::span<typename T::CharType> mut_span) {
 		requires c_io_character<typename T::CharType>;
 
 		{ obj.read(mut_span) } -> c_size_or_result;
+		{ obj.read_exact(mut_span) } -> c_void_or_result;
 
 		{ T::is_buffered } -> c_similar_to<bool>;
 		requires !T::is_buffered || requires {
@@ -47,6 +53,9 @@ concept c_reader
 			{ obj.commit_buffer(size) } -> c_void_or_result;
 		};
 	};
+
+template<class T>
+concept c_byte_reader = c_reader<T> && c_byte_like<typename T::CharType>;
 
 struct Eof { };
 

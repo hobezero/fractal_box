@@ -43,6 +43,7 @@ public:
 		if (_buffer.size() < data.size())
 			return from_error;
 
+		// TODO: Replace with memcpy: https://godbolt.org/z/b3cq6z3no
 		std::ranges::copy(data, _buffer.begin());
 		_buffer = _buffer.subspan(data.size());
 		return data.size();
@@ -108,6 +109,17 @@ struct SpanReader {
 		std::ranges::copy(_buffer.subspan(0zu, chunk_size), data.begin());
 		_buffer = _buffer.subspan(chunk_size);
 		return chunk_size;
+	}
+
+	constexpr
+	auto read_exact(std::span<CharType> data) noexcept -> Result<void, Eof> {
+		if (_buffer.size() < data.size())
+			return from_error;
+
+		std::ranges::copy(_buffer.subspan(0zu, data.size()), data.begin());
+		_buffer = _buffer.subspan(data.size());
+
+		return {};
 	}
 
 	FR_FORCE_INLINE constexpr

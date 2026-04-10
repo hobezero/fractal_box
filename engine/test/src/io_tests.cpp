@@ -94,40 +94,55 @@ TEST_CASE("SpanReader", "[u][engine][core][io]") {
 	constexpr auto buf_size = std::size(buf);
 	auto reader = fr::SpanReader{buf};
 
-	{
-		auto chunk = std::array<char, buf_size>{};
-		const auto res = reader.read(std::span(chunk.data(), 3));
-		REQUIRE(res.has_value());
-		CHECK(*res == 3);
-		CHECK(chunk == padded_str<buf_size>("abc"));
+	SECTION("read(..)") {
+		{
+			auto chunk = std::array<char, buf_size>{};
+			const auto res = reader.read(std::span(chunk.data(), 3));
+			REQUIRE(res.has_value());
+			CHECK(*res == 3);
+			CHECK(chunk == padded_str<buf_size>("abc"));
+		}
+		{
+			auto chunk = std::array<char, buf_size>{};
+			const auto res = reader.read(std::span(chunk.data(), 6));
+			REQUIRE(res.has_value());
+			CHECK(*res == 6);
+			CHECK(chunk == padded_str<buf_size>("defghi"));
+		}
+		{
+			auto chunk = std::array<char, buf_size>{};
+			const auto res = reader.read(std::span(chunk.data(), 0));
+			REQUIRE(res.has_value());
+			CHECK(*res == 0);
+			CHECK(chunk == padded_str<buf_size>(""));
+		}
+		SECTION("exact fit") {
+			auto chunk = std::array<char, buf_size>{};
+			const auto res = reader.read(std::span(chunk.data(), 6));
+			REQUIRE(res.has_value());
+			CHECK(*res == 6);
+			CHECK(chunk == padded_str<buf_size>("jklmno"));
+		}
+		SECTION("overfit") {
+			auto chunk = std::array<char, buf_size>{};
+			const auto res = reader.read(std::span(chunk.data(), 8));
+			REQUIRE(res.has_value());
+			CHECK(*res == 6);
+			CHECK(chunk == padded_str<buf_size>("jklmno"));
+		}
 	}
-	{
-		auto chunk = std::array<char, buf_size>{};
-		const auto res = reader.read(std::span(chunk.data(), 6));
-		REQUIRE(res.has_value());
-		CHECK(*res == 6);
-		CHECK(chunk == padded_str<buf_size>("defghi"));
-	}
-	{
-		auto chunk = std::array<char, buf_size>{};
-		const auto res = reader.read(std::span(chunk.data(), 0));
-		REQUIRE(res.has_value());
-		CHECK(*res == 0);
-		CHECK(chunk == padded_str<buf_size>(""));
-	}
-	SECTION("exact fit") {
-		auto chunk = std::array<char, buf_size>{};
-		const auto res = reader.read(std::span(chunk.data(), 6));
-		REQUIRE(res.has_value());
-		CHECK(*res == 6);
-		CHECK(chunk == padded_str<buf_size>("jklmno"));
-	}
-	SECTION("overfit") {
-		auto chunk = std::array<char, buf_size>{};
-		const auto res = reader.read(std::span(chunk.data(), 8));
-		REQUIRE(res.has_value());
-		CHECK(*res == 6);
-		CHECK(chunk == padded_str<buf_size>("jklmno"));
+	SECTION("read_exact(..)") {
+		{
+			auto chunk = std::array<char, buf_size>{};
+			const auto res = reader.read_exact(std::span(chunk.data(), 5));
+			REQUIRE(res.has_value());
+			CHECK(chunk == padded_str<buf_size>("abcde"));
+		}
+		{
+			auto chunk = std::array<char, buf_size>{};
+			const auto res = reader.read_exact(std::span(chunk.data(), 50));
+			CHECK(res.has_error<fr::Eof>());
+		}
 	}
 }
 

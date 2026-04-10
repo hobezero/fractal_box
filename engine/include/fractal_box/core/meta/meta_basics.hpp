@@ -106,7 +106,10 @@ struct MpIllegal {
 } // namespace detail
 
 template<class T>
-using MpType = std::type_identity<T>;
+struct MpType {
+	using Type = T;
+	using type = T;
+};
 
 template<class T>
 inline constexpr auto mp_type = MpType<T>{};
