@@ -54,12 +54,12 @@ public:
 
 	template<class... Args>
 	requires (!c_void<T>) && std::constructible_from<T, Args...>
-	FR_FORCE_INLINE constexpr
+	explicit(false) FR_FORCE_INLINE constexpr
 	Result(InPlaceInit, Args&&... args) noexcept(std::is_nothrow_constructible_v<T, Args...>):
 		_state{std::in_place_index<0zu>, std::forward<Args>(args)...}
 	{ }
 
-	FR_FORCE_INLINE constexpr
+	explicit(false) FR_FORCE_INLINE constexpr
 	Result(InPlaceInit) noexcept
 	requires c_void<T>:
 		_state{std::in_place_index<0zu>}
@@ -67,7 +67,7 @@ public:
 
 	template<class... Args>
 	requires (sizeof...(Errs) == 1zu) && std::constructible_from<FirstErr, Args...>
-	FR_FORCE_INLINE constexpr
+	explicit(false) FR_FORCE_INLINE constexpr
 	Result(FromErrorInit, Args&&... args)
 	noexcept(std::is_nothrow_constructible_v<FirstErr, Args...>):
 		_state{std::in_place_index<2zu>, std::forward<Args>(args)...}

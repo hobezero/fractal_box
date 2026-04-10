@@ -134,6 +134,7 @@ auto get_hashability() noexcept -> Hashability {
 	static constexpr auto has_unique_repr = std::has_unique_object_representations_v<PT>;
 
 	if constexpr (std::is_fundamental_v<PT>) {
+		static_assert(!c_has_custom_hash<PT>, "Can't customize hashing for primitives");
 		if constexpr (std::is_arithmetic_v<PT>) {
 			return {Primitive, std::is_integral_v<PT> && has_unique_repr ? AsBytes : Default};
 		}
@@ -145,6 +146,7 @@ auto get_hashability() noexcept -> Hashability {
 		}
 	}
 	else if constexpr (is_hvb_wrapper<PT>) {
+		static_assert(!c_has_custom_hash<PT>, "Can't customize hashing for visitor wrappers");
 		if constexpr (is_hvb_wrapper_digest<PT>) {
 			return {Wrapper, AsBytes};
 		}

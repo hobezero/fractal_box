@@ -378,7 +378,7 @@ public:
 
 template<class... Ts>
 inline consteval
-auto build_uni_hashable_lenses2_sizes(MpList<Ts...> types) {
+auto build_uni_hashable_lenses2_sizes(MpList<Ts...> types) noexcept {
 	const auto lenses1 = UniHashableLenses1{types};
 
 	const auto max_byte_hashables_path_size
@@ -404,7 +404,7 @@ auto build_uni_hashable_lenses2_sizes(MpList<Ts...> types) {
 
 template<class... Ts>
 inline consteval
-auto build_uni_hashable_lenses2(MpList<Ts...> types) {
+auto build_uni_hashable_lenses2(MpList<Ts...> types) noexcept {
 	constexpr auto sizes = build_uni_hashable_lenses2_sizes(types);
 	const auto lenses1 = UniHashableLenses1{types};
 	return UniHashableLenses2<sizes>{lenses1};
@@ -550,7 +550,6 @@ public:
 		HashDigest64 _result;
 	};
 
-	/// @todo FIXME: Make SFINAE-friendly
 	class Visitor: public HasherVisitorBase {
 	public:
 		using Hasher = UniHasher;
@@ -663,15 +662,13 @@ public:
 		template<c_hashable T>
 		FR_FORCE_INLINE constexpr
 		void absorb_dispatch(const T& obj) const noexcept {
-			static constexpr auto hashability = get_hashability<T>();
 			using enum HashableCategory;
+			static constexpr auto hashability = get_hashability<T>();
 			if constexpr (hashability) {
 				if constexpr (hashability.category() == Primitive) {
-					static_assert(!c_has_custom_hash<std::remove_cvref_t<T>>);
 					_state.absorb_primitive(obj);
 				}
 				else if constexpr (hashability.category() == Wrapper) {
-					static_assert(!c_has_custom_hash<std::remove_cvref_t<T>>);
 					absorb_wrapper(obj);
 				}
 				else if constexpr (hashability.category() == Custom) {
@@ -961,7 +958,7 @@ public:
 				_state.absorb_object_bytes(obj);
 			}
 			else if constexpr (mode == HashableMode::OptOut) {
-				visit_record_fields(obj, [&]<class... Fs>(const Fs&... fields){
+				visit_record_fields(obj, [&]<class... Fs>(const Fs&... fields) {
 					(..., absorb_dispatch(fields));
 				});
 			}
