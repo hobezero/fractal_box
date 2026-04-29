@@ -44,10 +44,32 @@ struct DummyReader {
 	using CharType = std::byte;
 	static constexpr auto is_buffered = false;
 
-	constexpr auto read(std::span<std::byte>) noexcept -> size_t { return 0zu; }
+	constexpr
+	auto read(std::span<std::byte>) noexcept -> size_t { return 0zu; }
+
+	constexpr
+	void read_exact(std::span<std::byte>) noexcept { }
 };
 
 } // namespace detail
+
+template<class T>
+concept c_data_format = requires(
+	detail::DummyWriter& writer,
+	detail::DummyReader& reader,
+	int obj
+) {
+	typename T::template EncodingArchive<detail::DummyWriter>;
+	typename T::template DecodingArchive<detail::DummyReader>;
+
+	typename T::template EncodeResult<detail::DummyWriter>;
+	typename T::template DecodeResult<detail::DummyReader>;
+
+	{ T::encode(writer, obj) } -> std::same_as<
+		typename T::template EncodeResult<detail::DummyWriter>>;
+	{ T::decode(reader, obj) } -> std::same_as<
+		typename T::template DecodeResult<detail::DummyReader>>;
+};
 
 template<class T>
 concept c_has_custom_serialize = requires(

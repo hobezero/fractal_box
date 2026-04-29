@@ -40,6 +40,8 @@ public:
 } // namespace
 
 TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
+	STATIC_CHECK(fr::c_data_format<fr::SbsDataFormat>);
+
 	STATIC_CHECK(fr::c_has_custom_serialize<CustomFriend>);
 	STATIC_CHECK(fr::c_has_custom_serialize<CustomStatic>);
 
