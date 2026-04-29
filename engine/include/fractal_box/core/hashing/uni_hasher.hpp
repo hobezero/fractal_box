@@ -664,40 +664,36 @@ public:
 		void absorb_dispatch(const T& obj) const noexcept {
 			using enum HashableCategory;
 			static constexpr auto hashability = get_hashability<T>();
-			if constexpr (hashability) {
-				if constexpr (hashability.category() == Primitive) {
-					_state.absorb_primitive(obj);
-				}
-				else if constexpr (hashability.category() == Wrapper) {
-					absorb_wrapper(obj);
-				}
-				else if constexpr (hashability.category() == Custom) {
-					fr_custom_hash(obj, *this);
-				}
-				else if constexpr (hashability.category() == Described) {
-					absorb_described(obj);
-				}
-				else if constexpr (hashability.category() == Enum) {
-					absorb_enum(obj);
-				}
-				else if constexpr (hashability.category() == Optional) {
-					absorb_optional(obj);
-				}
-				else if constexpr (hashability.category() == String) {
-					absorb_string(obj);
-				}
-				else if constexpr (hashability.category() == Array) {
-					absorb_array(obj);
-				}
-				else if constexpr (hashability.category() == Range) {
-					absorb_range(obj);
-				}
-				else if constexpr (hashability.category() == Record) {
-					absorb_record(obj);
-				}
-				else {
-					static_assert(false);
-				}
+			static_assert(hashability);
+			if constexpr (hashability.category() == Primitive) {
+				_state.absorb_primitive(obj);
+			}
+			else if constexpr (hashability.category() == Wrapper) {
+				absorb_wrapper(obj);
+			}
+			else if constexpr (hashability.category() == Custom) {
+				fr_custom_hash(obj, *this);
+			}
+			else if constexpr (hashability.category() == Described) {
+				absorb_described(obj);
+			}
+			else if constexpr (hashability.category() == Enum) {
+				absorb_enum(obj);
+			}
+			else if constexpr (hashability.category() == Optional) {
+				absorb_optional(obj);
+			}
+			else if constexpr (hashability.category() == String) {
+				absorb_string(obj);
+			}
+			else if constexpr (hashability.category() == Array) {
+				absorb_array(obj);
+			}
+			else if constexpr (hashability.category() == Range) {
+				absorb_range(obj);
+			}
+			else if constexpr (hashability.category() == Record) {
+				absorb_record(obj);
 			}
 			else {
 				static_assert(false);
