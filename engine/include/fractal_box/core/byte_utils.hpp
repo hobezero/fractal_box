@@ -207,5 +207,49 @@ void write_range_as_bytes(Target* dest, SrcIter src_begin, SrcSentinel src_end) 
 	}
 }
 
+/// @brief A constexpr-friendly utility to create an unitialized storage for an object that can
+/// be constructed at some point in the future
+/// @note The user is responsible not only for the construction of the object, but also destruction
+template<class T>
+union ObjectStorage {
+public:
+	FR_FORCE_INLINE constexpr
+	ObjectStorage() noexcept { }
+
+	constexpr
+	~ObjectStorage() { }
+
+	FR_FORCE_INLINE constexpr
+	auto ptr() const noexcept -> const T* { return std::addressof(this->value); }
+
+	FR_FORCE_INLINE constexpr
+	auto ptr() noexcept -> T* { return std::addressof(this->value); }
+
+public:
+	T value;
+};
+
+/// @brief A constexpr-friendly utility to create an unitialized storage for an object that will
+/// be constructed at some point in the future
+/// @note The destructor gets called every time, so skipping construction is UB
+template<class T>
+union UnitializedObject {
+public:
+	FR_FORCE_INLINE constexpr
+	UnitializedObject() noexcept { }
+
+	constexpr
+	~UnitializedObject() { value.~T(); }
+
+	FR_FORCE_INLINE constexpr
+	auto ptr() const noexcept -> const T* { return std::addressof(this->value); }
+
+	FR_FORCE_INLINE constexpr
+	auto ptr() noexcept -> T* { return std::addressof(this->value); }
+
+public:
+	T value;
+};
+
 } // namespace fr
 #endif // include guard
