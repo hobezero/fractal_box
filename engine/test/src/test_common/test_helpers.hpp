@@ -225,9 +225,9 @@ void named_typed_section(std::string_view name_prefix, F&& callback, Args&&... a
 	}
 	buf.append(sizeof...(Rest) > 0 ? "with types: "sv : "with type: "sv);
 
-	fmt::format_to(std::back_inserter(buf), "'{}'", fr::type_name_lit<First>);
-	(fmt::format_to(std::back_inserter(buf), ", '{}'", fr::type_name_lit<Rest>), ...);
-	(fmt::format_to(std::back_inserter(buf), ", '{}' (deduced)", fr::type_name_lit<Args>), ...);
+	fmt::format_to(std::back_inserter(buf), "'{}'", fr::type_name<First>);
+	(fmt::format_to(std::back_inserter(buf), ", '{}'", fr::type_name<Rest>), ...);
+	(fmt::format_to(std::back_inserter(buf), ", '{}' (deduced)", fr::type_name<Args>), ...);
 	if (!name_prefix.empty())
 		buf.append(")"sv);
 
