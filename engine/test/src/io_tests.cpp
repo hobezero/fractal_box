@@ -61,7 +61,7 @@ TEST_CASE("SpanWriter", "[u][engine][core][io]") {
 		const char chunk[] = {'j', 'k', 'l', 'm', 'n', 'o', 'p'};
 		const auto res = writer.write(chunk);
 		REQUIRE_FALSE(res.has_value());
-		CHECK(res.has_error<fr::Eof>());
+		CHECK(res.has_error<fr::BufferOverrun>());
 		CHECK(buf == std::array<char, 15>{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i'});
 	}
 }
@@ -141,7 +141,7 @@ TEST_CASE("SpanReader", "[u][engine][core][io]") {
 		{
 			auto chunk = std::array<char, buf_size>{};
 			const auto res = reader.read_exact(std::span(chunk.data(), 50));
-			CHECK(res.has_error<fr::Eof>());
+			CHECK(res.has_error<fr::BufferOverrun>());
 		}
 	}
 }

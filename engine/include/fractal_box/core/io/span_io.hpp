@@ -39,7 +39,7 @@ public:
 	~SpanWriter() = default;
 
 	constexpr
-	auto write(std::span<const CharType> data) noexcept -> Result<size_t, Eof> {
+	auto write(std::span<const CharType> data) noexcept -> Result<size_t, BufferOverrun> {
 		if (_buffer.size() < data.size())
 			return from_error;
 
@@ -101,7 +101,7 @@ struct SpanReader {
 	~SpanReader() = default;
 
 	constexpr
-	auto read(std::span<CharType> data) noexcept -> Result<size_t, Eof> {
+	auto read(std::span<CharType> data) noexcept -> Result<size_t, BufferOverrun> {
 		if (_buffer.empty())
 			return from_error;
 
@@ -112,7 +112,7 @@ struct SpanReader {
 	}
 
 	constexpr
-	auto read_exact(std::span<CharType> data) noexcept -> Result<void, Eof> {
+	auto read_exact(std::span<CharType> data) noexcept -> Result<void, BufferOverrun> {
 		if (_buffer.size() < data.size())
 			return from_error;
 

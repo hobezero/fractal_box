@@ -17,7 +17,7 @@ struct SbsDataFormat {
 private:
 	static_assert(std::endian::native == std::endian::little);
 
-	template<class Writer, class T>
+	template<class Writer>
 	static consteval
 	auto calc_encode_result_type() noexcept {
 		using Char = typename Writer::CharType;
@@ -26,7 +26,7 @@ private:
 		return mp_type<WriteResult>;
 	}
 
-	template<class Reader, class T>
+	template<class Reader>
 	static consteval
 	auto calc_decode_result_type() noexcept {
 		using Char = typename Reader::CharType;
@@ -35,56 +35,65 @@ private:
 	}
 
 public:
-	template<c_byte_writer Writer, c_serializable T>
-	using EncodeResult = typename decltype(calc_encode_result_type<Writer, T>())::Type;
+	template<c_byte_writer Writer>
+	class EncodingArchive;
 
-	template<c_byte_reader Reader, c_serializable T>
-	using DecodeResult = typename decltype(calc_decode_result_type<Reader, T>())::Type;
+	template<c_byte_reader Reader>
+	class DecodingArchive;
+
+	template<c_byte_writer Writer>
+	using EncodeResult = typename decltype(calc_encode_result_type<Writer>())::Type;
+
+	template<c_byte_reader Reader>
+	using DecodeResult = typename decltype(calc_decode_result_type<Reader>())::Type;
 
 	template<c_byte_writer Writer, c_serializable T>
 	static FR_FORCE_INLINE constexpr
-	auto encode(Writer& writer, const T& obj) -> EncodeResult<Writer, T> {
+	auto encode(Writer& writer, const T& obj) -> EncodeResult<Writer> {
 		using enum SerializableCategory;
 		static constexpr auto serializability = get_serializability<T>();
-		if constexpr (serializability) {
-			if constexpr (serializability.category() == Primitive) {
-				return encode_primitive(writer, obj);
-			}
-			else if constexpr (serializability.category() == Custom) {
-			}
-			else if constexpr (serializability.category() == Described) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Enum) {
-				return encode_enum(writer, obj);
-			}
-			else if constexpr (serializability.category() == Optional) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == String) {
-				return encode_string(writer, obj);
-			}
-			else if constexpr (serializability.category() == Array) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Vector) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Map) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Set) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Variant) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Record) {
-				static_assert(false);
+		static_assert(serializability);
+		if constexpr (serializability.category() == Primitive) {
+			return encode_primitive(writer, obj);
+		}
+		else if constexpr (serializability.category() == Custom) {
+			auto archive = EncodingArchive<Writer>{writer};
+			if constexpr (requires { T::fr_custom_serialize(archive, obj); }) {
+				return T::fr_custom_serialize(archive, obj);
 			}
 			else {
-				static_assert(false);
+				return fr_custom_serialize(archive, obj);
 			}
+		}
+		else if constexpr (serializability.category() == Described) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Enum) {
+			return encode_enum(writer, obj);
+		}
+		else if constexpr (serializability.category() == Optional) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == String) {
+			return encode_string(writer, obj);
+		}
+		else if constexpr (serializability.category() == Array) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Vector) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Map) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Set) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Variant) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Record) {
+			static_assert(false);
 		}
 		else {
 			static_assert(false);
@@ -93,48 +102,54 @@ public:
 
 	template<c_byte_reader Reader, c_serializable T>
 	static FR_FORCE_INLINE constexpr
-	auto decode(Reader& reader, T& obj) -> DecodeResult<Reader, T> {
+	auto decode(Reader& reader, T& obj) -> DecodeResult<Reader> {
 		using enum SerializableCategory;
 		static constexpr auto serializability = get_serializability<T>();
-		if constexpr (serializability) {
-			if constexpr (serializability.category() == Primitive) {
-				return decode_primitive(reader, obj);
-			}
-			else if constexpr (serializability.category() == Custom) {
-			}
-			else if constexpr (serializability.category() == Described) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Enum) {
-				return decode_enum(reader, obj);
-			}
-			else if constexpr (serializability.category() == Optional) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == String) {
-				return decode_string(reader, obj);
-			}
-			else if constexpr (serializability.category() == Array) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Vector) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Map) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Set) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Variant) {
-				static_assert(false);
-			}
-			else if constexpr (serializability.category() == Record) {
-				static_assert(false);
+		static_assert(serializability);
+		if constexpr (serializability.category() == Primitive) {
+			return decode_primitive(reader, obj);
+		}
+		else if constexpr (serializability.category() == Custom) {
+			auto archive = DecodingArchive<Reader>{reader};
+			if constexpr (requires { T::fr_custom_serialize(archive, obj); }) {
+				return T::fr_custom_serialize(archive, obj);
 			}
 			else {
-				static_assert(false);
+				return fr_custom_serialize(archive, obj);
 			}
+		}
+		else if constexpr (serializability.category() == Described) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Enum) {
+			return decode_enum(reader, obj);
+		}
+		else if constexpr (serializability.category() == Optional) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == String) {
+			return decode_string(reader, obj);
+		}
+		else if constexpr (serializability.category() == Array) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Vector) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Map) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Set) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Variant) {
+			static_assert(false);
+		}
+		else if constexpr (serializability.category() == Record) {
+			static_assert(false);
+		}
+		else {
+			static_assert(false);
 		}
 	}
 
@@ -159,7 +174,7 @@ private:
 
 	template<class Writer, class T>
 	static constexpr
-	auto encode_primitive(Writer& writer, const T& obj) -> EncodeResult<Writer, T> {
+	auto encode_primitive(Writer& writer, const T& obj) -> EncodeResult<Writer> {
 		using Char = typename Writer::CharType;
 		if constexpr (std::is_arithmetic_v<T>) {
 			if consteval {
@@ -180,19 +195,19 @@ private:
 
 	template<class Reader, class T>
 	static constexpr
-	auto decode_primitive(Reader& reader, T& obj) -> DecodeResult<Reader, T> {
+	auto decode_primitive(Reader& reader, T& obj) -> DecodeResult<Reader> {
 		using Char = typename Reader::CharType;
 		if constexpr (std::is_arithmetic_v<T>) {
 			if consteval {
 				auto obj_bytes = SimpleArray<Char, sizeof(T)>{};
-				if constexpr (c_result<DecodeResult<Reader, T>>) {
+				if constexpr (c_result<DecodeResult<Reader>>) {
 					auto res = reader.read_exact(std::span<Char>(obj_bytes.data(), sizeof(T)));
 					if (!res)
 						return {from_error, std::move(res)};
 					obj = std::bit_cast<T>(obj_bytes);
 					return {in_place, sizeof(T)};
 				}
-				else if constexpr (std::is_same_v<DecodeResult<Reader, T>, size_t>) {
+				else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
 					reader.read_exact(std::span<Char>(obj_bytes.data(), sizeof(T)));
 					obj = std::bit_cast<T>(obj_bytes);
 					return sizeof(T);
@@ -202,19 +217,19 @@ private:
 				}
 			}
 			else {
-				if constexpr (c_result<DecodeResult<Reader, T>>) {
+				if constexpr (c_result<DecodeResult<Reader>>) {
 					auto res = reader.read_exact(std::span<Char>(reinterpret_cast<Char*>(&obj),
 						sizeof(T)));
 					if (!res)
 						return {from_error, std::move(res)};
 					return {in_place, sizeof(T)};
 				}
-				else if constexpr (std::is_same_v<DecodeResult<Reader, T>, size_t>) {
+				else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
 					reader.read_exact(std::span<Char>(reinterpret_cast<Char*>(&obj), sizeof(T)));
 					return sizeof(T);
 				}
 				else {
-					return sizeof(T);
+					static_assert(false);
 				}
 			}
 		}
@@ -228,13 +243,13 @@ private:
 
 	template<class Writer, class E>
 	static FR_FORCE_INLINE constexpr
-	auto encode_enum(Writer& writer, E obj) -> EncodeResult<Writer, E> {
+	auto encode_enum(Writer& writer, E obj) -> EncodeResult<Writer> {
 		return encode_primitive(writer, std::to_underlying(obj));
 	}
 
 	template<class Reader, class E>
 	static FR_FORCE_INLINE constexpr
-	auto decode_enum(Reader& reader, E& obj) -> DecodeResult<Reader, E> {
+	auto decode_enum(Reader& reader, E& obj) -> DecodeResult<Reader> {
 		std::underlying_type_t<E> value;
 		auto result = decode_primitive(reader, value);
 		obj = static_cast<E>(value);
@@ -246,7 +261,7 @@ private:
 
 	template<class Writer, class T>
 	static constexpr
-	auto encode_string(Writer& writer, const T& obj) -> EncodeResult<Writer, T> {
+	auto encode_string(Writer& writer, const T& obj) -> EncodeResult<Writer> {
 		auto size_res = encode_primitive(writer, static_cast<size_t>(obj.size()));
 		if (!size_res)
 			return size_res;
@@ -257,7 +272,7 @@ private:
 			auto data_res = writer.write(std::span<const WriterChar>(obj.data(), obj.size()));
 			if (!data_res)
 				return data_res;
-			return EncodeResult<Writer, T>{result_size(size_res) + result_size(data_res)};
+			return EncodeResult<Writer>{result_size(size_res) + result_size(data_res)};
 		}
 		else {
 			const auto bytes_size = sizeof(StringChar) * obj.size();
@@ -268,7 +283,7 @@ private:
 				delete[] bytes;
 				if (!data_res)
 					return data_res;
-				return EncodeResult<Writer, T>{result_size(size_res) + result_size(data_res)};
+				return EncodeResult<Writer>{result_size(size_res) + result_size(data_res)};
 			}
 			else {
 				auto data_res = writer.write(std::span<const WriterChar>(
@@ -277,14 +292,14 @@ private:
 				));
 				if (!data_res)
 					return data_res;
-				return EncodeResult<Writer, T>{result_size(size_res) + result_size(data_res)};
+				return EncodeResult<Writer>{result_size(size_res) + result_size(data_res)};
 			}
 		}
 	}
 
 	template<class Reader, class T>
 	static constexpr
-	auto decode_string(Reader& reader, T& obj) -> DecodeResult<Reader, T> {
+	auto decode_string(Reader& reader, T& obj) -> DecodeResult<Reader> {
 		size_t size_value;
 		auto size_res = decode_primitive(reader, size_value);
 		if (!size_res)
@@ -295,19 +310,13 @@ private:
 
 		const auto old_size = obj.size();
 		const auto bytes_size = sizeof(StringChar) * size_value;
-		if constexpr (c_result<DecodeResult<Reader, T>>) {
-			using ReadExactResult = typename DecodeResult<Reader, T>::template Rebind<void>;
-			union U {
-				constexpr
-				U() noexcept { }
-
-			public:
-				ReadExactResult v;
-			} data_res;
+		if constexpr (c_result<DecodeResult<Reader>>) {
+			using ReadExactResult = typename DecodeResult<Reader>::template Rebind<void>;
+			ObjectStorage<ReadExactResult> data_res;
 
 			if constexpr (std::is_same_v<ReaderChar, StringChar>) {
 				obj.resize_and_overwrite(size_value, [&](StringChar* data, size_t n) {
-					std::construct_at(std::addressof(data_res.v),
+					std::construct_at(data_res.ptr(),
 						reader.read_exact(std::span<ReaderChar>(data, n)));
 					return n;
 				});
@@ -316,9 +325,9 @@ private:
 				if consteval {
 					obj.resize_and_overwrite(size_value, [&](StringChar* data, size_t n) {
 						auto* bytes = new ReaderChar[bytes_size];
-						std::construct_at(std::addressof(data_res.v),
+						std::construct_at(data_res.ptr(),
 							reader.read_exact(std::span<ReaderChar>(bytes, bytes_size)));
-						if (data_res.v)
+						if (data_res.value)
 							read_str_from_bytes(data, n, bytes);
 						delete[] bytes;
 						return n;
@@ -326,7 +335,7 @@ private:
 				}
 				else {
 					obj.resize_and_overwrite(size_value, [&](StringChar* data, size_t n) {
-						std::construct_at(std::addressof(data_res.v),
+						std::construct_at(data_res.ptr(),
 							reader.read_exact(std::span<ReaderChar>(
 								reinterpret_cast<ReaderChar*>(data), bytes_size)));
 						return n;
@@ -334,13 +343,13 @@ private:
 				}
 			}
 
-			if (!data_res.v) {
+			if (!data_res.value) {
 				obj.resize(old_size);
-				return {from_error, std::move(data_res).v};
+				return {from_error, std::move(data_res).value};
 			}
 			return {in_place, result_size(size_res) + bytes_size};
 		}
-		else if constexpr (std::is_same_v<DecodeResult<Reader, T>, size_t>) {
+		else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
 			// Same thing, except read_exact returns void
 			if constexpr (std::is_same_v<ReaderChar, StringChar>) {
 				obj.resize_and_overwrite(size_value, [&](StringChar* data, size_t n) {
@@ -373,6 +382,86 @@ private:
 			static_assert(false);
 		}
 	}
+};
+
+template<c_byte_writer Writer>
+class SbsDataFormat::EncodingArchive {
+public:
+	static constexpr auto is_encoding = true;
+	static constexpr auto is_decoding = false;
+
+	explicit FR_FORCE_INLINE constexpr
+	EncodingArchive(Writer& writer) noexcept: _writer(std::addressof(writer)) { }
+
+	template<c_serializable... Args>
+	requires (sizeof...(Args) > 0zu)
+	FR_FORCE_INLINE constexpr
+	auto operator()(const Args&... args) -> EncodeResult<Writer> {
+		if constexpr (c_result<EncodeResult<Writer>>) {
+			auto ret = EncodeResult<Writer>{0zu};
+			(..., [&](const auto& arg) {
+				if (!ret)
+					return;
+				auto res = SbsDataFormat::encode(*_writer, arg);
+				if (res)
+					*ret += *res;
+				else
+					ret = std::move(res);
+			}(args));
+			return ret;
+		}
+		else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
+			auto sum = 0zu;
+			(..., (sum += SbsDataFormat::encode(*_writer, args)));
+			return sum;
+		}
+		else {
+			static_assert(false);
+		}
+	}
+
+private:
+	Writer* _writer;
+};
+
+template<c_byte_reader Reader>
+class SbsDataFormat::DecodingArchive {
+public:
+	static constexpr auto is_encoding = false;
+	static constexpr auto is_decoding = true;
+
+	explicit FR_FORCE_INLINE constexpr
+	DecodingArchive(Reader& reader) noexcept: _reader(std::addressof(reader)) { }
+
+	template<class... Args>
+	FR_FORCE_INLINE constexpr
+	auto operator()(Args&&... args) -> DecodeResult<Reader> {
+		if constexpr (c_result<DecodeResult<Reader>>) {
+			auto ret = DecodeResult<Reader>{0zu};
+			(..., [&](auto& arg) {
+				if (!ret)
+					return;
+				auto res = SbsDataFormat::decode(*_reader, arg);
+				if (res)
+					*ret += *res;
+				else
+					ret = std::move(res);
+			}(args));
+			return ret;
+		}
+		else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
+			auto sum = 0zu;
+			(..., (sum += SbsDataFormat::decode(*_reader, args)));
+			return sum;
+		}
+		else {
+			static_assert(false);
+		}
+		(..., SbsDataFormat::decode(*_reader, args));
+	}
+
+private:
+	Reader* _reader;
 };
 
 } // namespace fr

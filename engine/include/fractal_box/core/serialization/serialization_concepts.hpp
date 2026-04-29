@@ -11,17 +11,17 @@ namespace fr {
 
 namespace detail {
 
-struct DummyWriteArchive {
-	static constexpr auto is_write = true;
-	static constexpr auto is_read = false;
+struct DummyEncodingArchive {
+	static constexpr auto is_encoding = true;
+	static constexpr auto is_decoding = false;
 
 	constexpr
 	auto operator()(const auto&...) noexcept { }
 };
 
-struct DummyReadArchive {
-	static constexpr auto is_write = false;
-	static constexpr auto is_read = true;
+struct DummyDecodingArchive {
+	static constexpr auto is_encoding = false;
+	static constexpr auto is_decoding = true;
 
 	constexpr
 	auto operator()(auto&...) noexcept { }
@@ -53,13 +53,13 @@ template<class T>
 concept c_has_custom_serialize = requires(
 	const T& const_obj,
 	T& mut_obj,
-	detail::DummyWriteArchive& write_archive,
-	detail::DummyReadArchive& read_archive
+	detail::DummyEncodingArchive& enc_archive,
+	detail::DummyDecodingArchive& dec_archive
 ) {
-	requires requires { { fr_custom_serialize(write_archive, const_obj) } -> c_void_or_result; }
-		|| requires { { T::fr_custom_serialize(write_archive, const_obj) } -> c_void_or_result; };
-	requires requires { { fr_custom_serialize(read_archive, mut_obj) } -> c_void_or_result; }
-		|| requires { { T::fr_custom_serialize(read_archive, mut_obj) } -> c_void_or_result; };
+	requires requires { { fr_custom_serialize(enc_archive, const_obj) } -> c_void_or_result; }
+		|| requires { { T::fr_custom_serialize(enc_archive, const_obj) } -> c_void_or_result; };
+	requires requires { { fr_custom_serialize(dec_archive, mut_obj) } -> c_void_or_result; }
+		|| requires { { T::fr_custom_serialize(dec_archive, mut_obj) } -> c_void_or_result; };
 };
 
 template<class T, class DataFormat>

@@ -57,7 +57,7 @@ concept c_reader
 template<class T>
 concept c_byte_reader = c_reader<T> && c_byte_like<typename T::CharType>;
 
-struct Eof { };
+struct BufferOverrun { };
 
 } // namespace fr
 #endif

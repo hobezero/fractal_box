@@ -11,10 +11,12 @@
 namespace {
 
 struct CustomFriend {
+	auto operator<=>(const CustomFriend&) const -> bool = default;
+
 	template<class Ar>
 	friend constexpr
-	void fr_custom_serialize(Ar& archive, fr::AddConstIf<CustomFriend, Ar::is_write>& self) {
-		archive(self.x, self.y);
+	auto fr_custom_serialize(Ar& archive, fr::AddConstIf<CustomFriend, Ar::is_encoding>& self) {
+		return archive(self.x, self.y);
 	}
 
 public:
@@ -23,9 +25,11 @@ public:
 };
 
 struct CustomStatic {
+	auto operator<=>(const CustomStatic&) const -> bool = default;
+
 	static constexpr
-	void fr_custom_serialize(auto& archive, auto& self) {
-		archive(self.x, self.y);
+	auto fr_custom_serialize(auto& archive, auto& self) {
+		return archive(self.x, self.y);
 	}
 
 public:
@@ -105,7 +109,7 @@ TEST_CASE("SbsDataFormat.primitives", "[u][engine][core][serialization]") {
 
 			auto res2 = fr::SbsDataFormat::encode(writer, in_value2);
 			FRT_CHECK(!res2);
-			FRT_CHECK(res2.has_error<fr::Eof>());
+			FRT_CHECK(res2.has_error<fr::BufferOverrun>());
 
 			return true;
 		};
@@ -122,7 +126,7 @@ TEST_CASE("SbsDataFormat.primitives", "[u][engine][core][serialization]") {
 
 			auto res = fr::SbsDataFormat::decode(reader, out_value);
 			FRT_CHECK(!res);
-			FRT_CHECK(res.has_error<fr::Eof>());
+			FRT_CHECK(res.has_error<fr::BufferOverrun>());
 
 			return true;
 		};
@@ -201,7 +205,7 @@ static constexpr auto test_sbs_strings = []<class C> {
 
 			auto res = fr::SbsDataFormat::encode(writer, in_value);
 			FRT_CHECK(!res);
-			FRT_CHECK(res.template has_error<fr::Eof>());
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
 
 			return true;
 		};
@@ -223,12 +227,12 @@ static constexpr auto test_sbs_strings = []<class C> {
 			auto reader1 = fr::SpanReader{std::span<std::byte>(buf.data(), buf.data() + 3)};
 			auto res1 = fr::SbsDataFormat::decode(reader1, out_value);
 			FRT_CHECK(!res1);
-			FRT_CHECK(res1.template has_error<fr::Eof>());
+			FRT_CHECK(res1.template has_error<fr::BufferOverrun>());
 
 			auto reader2 = fr::SpanReader{std::span<std::byte>(buf.data(), buf.data() + 10)};
 			auto res2 = fr::SbsDataFormat::decode(reader2, out_value);
 			FRT_CHECK(!res2);
-			FRT_CHECK(res2.template has_error<fr::Eof>());
+			FRT_CHECK(res2.template has_error<fr::BufferOverrun>());
 
 			return true;
 		};
@@ -237,6 +241,82 @@ static constexpr auto test_sbs_strings = []<class C> {
 		STATIC_CHECK(do_test());
 	}
 };
+
+static constexpr auto test_custom = []<class T> {
+	SECTION("serializing into a vector") {
+		constexpr auto do_test = [] {
+			auto in_value = T{55, "abcdef"};
+			static constexpr auto value_size = sizeof(int) + sizeof(size_t) + 6zu;
+
+			auto buf = std::vector<unsigned char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
+
+			auto out_value = T{};
+			auto reader = fr::SpanReader{buf};
+
+			auto res = fr::SbsDataFormat::decode(reader, out_value);
+			FRT_REQUIRE(res);
+			FRT_CHECK(*res == value_size);
+			FRT_CHECK(out_value == in_value);
+
+			return true;
+		};
+
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+	SECTION("serialializing into an array which is too small") {
+		constexpr auto do_test = [] {
+			auto in_value = T{55, "abcdef"};
+			static constexpr auto value_size = sizeof(int) + sizeof(size_t) + 6zu;
+
+			auto buf = std::array<std::byte, value_size - 2>{};
+			auto writer = fr::SpanWriter{buf};
+
+			auto res = fr::SbsDataFormat::encode(writer, in_value);
+			FRT_CHECK(!res);
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+	SECTION("deserializing from a span which is oo small") {
+		constexpr auto do_test = [] {
+			auto in_value = T{55, "abcdef"};
+			static constexpr auto value_size = sizeof(int) + sizeof(size_t) + 6zu;
+
+			auto buf = std::vector<char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_REQUIRE(fr::SbsDataFormat::encode(writer, in_value));
+
+			auto out_value = T{};
+
+			auto reader1 = fr::SpanReader{std::span<char>(buf.data(), buf.data() + 3)};
+			auto res1 = fr::SbsDataFormat::decode(reader1, out_value);
+			FRT_CHECK(!res1);
+			FRT_CHECK(res1.template has_error<fr::BufferOverrun>());
+
+			auto reader2 = fr::SpanReader{std::span<char>(buf.data(), buf.data() + value_size - 2)};
+			auto res2 = fr::SbsDataFormat::decode(reader2, out_value);
+			FRT_CHECK(!res2);
+			FRT_CHECK(res2.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+};
+
+TEST_CASE("SbsDataFormat.custom", "[u][engine][core][serialization]") {
+	frt::named_typed_section<CustomFriend>("through friend function", test_custom);
+	frt::named_typed_section<CustomStatic>("through static memer function", test_custom);
+}
 
 TEST_CASE("SbsDataFormat.strings", "[u][engine][core][serialization]") {
 	frt::named_typed_section<char>("std::string", test_sbs_strings);
