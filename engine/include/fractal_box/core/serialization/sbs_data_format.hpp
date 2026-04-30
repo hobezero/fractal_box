@@ -81,7 +81,7 @@ public:
 			static_assert(false);
 		}
 		else if constexpr (serializability.category() == Vector) {
-			static_assert(false);
+			return encode_vector(writer, obj);
 		}
 		else if constexpr (serializability.category() == Map) {
 			static_assert(false);
@@ -134,7 +134,7 @@ public:
 			static_assert(false);
 		}
 		else if constexpr (serializability.category() == Vector) {
-			static_assert(false);
+			return decode_vector(reader, obj);
 		}
 		else if constexpr (serializability.category() == Map) {
 			static_assert(false);
@@ -157,12 +157,28 @@ private:
 	template<class T>
 	static FR_FORCE_INLINE constexpr
 	auto result_size(const T& result) noexcept -> size_t {
-		if constexpr (std::is_same_v<T, size_t>) {
+		if constexpr (is_result_of<T, size_t>) {
+			if (!result)
+				return 0zu;
+			return result.value();
+		}
+		else if constexpr (std::is_same_v<T, size_t>) {
 			return result;
 		}
-		else if constexpr (is_result_of<T, size_t>) {
-			FR_ASSERT_AUDIT(result);
-			return result.value();
+		else {
+			static_assert(false);
+		}
+	}
+
+	template<class T>
+	static FR_FORCE_INLINE constexpr
+	void set_result_size(T& result, size_t new_size) noexcept {
+		if constexpr (is_result_of<T, size_t>) {
+			if (result)
+				result.value() = new_size;
+		}
+		else if constexpr (std::is_same_v<T, size_t>) {
+			result = new_size;
 		}
 		else {
 			static_assert(false);
@@ -270,9 +286,8 @@ private:
 		using StringChar = typename T::value_type;
 		if constexpr (std::is_same_v<WriterChar, StringChar>) {
 			auto data_res = writer.write(std::span<const WriterChar>(obj.data(), obj.size()));
-			if (!data_res)
-				return data_res;
-			return EncodeResult<Writer>{result_size(size_res) + result_size(data_res)};
+			set_result_size(data_res, result_size(size_res) + result_size(data_res));
+			return data_res;
 		}
 		else {
 			const auto bytes_size = sizeof(StringChar) * obj.size();
@@ -281,18 +296,16 @@ private:
 				write_str_as_bytes(bytes, obj.data(), obj.size());
 				auto data_res = writer.write(std::span<const WriterChar>(bytes, bytes_size));
 				delete[] bytes;
-				if (!data_res)
-					return data_res;
-				return EncodeResult<Writer>{result_size(size_res) + result_size(data_res)};
+				set_result_size(data_res, result_size(size_res) + result_size(data_res));
+				return data_res;
 			}
 			else {
 				auto data_res = writer.write(std::span<const WriterChar>(
 					reinterpret_cast<const WriterChar*>(obj.data()),
 					bytes_size
 				));
-				if (!data_res)
-					return data_res;
-				return EncodeResult<Writer>{result_size(size_res) + result_size(data_res)};
+				set_result_size(data_res, result_size(size_res) + result_size(data_res));
+				return data_res;
 			}
 		}
 	}
@@ -382,6 +395,66 @@ private:
 			static_assert(false);
 		}
 	}
+
+	template<class Writer, class T>
+	static constexpr
+	auto encode_vector(Writer& writer, const T& obj) -> EncodeResult<Writer> {
+		// TODO: Do not cast to size_t, use native type
+		auto ret = encode_primitive(writer, static_cast<size_t>(obj.size()));
+		if constexpr (c_result<EncodeResult<Writer>>) {
+			if (!ret)
+				return ret;
+			for (const auto& v : obj) {
+				auto res = SbsDataFormat::encode(writer, v);
+				if (res)
+					*ret += *res;
+				else {
+					ret = std::move(res);
+					break;
+				}
+			}
+		}
+		else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
+			for (const auto& v : obj) {
+				ret += SbsDataFormat::encode(writer, v);
+			}
+		}
+		else {
+			static_assert(false);
+		}
+		return ret;
+	}
+
+	template<class Reader, class T>
+	static constexpr
+	auto decode_vector(Reader& reader, T& obj) -> DecodeResult<Reader> {
+		size_t size_value;
+		auto ret = decode_primitive(reader, size_value);
+
+		if constexpr (c_result<DecodeResult<Reader>>) {
+			if (!ret)
+				return ret;
+			obj.reserve(static_cast<typename T::size_type>(size_value));
+			for (auto i = 0zu; i < size_value; ++i) {
+				auto& v = obj.emplace_back();
+				auto res = SbsDataFormat::decode(reader, v);
+				if (!res)
+					return res;
+				*ret += *res;
+			}
+		}
+		else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
+			obj.reserve(static_cast<typename T::size_type>(size_value));
+			for (auto i = 0zu; i < size_value; ++i) {
+				auto& v = obj.emplace_back();
+				ret += SbsDataFormat::decode(reader, v);
+			}
+		}
+		else {
+			static_assert(false);
+		}
+		return ret;
+	}
 };
 
 template<c_byte_writer Writer>
@@ -399,14 +472,16 @@ public:
 	auto operator()(const Args&... args) -> EncodeResult<Writer> {
 		if constexpr (c_result<EncodeResult<Writer>>) {
 			auto ret = EncodeResult<Writer>{0zu};
-			(..., [&](const auto& arg) {
-				if (!ret)
-					return;
+			(... && [&](const auto& arg) {
 				auto res = SbsDataFormat::encode(*_writer, arg);
-				if (res)
+				if (res) {
 					*ret += *res;
-				else
+					return true;
+				}
+				else {
 					ret = std::move(res);
+					return false;
+				}
 			}(args));
 			return ret;
 		}
@@ -438,14 +513,16 @@ public:
 	auto operator()(Args&&... args) -> DecodeResult<Reader> {
 		if constexpr (c_result<DecodeResult<Reader>>) {
 			auto ret = DecodeResult<Reader>{0zu};
-			(..., [&](auto& arg) {
-				if (!ret)
-					return;
+			(... && [&](auto& arg) {
 				auto res = SbsDataFormat::decode(*_reader, arg);
-				if (res)
+				if (res) {
 					*ret += *res;
-				else
+					return true;
+				}
+				else {
 					ret = std::move(res);
+					return false;
+				}
 			}(args));
 			return ret;
 		}
