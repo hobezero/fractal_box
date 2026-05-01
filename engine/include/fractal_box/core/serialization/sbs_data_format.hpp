@@ -72,7 +72,7 @@ public:
 			return encode_enum(writer, obj);
 		}
 		else if constexpr (serializability.category() == Optional) {
-			static_assert(false);
+			return encode_optional(writer, obj);
 		}
 		else if constexpr (serializability.category() == String) {
 			return encode_string(writer, obj);
@@ -125,7 +125,7 @@ public:
 			return decode_enum(reader, obj);
 		}
 		else if constexpr (serializability.category() == Optional) {
-			static_assert(false);
+			return decode_optional(reader, obj);
 		}
 		else if constexpr (serializability.category() == String) {
 			return decode_string(reader, obj);
@@ -272,6 +272,69 @@ private:
 		return result;
 	}
 
+	template<class Writer, class T>
+	static constexpr
+	auto encode_optional(Writer& writer, const T& obj) -> EncodeResult<Writer> {
+		auto has_value = bool{obj.has_value()};
+		auto ret = encode_primitive(writer, has_value);
+
+		if constexpr (c_result<EncodeResult<Writer>>) {
+			if (!ret)
+				return ret;
+			if (has_value) {
+				auto res = SbsDataFormat::encode(writer, *obj);
+				if (res)
+					*ret += *res;
+				else
+					return res;
+			}
+		}
+		else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>){
+			if (has_value)
+				ret += SbsDataFormat::encode(writer, *obj);
+		}
+		else {
+			static_assert(false);
+		}
+		return ret;
+	}
+
+	template<class Reader, class T>
+	static constexpr
+	auto decode_optional(Reader& reader, T& obj) -> DecodeResult<Reader> {
+		bool has_value;
+		auto ret = decode_primitive(reader, has_value);
+		if constexpr (c_result<DecodeResult<Reader>>) {
+			if (!ret)
+				return ret;
+			if (has_value) {
+				if (!obj.has_value())
+					obj.emplace();
+				auto res = SbsDataFormat::decode(reader, *obj);
+				if (!res)
+					return res;
+				*ret += *res;
+			}
+			else if (obj.has_value()) {
+				obj.reset();
+			}
+		}
+		else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
+			if (has_value) {
+				if (!obj.has_value())
+					obj.emplace();
+				ret += SbsDataFormat::decode(reader, *obj);
+			}
+			else if (obj.has_value()) {
+				obj.reset();
+			}
+		}
+		else {
+			static_assert(false);
+		}
+		return ret;
+	}
+
 	// Strings
 	// ^^^^^^^
 
@@ -406,8 +469,9 @@ private:
 				return ret;
 			for (const auto& v : obj) {
 				auto res = SbsDataFormat::encode(writer, v);
-				if (res)
+				if (res ) {
 					*ret += *res;
+				}
 				else {
 					ret = std::move(res);
 					break;
