@@ -1,6 +1,8 @@
 #include "fractal_box/core/serialization/sbs_data_format.hpp"
 #include "fractal_box/core/serialization/serialization_concepts.hpp"
 
+#include <algorithm>
+
 #include <catch2/catch_test_macros.hpp>
 
 #include "fractal_box/core/io/span_io.hpp"
@@ -583,6 +585,92 @@ TEST_CASE("SbsDataFormat.strings", "[u][engine][core][serialization]") {
 	frt::named_typed_section<char>("std::string", test_sbs_strings);
 	frt::named_typed_section<char16_t>("std::u16string", test_sbs_strings);
 	frt::named_typed_section<char32_t>("std::u32string", test_sbs_strings);
+}
+
+TEST_CASE("SbsDataFormat.arrays", "[u][engine][core][serialization]") {
+	SECTION("serializing into a vector") {
+		constexpr auto do_test = [] {
+			const auto in_value1 = std::array<int, 3>{11, 22, 33};
+			const auto in_value2 = std::array<int, 0>{};
+			const int in_value3[3] = {11, 22, 33};
+
+			static constexpr auto value1_size = sizeof(int) * std::size(in_value1);
+			static constexpr auto value2_size = sizeof(int) * std::size(in_value2);
+			static constexpr auto value3_size = sizeof(int) * std::size(in_value3);
+
+			auto buf = std::vector<unsigned char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value1) == value1_size);
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value2) == value2_size);
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value3) == value3_size);
+
+			auto out_value1 = std::array<int, 3>{};
+			auto out_value2 = std::array<int, 0>{};
+			int out_value3[3] = {};
+
+			auto reader = fr::SpanReader{buf};
+
+			auto res1 = fr::SbsDataFormat::decode(reader, out_value1);
+			FRT_REQUIRE(res1);
+			FRT_CHECK(*res1 == value1_size);
+			FRT_CHECK(out_value1 == in_value1);
+
+			auto res2 = fr::SbsDataFormat::decode(reader, out_value2);
+			FRT_REQUIRE(res2);
+			FRT_CHECK(*res2 == value2_size);
+			FRT_CHECK(out_value2 == in_value2);
+
+			auto res3 = fr::SbsDataFormat::decode(reader, out_value3);
+			FRT_REQUIRE(res3);
+			FRT_CHECK(*res3 == value3_size);
+			FRT_CHECK(std::ranges::equal(out_value3, in_value3));
+
+			return true;
+		};
+
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+	SECTION("serialializing into an array which is too small") {
+		constexpr auto do_test = [] {
+			auto in_value = std::array<int, 3>{11, 22, 33};
+			static constexpr auto value_size = sizeof(int) * std::size(in_value);
+
+			auto buf = std::array<std::byte, value_size - 3>{};
+			auto writer = fr::SpanWriter{buf};
+
+			auto res = fr::SbsDataFormat::encode(writer, in_value);
+			FRT_CHECK(!res);
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+	SECTION("deserializing from a span which is too small") {
+		constexpr auto do_test = [] {
+			auto in_value = std::array<int, 3>{11, 22, 33};
+			static constexpr auto value_size = sizeof(int) * std::size(in_value);
+
+			auto buf = std::vector<char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_REQUIRE(fr::SbsDataFormat::encode(writer, in_value));
+
+			auto out_value = std::array<int, 3>{};
+
+			auto reader = fr::SpanReader{std::span<char>(buf.data(), buf.data() + value_size - 3)};
+			auto res = fr::SbsDataFormat::decode(reader, out_value);
+			FRT_CHECK(!res);
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		STATIC_CHECK(do_test());
+	}
 }
 
 TEST_CASE("SbsDataFormat.vectors", "[u][engine][core][serialization]") {

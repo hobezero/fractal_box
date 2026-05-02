@@ -120,7 +120,7 @@ public:
 			return encode_string(writer, obj);
 		}
 		else if constexpr (serializability.category() == Array) {
-			static_assert(false);
+			return encode_array(writer, obj);
 		}
 		else if constexpr (serializability.category() == Vector) {
 			return encode_vector(writer, obj);
@@ -173,7 +173,7 @@ public:
 			return decode_string(reader, obj);
 		}
 		else if constexpr (serializability.category() == Array) {
-			static_assert(false);
+			return decode_array(reader, obj);
 		}
 		else if constexpr (serializability.category() == Vector) {
 			return decode_vector(reader, obj);
@@ -496,6 +496,73 @@ private:
 			}
 
 			return result_size(size_res) + bytes_size;
+		}
+		else {
+			static_assert(false);
+		}
+	}
+
+	template<class Writer, class T>
+	static constexpr
+	auto encode_array(Writer& writer, const T& obj) -> EncodeResult<Writer> {
+		if constexpr (std::size(obj) == 0zu) {
+			// std::array can have zero size
+			return 0zu;
+		}
+		else if constexpr (c_result<EncodeResult<Writer>>) {
+			auto ret = SbsDataFormat::encode(writer, obj[0zu]);
+			if (!ret)
+				return ret;
+			for (auto i = 1zu; i < std::size(obj); ++i) {
+				auto res = SbsDataFormat::encode(writer, obj[i]);
+				if (res ) {
+					*ret += *res;
+				}
+				else {
+					ret = std::move(res);
+					break;
+				}
+			}
+			return ret;
+		}
+		else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
+			auto ret = 0zu;
+			for (const auto& v : obj) {
+				ret += SbsDataFormat::encode(writer, v);
+			}
+			return ret;
+		}
+		else {
+			static_assert(false);
+		}
+	}
+
+	template<class Reader, class T>
+	static constexpr
+	auto decode_array(Reader& reader, T& obj) -> DecodeResult<Reader> {
+		static constexpr auto size = std::size(obj);
+		if constexpr (size == 0zu) {
+			// std::array can have zero size
+			return 0zu;
+		}
+		else if constexpr (c_result<DecodeResult<Reader>>) {
+			auto ret = SbsDataFormat::decode(reader, obj[0zu]);
+			if (!ret)
+				return ret;
+			for (auto i = 1zu; i < size; ++i) {
+				auto res = SbsDataFormat::decode(reader, obj[i]);
+				if (!res)
+					return res;
+				*ret += *res;
+			}
+			return ret;
+		}
+		else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
+			auto ret = 0zu;
+			for (auto& v : obj) {
+				ret += SbsDataFormat::decode(reader, v);
+			}
+			return ret;
 		}
 		else {
 			static_assert(false);
