@@ -518,14 +518,14 @@ TEST_CASE("SbsDataFormat.vectors", "[u][engine][core][serialization]") {
 TEST_CASE("SbsDataFormat.variantts", "[u][engine][core][serialization]") {
 	SECTION("serializing into a vector") {
 		constexpr auto do_test = [] {
-			const auto in_value1 = std::variant<int64_t, CustomFriend>{67};
-			const auto in_value2 = std::variant<int64_t, CustomFriend>{
-				std::in_place_type<CustomFriend>, 15, "abc"};
+			using Var = std::variant<int64_t, CustomFriend>;
+			using Index = fr::SbsDataFormat::VariantIndexType<Var>;
+			const auto in_value1 = Var{67};
+			const auto in_value2 = Var{std::in_place_type<CustomFriend>, 15, "abc"};
 
-			static constexpr auto value1_size = sizeof(fr::SbsDataFormat::VariantIndexType)
+			static constexpr auto value1_size = sizeof(Index)
 				+ sizeof(int64_t);
-			static constexpr auto value2_size = sizeof(fr::SbsDataFormat::VariantIndexType)
-				+ sizeof(int) + sizeof(size_t) + 3;
+			static constexpr auto value2_size = sizeof(Index) + sizeof(int) + sizeof(size_t) + 3;
 
 			auto buf = std::vector<unsigned char>{};
 			auto writer = fr::VectorWriter{buf};
@@ -556,11 +556,12 @@ TEST_CASE("SbsDataFormat.variantts", "[u][engine][core][serialization]") {
 
 		// C++23 bans excepion throwing in constexpr context, run these checks only at runtime
 		SECTION("valueless") {
-			const auto in_value
-				= fr::make_valueless_variant<std::variant<int64_t, CustomFriend>>();
+			using Var = std::variant<int64_t, CustomFriend>;
+			using Index = fr::SbsDataFormat::VariantIndexType<Var>;
+			const auto in_value = fr::make_valueless_variant<Var>();
 			FRT_REQUIRE(in_value.valueless_by_exception());
 
-			static constexpr auto value_size = sizeof(fr::SbsDataFormat::VariantIndexType);
+			static constexpr auto value_size = sizeof(Index);
 
 			auto buf = std::vector<unsigned char>{};
 			auto writer = fr::VectorWriter{buf};
@@ -586,8 +587,10 @@ TEST_CASE("SbsDataFormat.variantts", "[u][engine][core][serialization]") {
 	}
 	SECTION("serialializing into an array which is too small") {
 		constexpr auto do_test = [] {
+			using Var = std::variant<int64_t, CustomFriend>;
+			using Index = fr::SbsDataFormat::VariantIndexType<Var>;
 			const auto in_value = std::variant<int64_t, CustomFriend>{5};
-			static constexpr auto value_size = sizeof(fr::SbsDataFormat::VariantIndexType);
+			static constexpr auto value_size = sizeof(Index) + sizeof(int64_t);
 
 			auto buf = std::array<std::byte, value_size - 2>{};
 			auto writer = fr::SpanWriter{buf};

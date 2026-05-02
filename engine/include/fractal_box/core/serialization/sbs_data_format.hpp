@@ -52,6 +52,27 @@ private:
 		return mp_type<ReadResult>;
 	}
 
+	template<std::unsigned_integral T>
+	static constexpr auto max_value = static_cast<T>(-1);
+
+	template<size_t NumAlternatives>
+	static consteval
+	auto calc_variant_index_type() noexcept {
+		// Reserve the max value as a valueless indicator
+		if constexpr (NumAlternatives < static_cast<size_t>(max_value<uint8_t>)) {
+			return uint8_t{};
+		}
+		else if constexpr (NumAlternatives < static_cast<size_t>(max_value<uint16_t>)) {
+			return uint16_t{};
+		}
+		else if constexpr (NumAlternatives < static_cast<size_t>(max_value<uint32_t>)) {
+			return uint32_t{};
+		}
+		else {
+			// I don't think any compiler can handle a template with 4.2 billion types
+			return uint64_t{};
+		}
+	}
 public:
 	template<c_byte_writer Writer>
 	class EncodingArchive;
@@ -65,7 +86,8 @@ public:
 	template<c_byte_reader Reader>
 	using DecodeResult = typename decltype(calc_decode_result_type<Reader>())::Type;
 
-	using VariantIndexType = uint32_t;
+	template<class Variant>
+	using VariantIndexType = decltype(calc_variant_index_type<mp_size<Variant>>());
 
 	template<c_byte_writer Writer, c_serializable T>
 	static FR_FORCE_INLINE constexpr
@@ -545,15 +567,16 @@ private:
 	static constexpr
 	auto encode_variant(Writer& writer, const T& obj) -> EncodeResult<Writer> {
 		// TODO: Don't encode index if there is only one possible alternative
+		using Index = VariantIndexType<T>;
 		auto index_value = obj.valueless_by_exception()
-			? npos_for<VariantIndexType>
-			: static_cast<VariantIndexType>(obj.index());
+			? npos_for<Index>
+			: static_cast<Index>(obj.index());
 		auto ret = encode_primitive(writer, index_value);
 
 		if constexpr (c_result<EncodeResult<Writer>>) {
 			if (!ret)
 				return ret;
-			if (index_value != npos_for<VariantIndexType>) {
+			if (index_value != npos_for<Index>) {
 				std::visit([&](const auto& var) {
 					auto res = SbsDataFormat::encode(writer, var);
 					if (res)
@@ -564,7 +587,7 @@ private:
 			}
 		}
 		else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
-			if (index_value != npos_for<VariantIndexType>) {
+			if (index_value != npos_for<Index>) {
 				std::visit([&](const auto& var) {
 					ret += SbsDataFormat::encode(writer, var);
 				}, obj);
@@ -579,14 +602,15 @@ private:
 	template<class Reader, class T>
 	static constexpr
 	auto decode_variant(Reader& reader, T& obj) -> DecodeResult<Reader> {
-		VariantIndexType index_value;
+		using Index = VariantIndexType<T>;
+		Index index_value;
 		auto ret = decode_primitive(reader, index_value);
 		if constexpr (c_result<DecodeResult<Reader>>) {
 			 if (!ret)
 				return ret;
 		}
 
-		if (index_value == npos_for<VariantIndexType>) {
+		if (index_value == npos_for<Index>) {
 			// There is no direct API to put variant into the valueless state. The workaround
 			// is to throw an exception when variant attempts to access some dummy object
 			// during emplacement
