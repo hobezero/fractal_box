@@ -5,7 +5,7 @@
 #include <ranges>
 
 #include "fractal_box/core/concepts.hpp"
-#include "fractal_box/core/meta/meta_basics.hpp"
+#include "fractal_box/core/meta/meta.hpp"
 
 namespace fr {
 
@@ -45,7 +45,7 @@ concept c_container
 	&& std::swappable<C>
 	// Don't detect view-like types (e.g. `std::span`)
 	&& !std::ranges::borrowed_range<C>
-	&& requires(C mut_container, const C const_container) {
+	&& requires(C& mut_container, const C& const_container) {
 		// Member types
 		// ^^^^^^^^^^^^
 
@@ -101,7 +101,7 @@ concept c_contiguous_container = c_random_access_container<C> && std::ranges::co
 template<class C>
 concept c_std_array_like
 	= c_constexpr_sized_container<C>
-	&& requires(C container) {
+	&& requires(C& container) {
 		{ container.data() } -> std::same_as<typename C::pointer>;
 		// Check that all elements are stored in-place, or size is zero
 		requires (constexpr_size<C> == sizeof(C) / sizeof(typename C::value_type))
@@ -117,13 +117,13 @@ concept c_list_like
 	= c_sized_container<C>
 	&& std::ranges::bidirectional_range<C>
 	&& !std::ranges::random_access_range<C>
-	&& requires(C container, typename C::value_type v) {
+	&& requires(C& container, typename C::value_type v) {
 		container.push_back(v);
 		container.push_front(v);
 		container.pop_back();
 		container.pop_front();
 	}
-	&& !requires(C container, typename C::size_type i) {
+	&& !requires(C& container, typename C::size_type i) {
 		container[i];
 		container.at(i);
 	};
@@ -134,8 +134,8 @@ concept c_vector_like
 	&& std::ranges::random_access_range<C>
 	&& std::ranges::contiguous_range<C>
 	&& requires(
-		C mut_container,
-		const C const_container,
+		C& mut_container,
+		const C& const_container,
 		typename C::value_type v,
 		typename C::size_type i
 	) {
@@ -166,8 +166,8 @@ concept c_string_like
 	&& c_default_constructible<C>
 	&& c_nothrow_movable<C>
 	&& std::copyable<C>
-	&& requires(C mut_container,
-		const C const_container,
+	&& requires(C& mut_container,
+		const C& const_container,
 		typename C::size_type n,
 		typename C::value_type ch
 	) {
@@ -216,7 +216,7 @@ concept c_span_like
 	// NOTE: Const-c_std_array_like extent spans aren't default-constructible
 	&& c_nothrow_movable<S>
 	&& c_nothrow_copyable<S>
-	&& requires(S mut_span, const S const_span) {
+	&& requires(S& mut_span, const S& const_span) {
 		// Member types (similar to `c_container` but with `element_type`)
 		// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
@@ -271,8 +271,8 @@ concept c_string_view_like
 	&& c_nothrow_movable<S>
 	&& c_nothrow_copyable<S>
 	&& requires(
-		S mut_sview,
-		const S const_sview,
+		S& mut_sview,
+		const S& const_sview,
 		typename S::size_type n
 	) {
 		// Member types
@@ -320,7 +320,7 @@ concept c_string_view_like
 template<class O>
 concept c_optional_like
 	= std::default_initializable<O>
-	&& requires(O mut_opt, const O const_opt, typename O::value_type v) {
+	&& requires(O& mut_opt, const O& const_opt, typename O::value_type v) {
 		// Member types
 		// ^^^^^^^^^^^^
 		typename O::value_type;
@@ -345,6 +345,15 @@ concept c_optional_like
 		{ mut_opt.reset() } -> std::same_as<void>;
 	};
 
+template<class V>
+concept c_variant_like = requires(V& mut_var, const V& const_var) {
+	{ const_var.index() } -> std::integral;
+	{ const_var.valueless_by_exception() } -> std::same_as<bool>;
+	visit([](auto&) { }, mut_var);
+	visit([](const auto&) { }, const_var);
+	{ get<0>(mut_var) } -> std::same_as<MpFirst<V>&>;
+	{ get<0>(const_var) } -> std::same_as<const MpFirst<V>&>;
+};
 /// @brief Detects tuple-like classes: `std::tuple`, `std::pair`, `std::ranges::subrange`,
 /// `std::array`, `std::complex`, etc.
 template<class T>

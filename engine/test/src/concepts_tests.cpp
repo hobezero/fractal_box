@@ -252,6 +252,16 @@ TEST_CASE("c_optional_like", "[u][engine][core][concepts]") {
 	STATIC_CHECK_FALSE(fr::c_optional_like<std::string*>);
 }
 
+TEST_CASE("c_variant_like", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_variant_like<std::variant<int>>);
+	STATIC_CHECK(fr::c_variant_like<std::variant<NoDefaultCtor>>);
+	STATIC_CHECK(fr::c_variant_like<std::variant<NoDefaultCtor, int, std::string>>);
+
+	STATIC_CHECK_FALSE(fr::c_variant_like<std::optional<int>>);
+	STATIC_CHECK_FALSE(fr::c_variant_like<std::tuple<int, float>>);
+	STATIC_CHECK_FALSE(fr::c_variant_like<Dummy>);
+}
+
 TEST_CASE("c_tuple_like", "[u][engine][core][concepts]") {
 	STATIC_CHECK(fr::c_tuple_like<std::tuple<int, float, char>>);
 	STATIC_CHECK(fr::c_tuple_like<std::pair<int, float>>);
