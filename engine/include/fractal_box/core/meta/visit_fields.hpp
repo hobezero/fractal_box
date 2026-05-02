@@ -56,7 +56,7 @@ auto num_record_fields_impl() -> size_t {
 template<class F, class T>
 FR_FORCE_INLINE constexpr
 auto visit_record_impl(F&& f, T&&, ValueC<0zu>) -> decltype(auto) {
-	return std::forward<F>(f);
+	return std::forward<F>(f)();
 }
 
 template<class F, class T>

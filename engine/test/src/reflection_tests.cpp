@@ -651,6 +651,10 @@ TEST_CASE("Aggregate-reflection.class-API", "[u][engine][core][reflection]") {
 	STATIC_CHECK(fr::mp_size<fr::ReflProperties<frt::Fidget>> == 0);
 
 	STATIC_CHECK(std::same_as<
+		fr::ReflDecomposition<frt::B0>,
+		fr::MpList<>
+	>);
+	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<frt::Fidget>,
 		fr::MpList<const char*, std::string, std::optional<int>, std::tuple<float, float>>
 	>);
