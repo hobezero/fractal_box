@@ -60,12 +60,156 @@ enum class MyEnum {
 
 } // namespace
 
+TEST_CASE("get_serializability", "[u][engine][core][serialization]") {
+	using enum fr::SerializableMode;
+	using enum fr::SerializableCategory;
+	using SA = fr::Serializability;
+
+	SECTION("Primitive") {
+		STATIC_CHECK(fr::get_serializability<bool>() == SA{Primitive, Default});
+		STATIC_CHECK(fr::get_serializability<signed char>() == SA{Primitive, Default});
+		STATIC_CHECK(fr::get_serializability<char>() == SA{Primitive, Default});
+		STATIC_CHECK(fr::get_serializability<short>() == SA{Primitive, Default});
+		STATIC_CHECK(fr::get_serializability<int>() == SA{Primitive, Default});
+		STATIC_CHECK(fr::get_serializability<unsigned long>() == SA{Primitive, Default});
+		STATIC_CHECK(fr::get_serializability<float>() == SA{Primitive, Default});
+		STATIC_CHECK(fr::get_serializability<long double>() == SA{Primitive, Default});
+		STATIC_CHECK(fr::get_serializability<void>() == SA{Primitive, None});
+		STATIC_CHECK(fr::get_serializability<std::nullptr_t>() == SA{Primitive, None});
+	}
+	SECTION("Custom") {
+		STATIC_CHECK(fr::get_serializability<CustomFriend>() == SA{Custom, Default});
+		STATIC_CHECK(fr::get_serializability<CustomStatic>() == SA{Custom, Default});
+	}
+	SECTION("Enum") {
+		STATIC_CHECK(fr::get_serializability<MyEnum>() == SA{Enum, Default});
+	}
+	SECTION("Optional") {
+		STATIC_CHECK(fr::get_serializability<std::optional<int>>() == SA{Optional, Default});
+		STATIC_CHECK(fr::get_serializability<std::optional<CustomFriend>>()
+			== SA{Optional, Default});
+
+		STATIC_CHECK(fr::get_serializability<std::optional<PrivateClass>>()
+			== SA{Optional, None});
+		STATIC_CHECK(fr::get_serializability<std::optional<NoDefaultCtor>>()
+			== SA{Optional, None});
+	}
+	SECTION("String") {
+		STATIC_CHECK(fr::get_serializability<std::string>() == SA{String, Default});
+		STATIC_CHECK(fr::get_serializability<std::u16string>() == SA{String, Default});
+		STATIC_CHECK(fr::get_serializability<std::u32string>() == SA{String, Default});
+		STATIC_CHECK(fr::get_serializability<std::wstring>() == SA{String, Default});
+	}
+	SECTION("Array") {
+		STATIC_CHECK(fr::get_serializability<std::array<int, 5>>() == SA{Array, Default});
+		STATIC_CHECK(fr::get_serializability<int[5]>() == SA{Array, Default});
+		STATIC_CHECK(fr::get_serializability<int[5][3]>() == SA{Array, Default});
+
+		STATIC_CHECK(fr::get_serializability<std::array<PrivateClass, 5>>() == SA{Array, None});
+		STATIC_CHECK(fr::get_serializability<PrivateClass[5]>() == SA{Array, None});
+	}
+	SECTION("Vector") {
+		STATIC_CHECK(fr::get_serializability<std::vector<int>>() == SA{Vector, Default});
+		STATIC_CHECK(fr::get_serializability<std::vector<CustomFriend>>() == SA{Vector, Default});
+
+		STATIC_CHECK(fr::get_serializability<std::vector<PrivateClass>>() == SA{Vector, None});
+		STATIC_CHECK(fr::get_serializability<std::vector<NoDefaultCtor>>() == SA{Vector, None});
+	}
+	SECTION("Variant") {
+		STATIC_CHECK(fr::get_serializability<std::variant<int>>() == SA{Variant, Default});
+		STATIC_CHECK(fr::get_serializability<std::variant<int, std::monostate>>()
+			== SA{Variant, Default});
+		STATIC_CHECK(fr::get_serializability<std::variant<int, CustomFriend, float>>()
+			== SA{Variant, Default});
+
+		STATIC_CHECK(fr::get_serializability<std::variant<std::nullptr_t>>()
+			== SA{Variant, None});
+		STATIC_CHECK(fr::get_serializability<std::variant<int, PrivateClass, float>>()
+			== SA{Variant, None});
+	}
+	SECTION("Record") {
+		STATIC_CHECK(fr::get_serializability<std::monostate>() == SA{Record, Default});
+	}
+}
+
 TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
-	STATIC_CHECK(fr::c_data_format<fr::SbsDataFormat>);
+	SECTION("c_data_format") {
+		STATIC_CHECK(fr::c_data_format<fr::SbsDataFormat>);
+	}
+	SECTION("c_has_custom_serialize") {
+		STATIC_CHECK(fr::c_has_custom_serialize<CustomFriend>);
+		STATIC_CHECK(fr::c_has_custom_serialize<CustomStatic>);
+	}
 
-	STATIC_CHECK(fr::c_has_custom_serialize<CustomFriend>);
-	STATIC_CHECK(fr::c_has_custom_serialize<CustomStatic>);
+	using SerializableTypes = fr::MpList<
+		bool,
+		short,
+		int,
+		int&,
+		unsigned long,
+		float,
+		long double,
+		CustomFriend,
+		CustomStatic,
+		CustomStatic&,
+		MyEnum,
+		MyEnum&,
+		std::optional<int>,
+		std::optional<int>&,
+		std::optional<CustomFriend>,
+		std::string,
+		std::string&,
+		std::u16string,
+		std::u32string,
+		std::wstring,
+		std::array<int, 5>,
+		int[5],
+		int(&)[5],
+		int[5][3],
+		std::vector<int>,
+		std::vector<std::string>,
+		std::vector<int>&,
+		std::vector<CustomFriend>,
+		std::variant<int>,
+		std::variant<int>&,
+		std::variant<int, std::monostate>,
+		std::variant<int, CustomFriend, float>
+	>;
 
+	using UnserializableTypes = fr::MpList<
+		void,
+		std::nullptr_t,
+		int*,
+		auto (char) -> int,
+		auto (*)(char) -> int,
+		auto (&)(char) -> int,
+		AbstractClass,
+		std::optional<PrivateClass>,
+		std::optional<NoDefaultCtor>,
+		std::array<PrivateClass, 5>,
+		PrivateClass[5],
+		std::vector<PrivateClass>,
+		std::vector<NoDefaultCtor>,
+		std::variant<std::nullptr_t>,
+		std::variant<int, PrivateClass, float>
+	>;
+
+	SECTION("c_serializable") {
+		fr::for_each_type<SerializableTypes>([]<class T> {
+			STATIC_CHECK(fr::c_serializable<T>);
+		});
+		fr::for_each_type<UnserializableTypes>([]<class T> {
+			STATIC_CHECK_FALSE(fr::c_serializable<T>);
+		});
+	}
+	SECTION("c_serializable_by") {
+		fr::for_each_type<SerializableTypes>([]<class T> {
+			STATIC_CHECK(fr::c_serializable_by<T, fr::SbsDataFormat>);
+		});
+		fr::for_each_type<UnserializableTypes>([]<class T> {
+			STATIC_CHECK_FALSE(fr::c_serializable_by<T, fr::SbsDataFormat>);
+		});
+	}
 	STATIC_CHECK(fr::c_serializable<int>);
 	STATIC_CHECK(fr::c_serializable<CustomFriend>);
 	STATIC_CHECK(fr::c_serializable<CustomStatic>);

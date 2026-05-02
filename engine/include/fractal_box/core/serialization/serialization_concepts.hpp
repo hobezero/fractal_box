@@ -63,8 +63,8 @@ concept c_data_format = requires(
 	typename T::template EncodingArchive<detail::DummyWriter>;
 	typename T::template DecodingArchive<detail::DummyReader>;
 
-	typename T::template EncodeResult<detail::DummyWriter>;
-	typename T::template DecodeResult<detail::DummyReader>;
+	requires c_size_or_result<typename T::template EncodeResult<detail::DummyWriter>>;
+	requires c_size_or_result<typename T::template DecodeResult<detail::DummyReader>>;
 
 	{ T::encode(writer, obj) } -> std::same_as<
 		typename T::template EncodeResult<detail::DummyWriter>>;
@@ -92,8 +92,8 @@ concept c_serializable_by = requires(
 	const T& const_obj,
 	T& mut_obj
 ) {
-	{ DataFormat::encode(writer, const_obj) } -> c_void_or_result;
-	{ DataFormat::decode(reader, mut_obj) } -> c_void_or_result;
+	{ DataFormat::encode(writer, const_obj) } -> c_size_or_result;
+	{ DataFormat::decode(reader, mut_obj) } -> c_size_or_result;
 };
 
 enum class SerializableCategory: uint8_t {

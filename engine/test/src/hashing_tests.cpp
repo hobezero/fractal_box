@@ -442,6 +442,10 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 
 	SECTION("Primitive") {
 		STATIC_CHECK(fr::get_hashability<bool>() == HA{Primitive, AsBytes});
+		STATIC_CHECK(fr::get_hashability<signed char>() == HA{Primitive, AsBytes});
+		STATIC_CHECK(fr::get_hashability<unsigned char>() == HA{Primitive, AsBytes});
+		STATIC_CHECK(fr::get_hashability<char>() == HA{Primitive, AsBytes});
+		STATIC_CHECK(fr::get_hashability<short>() == HA{Primitive, AsBytes});
 		STATIC_CHECK(fr::get_hashability<int>() == HA{Primitive, AsBytes});
 		STATIC_CHECK(fr::get_hashability<unsigned long>() == HA{Primitive, AsBytes});
 		STATIC_CHECK(fr::get_hashability<float>() == HA{Primitive, OptOut});
@@ -713,6 +717,10 @@ TEST_CASE("HashDigestOfSize", "[u][engine][core][hashing]") {
 TEST_CASE("UniHasher.SFINAE", "[u][engine][core][hashing]") {
 	using HashableTypes = fr::MpList<
 		bool,
+		signed char,
+		unsigned char,
+		char,
+		short,
 		int,
 		float,
 		long double,
@@ -765,6 +773,7 @@ TEST_CASE("UniHasher.SFINAE", "[u][engine][core][hashing]") {
 	>;
 
 	using UnhashableTypes = fr::MpList<
+		void,
 		int*,
 
 		HVB::Tuple<int, PrivateClass, PrivateClass>,
