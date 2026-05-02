@@ -585,6 +585,12 @@ struct ADHEB {
 
 FR_DIAGNOSTIC_POP
 
+template<class T>
+struct ThrowingConvertible {
+	explicit(false) constexpr
+	operator T() const { throw 1; }
+};
+
 } // namespace detail
 
 } // namespace fr

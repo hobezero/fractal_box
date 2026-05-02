@@ -3,9 +3,10 @@
 
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/error_handling/result.hpp"
-#include "fractal_box/core/serialization/serialization_attributes.hpp"
 #include "fractal_box/core/meta/meta.hpp"
 #include "fractal_box/core/meta/reflection.hpp"
+#include "fractal_box/core/range_concepts.hpp"
+#include "fractal_box/core/serialization/serialization_attributes.hpp"
 
 namespace fr {
 
@@ -148,6 +149,9 @@ template<class T>
 inline consteval
 auto get_serializability() noexcept -> Serializability;
 
+template<class T>
+using IsSerializable = BoolC<bool{get_serializability<T>()}>;
+
 namespace detail {
 
 template<SerializableMode Mode, class Child>
@@ -156,18 +160,12 @@ void verify_serializable_child() noexcept {
 
 }
 
-} // namespace detail
-
-template<class T>
-using IsSerializable = BoolC<bool{get_serializability<T>()}>;
-
 template<class T>
 inline consteval
-auto get_serializability() noexcept -> Serializability {
+auto get_serializability_impl() noexcept -> Serializability {
 	using PT = std::remove_cvref_t<T>;
-
-	using enum SerializableMode;
 	using enum SerializableCategory;
+	using enum SerializableMode;
 
 	if constexpr (std::is_fundamental_v<PT>) {
 		static_assert(!c_has_custom_serialize<PT>, "Can't customize serialization for primitives");
@@ -222,7 +220,7 @@ auto get_serializability() noexcept -> Serializability {
 		return {String, Default};
 	}
 	else if constexpr (std::is_bounded_array_v<PT>) {
-		return {Array, get_serializability<std::remove_all_extents<PT>>().mode()};
+		return {Array, get_serializability<std::remove_all_extents_t<PT>>().mode()};
 	}
 	else if constexpr (c_std_array_like<PT>) {
 		return {Array, get_serializability<typename PT::value_type>().mode()};
@@ -230,7 +228,10 @@ auto get_serializability() noexcept -> Serializability {
 	else if constexpr (c_vector_like<PT>) {
 		return {Vector, get_serializability<typename PT::value_type>().mode()};
 	}
-	// TODO: Map, Set, Variant
+	// TODO: Map, Set
+	else if constexpr (c_variant_like<PT>) {
+		return {Variant, mp_all_of<PT, IsSerializable> ? Default : None};
+	}
 	else if constexpr (c_record_like<PT>) {
 		using Decomposed = ReflDecomposition<PT>;
 		if constexpr (mp_all_of<Decomposed, IsSerializable>) {
@@ -243,6 +244,19 @@ auto get_serializability() noexcept -> Serializability {
 	else {
 		return {Unserializable, None};
 	}
+}
+
+} // namespace detail
+
+template<class T>
+inline consteval
+auto get_serializability() noexcept -> Serializability {
+	// TODO: Should we treat const types as serializable?
+	using PT = std::remove_cvref_t<T>;
+	const auto sa = detail::get_serializability_impl<PT>();
+	if (!std::is_default_constructible_v<PT>)
+		return {sa.category(), SerializableMode::None};
+	return sa;
 }
 
 template<class T>

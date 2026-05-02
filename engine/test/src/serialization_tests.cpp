@@ -37,6 +37,27 @@ public:
 	std::string y;
 };
 
+class AbstractClass {
+public:
+	virtual ~AbstractClass() = 0;
+};
+
+class PrivateClass {
+private:
+	[[maybe_unused]]
+	int _foo;
+};
+
+struct NoDefaultCtor {
+	NoDefaultCtor() = delete;
+	NoDefaultCtor(int) { }
+};
+
+enum class MyEnum {
+	A,
+	B
+};
+
 } // namespace
 
 TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
@@ -412,7 +433,6 @@ TEST_CASE("SbsDataFormat.optionals", "[u][engine][core][serialization]") {
 		do_test();
 		STATIC_CHECK(do_test());
 	}
-
 }
 
 TEST_CASE("SbsDataFormat.strings", "[u][engine][core][serialization]") {
@@ -487,6 +507,116 @@ TEST_CASE("SbsDataFormat.vectors", "[u][engine][core][serialization]") {
 			auto res2 = fr::SbsDataFormat::decode(reader2, out_value);
 			FRT_CHECK(!res2);
 			FRT_CHECK(res2.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+}
+
+TEST_CASE("SbsDataFormat.variantts", "[u][engine][core][serialization]") {
+	SECTION("serializing into a vector") {
+		constexpr auto do_test = [] {
+			const auto in_value1 = std::variant<int64_t, CustomFriend>{67};
+			const auto in_value2 = std::variant<int64_t, CustomFriend>{
+				std::in_place_type<CustomFriend>, 15, "abc"};
+
+			static constexpr auto value1_size = sizeof(fr::SbsDataFormat::VariantIndexType)
+				+ sizeof(int64_t);
+			static constexpr auto value2_size = sizeof(fr::SbsDataFormat::VariantIndexType)
+				+ sizeof(int) + sizeof(size_t) + 3;
+
+			auto buf = std::vector<unsigned char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value1) == value1_size);
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value2) == value2_size);
+
+			auto out_value1 = std::variant<int64_t, CustomFriend>{0};
+			auto out_value2 = std::variant<int64_t, CustomFriend>{0};
+
+			auto reader = fr::SpanReader{buf};
+
+			auto res1 = fr::SbsDataFormat::decode(reader, out_value1);
+			FRT_REQUIRE(res1);
+			FRT_CHECK(*res1 == value1_size);
+			FRT_CHECK(out_value1 == in_value1);
+
+			auto res2 = fr::SbsDataFormat::decode(reader, out_value2);
+			FRT_REQUIRE(res2);
+			FRT_CHECK(*res2 == value2_size);
+			FRT_CHECK(out_value2 == in_value2);
+
+			return true;
+		};
+
+		do_test();
+		STATIC_CHECK(do_test());
+
+		// C++23 bans excepion throwing in constexpr context, run these checks only at runtime
+		SECTION("valueless") {
+			const auto in_value
+				= fr::make_valueless_variant<std::variant<int64_t, CustomFriend>>();
+			FRT_REQUIRE(in_value.valueless_by_exception());
+
+			static constexpr auto value_size = sizeof(fr::SbsDataFormat::VariantIndexType);
+
+			auto buf = std::vector<unsigned char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
+
+			auto out_value1 = std::variant<int64_t, CustomFriend>{0};
+			auto out_value2 = fr::make_valueless_variant<std::variant<int64_t, CustomFriend>>();
+
+			auto reader1 = fr::SpanReader{buf};
+			auto reader2 = fr::SpanReader{buf};
+
+			auto res1 = fr::SbsDataFormat::decode(reader1, out_value1);
+			FRT_REQUIRE(res1);
+			FRT_CHECK(*res1 == value_size);
+			FRT_CHECK(out_value1 == in_value);
+
+			auto res2 = fr::SbsDataFormat::decode(reader2, out_value2);
+			FRT_REQUIRE(res2);
+			FRT_CHECK(*res2 == value_size);
+			FRT_CHECK(out_value2 == in_value);
+		}
+	}
+	SECTION("serialializing into an array which is too small") {
+		constexpr auto do_test = [] {
+			const auto in_value = std::variant<int64_t, CustomFriend>{5};
+			static constexpr auto value_size = sizeof(fr::SbsDataFormat::VariantIndexType);
+
+			auto buf = std::array<std::byte, value_size - 2>{};
+			auto writer = fr::SpanWriter{buf};
+
+			auto res = fr::SbsDataFormat::encode(writer, in_value);
+			FRT_CHECK(!res);
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+	SECTION("deserializing from a span which is too small") {
+		constexpr auto do_test = [] {
+			const auto in_value = std::variant<int64_t, CustomFriend>{5};
+			static constexpr auto value_size = sizeof(bool) + sizeof(int);
+
+			auto buf = std::vector<char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_REQUIRE(fr::SbsDataFormat::encode(writer, in_value));
+
+			auto out_value = std::variant<int64_t, CustomFriend>{0};
+
+			auto reader = fr::SpanReader{std::span<char>(buf.data(), buf.data() + value_size - 2)};
+			auto res = fr::SbsDataFormat::decode(reader, out_value);
+			FRT_CHECK(!res);
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
 
 			return true;
 		};

@@ -8,9 +8,27 @@
 #include "fractal_box/core/byte_utils.hpp"
 #include "fractal_box/core/containers/simple_array.hpp"
 #include "fractal_box/core/io/io_concepts.hpp"
+#include "fractal_box/core/meta/meta.hpp"
 #include "fractal_box/core/serialization/serialization_concepts.hpp"
 
 namespace fr {
+
+template<class V>
+inline constexpr
+void set_variant_valueless(V& variant) {
+	try {
+		variant.template emplace<0zu>(detail::ThrowingConvertible<MpFirst<V>>{});
+	}
+	catch (int) { }
+}
+
+template<class V>
+inline constexpr
+auto make_valueless_variant() -> V {
+	auto v = V{};
+	set_variant_valueless(v);
+	return v;
+}
 
 /// @brief Simple binary serialization format
 struct SbsDataFormat {
@@ -46,6 +64,8 @@ public:
 
 	template<c_byte_reader Reader>
 	using DecodeResult = typename decltype(calc_decode_result_type<Reader>())::Type;
+
+	using VariantIndexType = uint32_t;
 
 	template<c_byte_writer Writer, c_serializable T>
 	static FR_FORCE_INLINE constexpr
@@ -90,7 +110,7 @@ public:
 			static_assert(false);
 		}
 		else if constexpr (serializability.category() == Variant) {
-			static_assert(false);
+			return encode_variant(writer, obj);
 		}
 		else if constexpr (serializability.category() == Record) {
 			static_assert(false);
@@ -143,7 +163,7 @@ public:
 			static_assert(false);
 		}
 		else if constexpr (serializability.category() == Variant) {
-			static_assert(false);
+			return decode_variant(reader, obj);
 		}
 		else if constexpr (serializability.category() == Record) {
 			static_assert(false);
@@ -304,6 +324,7 @@ private:
 	auto decode_optional(Reader& reader, T& obj) -> DecodeResult<Reader> {
 		bool has_value;
 		auto ret = decode_primitive(reader, has_value);
+
 		if constexpr (c_result<DecodeResult<Reader>>) {
 			if (!ret)
 				return ret;
@@ -513,6 +534,91 @@ private:
 				auto& v = obj.emplace_back();
 				ret += SbsDataFormat::decode(reader, v);
 			}
+		}
+		else {
+			static_assert(false);
+		}
+		return ret;
+	}
+
+	template<class Writer, class T>
+	static constexpr
+	auto encode_variant(Writer& writer, const T& obj) -> EncodeResult<Writer> {
+		// TODO: Don't encode index if there is only one possible alternative
+		auto index_value = obj.valueless_by_exception()
+			? npos_for<VariantIndexType>
+			: static_cast<VariantIndexType>(obj.index());
+		auto ret = encode_primitive(writer, index_value);
+
+		if constexpr (c_result<EncodeResult<Writer>>) {
+			if (!ret)
+				return ret;
+			if (index_value != npos_for<VariantIndexType>) {
+				std::visit([&](const auto& var) {
+					auto res = SbsDataFormat::encode(writer, var);
+					if (res)
+						*ret += *ret;
+					else
+						ret = std::move(res);
+				}, obj);
+			}
+		}
+		else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
+			if (index_value != npos_for<VariantIndexType>) {
+				std::visit([&](const auto& var) {
+					ret += SbsDataFormat::encode(writer, var);
+				}, obj);
+			}
+		}
+		else {
+			static_assert(false);
+		}
+		return ret;
+	}
+
+	template<class Reader, class T>
+	static constexpr
+	auto decode_variant(Reader& reader, T& obj) -> DecodeResult<Reader> {
+		VariantIndexType index_value;
+		auto ret = decode_primitive(reader, index_value);
+		if constexpr (c_result<DecodeResult<Reader>>) {
+			 if (!ret)
+				return ret;
+		}
+
+		if (index_value == npos_for<VariantIndexType>) {
+			// There is no direct API to put variant into the valueless state. The workaround
+			// is to throw an exception when variant attempts to access some dummy object
+			// during emplacement
+			if (!obj.valueless_by_exception()) {
+				set_variant_valueless(obj);
+			}
+			return ret;
+		}
+
+		if constexpr (c_result<DecodeResult<Reader>>) {
+			unroll<mp_size<T>>([&]<size_t I> {
+				if (index_value == I) {
+					auto& value = obj.index() == I ? get<I>(obj) : obj.template emplace<I>();
+					auto res = SbsDataFormat::decode(reader, value);
+					if (res)
+						*ret += *res;
+					else
+						ret = std::move(res);
+					return false;
+				}
+				return true;
+			});
+		}
+		else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
+			unroll<mp_size<T>>([&]<size_t I> {
+				if (index_value == I) {
+					auto& value = obj.index() == I ? get<I>(obj) : obj.template emplace<I>();
+					ret += SbsDataFormat::decode(reader, value);
+					return false;
+				}
+				return true;
+			});
 		}
 		else {
 			static_assert(false);

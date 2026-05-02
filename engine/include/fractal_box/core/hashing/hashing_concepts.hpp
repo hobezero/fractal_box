@@ -129,8 +129,8 @@ inline consteval
 auto get_hashability() noexcept -> Hashability {
 	using PT = std::remove_cvref_t<T>;
 	using HVB = HasherVisitorBase;
-	using enum HashableMode;
 	using enum HashableCategory;
+	using enum HashableMode;
 	static constexpr auto has_unique_repr = std::has_unique_object_representations_v<PT>;
 
 	if constexpr (std::is_fundamental_v<PT>) {
