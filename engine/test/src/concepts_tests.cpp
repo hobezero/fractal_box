@@ -12,6 +12,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <catch2/catch_test_macros.hpp>
@@ -19,6 +20,12 @@
 namespace {
 
 struct Dummy { };
+
+template<class T1, class T2>
+struct DummyAlmostPair {
+	T1 first;
+	T2 second;
+};
 
 struct NoDefaultCtor {
 	NoDefaultCtor() = delete;
@@ -99,6 +106,75 @@ TEST_CASE("c_nothrow_explicitly_convertible_to", "[u][engine][core][concepts]") 
 
 // range_concepts.hpp
 // ==================
+
+TEST_CASE("c_optional_like", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_optional_like<std::optional<int>>);
+	STATIC_CHECK(fr::c_optional_like<std::optional<std::string>>);
+	STATIC_CHECK(fr::c_optional_like<std::optional<std::optional<int>>>);
+	STATIC_CHECK(fr::c_optional_like<std::optional<std::unique_ptr<int>>>);
+
+	STATIC_CHECK_FALSE(fr::c_optional_like<int>);
+	STATIC_CHECK_FALSE(fr::c_optional_like<std::variant<int, std::monostate>>);
+	STATIC_CHECK_FALSE(fr::c_optional_like<std::any>);
+	STATIC_CHECK_FALSE(fr::c_optional_like<std::string*>);
+}
+
+TEST_CASE("c_variant_like", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_variant_like<std::variant<int>>);
+	STATIC_CHECK(fr::c_variant_like<std::variant<NoDefaultCtor>>);
+	STATIC_CHECK(fr::c_variant_like<std::variant<NoDefaultCtor, int, std::string>>);
+
+	STATIC_CHECK_FALSE(fr::c_variant_like<std::optional<int>>);
+	STATIC_CHECK_FALSE(fr::c_variant_like<std::tuple<int, float>>);
+	STATIC_CHECK_FALSE(fr::c_variant_like<Dummy>);
+}
+
+TEST_CASE("c_tuple_like", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_tuple_like<std::tuple<int, float, char>>);
+	STATIC_CHECK(fr::c_tuple_like<std::pair<int, float>>);
+	STATIC_CHECK(fr::c_tuple_like<std::array<int, 4>>);
+	STATIC_CHECK(fr::c_aggregate<int[4]>);
+#if 0 // TODO: Enable in C++26
+	STATIC_CHECK(fr::c_tuple_like<std::complex<float>>);
+#endif
+
+	STATIC_CHECK_FALSE(fr::c_tuple_like<std::variant<int, std::monostate>>);
+	STATIC_CHECK_FALSE(fr::c_tuple_like<std::any>);
+	STATIC_CHECK_FALSE(fr::c_tuple_like<std::vector<std::string>>);
+	STATIC_CHECK_FALSE(fr::c_tuple_like<int>);
+}
+
+TEST_CASE("c_record_like", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_record_like<std::array<int, 4>>);
+	STATIC_CHECK(fr::c_record_like<std::tuple<int, float>>);
+	STATIC_CHECK(fr::c_record_like<Dummy>);
+}
+
+TEST_CASE("c_pair_like", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_pair_like<std::pair<int, float>>);
+	STATIC_CHECK(fr::c_pair_like<std::pair<int*, float*>>);
+	STATIC_CHECK(fr::c_pair_like<std::pair<int&, float&>>);
+	STATIC_CHECK(fr::c_pair_like<std::pair<const int&, const float&>>);
+	STATIC_CHECK(fr::c_pair_like<std::pair<int&&, float&&>>);
+	STATIC_CHECK(fr::c_pair_like<std::pair<const int&&, const float&&>>);
+	STATIC_CHECK(fr::c_pair_like<std::pair<Dummy, NoDefaultCtor>>);
+	STATIC_CHECK(fr::c_pair_like<std::pair<int, float>>);
+
+	STATIC_CHECK_FALSE(fr::c_pair_like<std::tuple<int, float>>);
+	STATIC_CHECK_FALSE(fr::c_pair_like<DummyAlmostPair<int, float>>);
+	STATIC_CHECK_FALSE(fr::c_pair_like<std::array<int, 2>>);
+	STATIC_CHECK_FALSE(fr::c_pair_like<int[2]>);
+}
+
+TEST_CASE("c_pair_of", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_pair_of<std::pair<int, float>, int, float>);
+	STATIC_CHECK(fr::c_pair_of<std::pair<const int&&, const float* const>, const int&&,
+		const float* const>);
+
+	STATIC_CHECK_FALSE(fr::c_pair_of<std::pair<int, float>, int, double>);
+	STATIC_CHECK_FALSE(fr::c_pair_of<std::pair<int, float>, char, float>);
+	STATIC_CHECK_FALSE(fr::c_pair_of<std::pair<int, float&>, const int, float>);
+}
 
 TEST_CASE("c_constexpr_sized_range", "[u][engine][core][concepts]") {
 	STATIC_CHECK(fr::c_constexpr_sized_range<std::array<int, 5>>);
@@ -238,47 +314,4 @@ TEST_CASE("c_string_view_like", "[u][engine][core][concepts]") {
 	STATIC_CHECK_FALSE(fr::c_string_view_like<std::span<int>>);
 	STATIC_CHECK_FALSE(fr::c_string_view_like<std::string>);
 	STATIC_CHECK_FALSE(fr::c_string_view_like<std::wstring>);
-}
-
-TEST_CASE("c_optional_like", "[u][engine][core][concepts]") {
-	STATIC_CHECK(fr::c_optional_like<std::optional<int>>);
-	STATIC_CHECK(fr::c_optional_like<std::optional<std::string>>);
-	STATIC_CHECK(fr::c_optional_like<std::optional<std::optional<int>>>);
-	STATIC_CHECK(fr::c_optional_like<std::optional<std::unique_ptr<int>>>);
-
-	STATIC_CHECK_FALSE(fr::c_optional_like<int>);
-	STATIC_CHECK_FALSE(fr::c_optional_like<std::variant<int, std::monostate>>);
-	STATIC_CHECK_FALSE(fr::c_optional_like<std::any>);
-	STATIC_CHECK_FALSE(fr::c_optional_like<std::string*>);
-}
-
-TEST_CASE("c_variant_like", "[u][engine][core][concepts]") {
-	STATIC_CHECK(fr::c_variant_like<std::variant<int>>);
-	STATIC_CHECK(fr::c_variant_like<std::variant<NoDefaultCtor>>);
-	STATIC_CHECK(fr::c_variant_like<std::variant<NoDefaultCtor, int, std::string>>);
-
-	STATIC_CHECK_FALSE(fr::c_variant_like<std::optional<int>>);
-	STATIC_CHECK_FALSE(fr::c_variant_like<std::tuple<int, float>>);
-	STATIC_CHECK_FALSE(fr::c_variant_like<Dummy>);
-}
-
-TEST_CASE("c_tuple_like", "[u][engine][core][concepts]") {
-	STATIC_CHECK(fr::c_tuple_like<std::tuple<int, float, char>>);
-	STATIC_CHECK(fr::c_tuple_like<std::pair<int, float>>);
-	STATIC_CHECK(fr::c_tuple_like<std::array<int, 4>>);
-	STATIC_CHECK(fr::c_aggregate<int[4]>);
-#if 0 // TODO: Enable in C++26
-	STATIC_CHECK(fr::c_tuple_like<std::complex<float>>);
-#endif
-
-	STATIC_CHECK_FALSE(fr::c_tuple_like<std::variant<int, std::monostate>>);
-	STATIC_CHECK_FALSE(fr::c_tuple_like<std::any>);
-	STATIC_CHECK_FALSE(fr::c_tuple_like<std::vector<std::string>>);
-	STATIC_CHECK_FALSE(fr::c_tuple_like<int>);
-}
-
-TEST_CASE("c_record_like", "[u][engine][core][concepts]") {
-	STATIC_CHECK(fr::c_record_like<std::array<int, 4>>);
-	STATIC_CHECK(fr::c_record_like<std::tuple<int, float>>);
-	STATIC_CHECK(fr::c_record_like<Dummy>);
 }

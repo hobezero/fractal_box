@@ -34,10 +34,82 @@ inline constexpr auto constexpr_size = decltype([](R& r) {
 template<class InIter, class OutIter, class Cmp = std::ranges::less, class Proj = std::identity>
 concept c_self_mergeable = std::mergeable<InIter, InIter, OutIter, Cmp, Proj, Proj>;
 
+// Detection of container-like classes
+// -----------------------------------
+
+template<class O>
+concept c_optional_like
+	= std::default_initializable<O>
+	&& requires(O& mut_opt, const O& const_opt, typename O::value_type v) {
+		// Member types
+		// ^^^^^^^^^^^^
+		typename O::value_type;
+
+		// Member functions
+		// ^^^^^^^^^^^^^^^^
+
+		{ const_opt.operator->() } -> std::same_as<const typename O::value_type*>;
+		{ mut_opt.operator->() } -> std::same_as<typename O::value_type*>;
+
+		{ const_opt.operator*() } -> std::same_as<const typename O::value_type&>;
+		{ mut_opt.operator*() } -> std::same_as<typename O::value_type&>;
+
+		{ const_opt.operator bool() } -> std::same_as<bool>;
+		{ const_opt.has_value() } -> std::same_as<bool>;
+
+		{ const_opt.value() } -> std::same_as<const typename O::value_type&>;
+		{ mut_opt.value() } -> std::same_as<typename O::value_type&>;
+
+		{ const_opt.value_or(v) } -> std::same_as<typename O::value_type>;
+
+		{ mut_opt.reset() } -> std::same_as<void>;
+	};
+
+template<class V>
+concept c_variant_like = requires(V& mut_var, const V& const_var) {
+	{ const_var.index() } -> std::integral;
+	{ const_var.valueless_by_exception() } -> std::same_as<bool>;
+	visit([](auto&) { }, mut_var);
+	visit([](const auto&) { }, const_var);
+	{ get<0>(mut_var) } -> std::same_as<MpFirst<V>&>;
+	{ get<0>(const_var) } -> std::same_as<const MpFirst<V>&>;
+};
+
+/// @brief Detects tuple-like classes: `std::tuple`, `std::pair`, `std::ranges::subrange`,
+/// `std::array`, `std::complex`, etc.
+template<class T>
+concept c_tuple_like = requires {
+	{ std::tuple_size<T>::value } -> std::convertible_to<size_t>;
+};
+
+template<class T>
+concept c_record_like = c_aggregate<T> || c_tuple_like<T>;
+
+template<class P>
+concept c_pair_like
+	= c_tuple_like<P>
+	&& requires(P& pair) {
+	typename P::first_type;
+	typename P::second_type;
+
+	{ pair.first } -> std::same_as<typename P::first_type&>;
+	{ pair.second } -> std::same_as<typename P::second_type&>;
+
+	requires (std::tuple_size<P>::value == 2zu);
+	requires std::same_as<std::tuple_element_t<0zu, P>, typename P::first_type>;
+	requires std::same_as<std::tuple_element_t<1zu, P>, typename P::second_type>;
+};
+
+template<class P, class T1, class T2>
+concept c_pair_of
+	= c_pair_like<P>
+	&& std::same_as<typename P::first_type, T1>
+	&& std::same_as<typename P::second_type, T2>;
+
 // Detection of container types
 // ----------------------------
 
-/// @brief `Container` named requirement
+/// @brief `Container` named requirements
 /// @see https://en.cppreference.com/w/cpp/named_req/Container
 template<class C>
 concept c_container
@@ -71,19 +143,17 @@ concept c_container
 
 		{ mut_container.begin() } -> std::same_as<typename C::iterator>;
 		{ const_container.begin() } -> std::same_as<typename C::const_iterator>;
+		{ const_container.cbegin() } -> std::same_as<typename C::const_iterator>;
+
 		/// @note Standard says `typename C::iterator>
 		{ mut_container.end() } -> std::sentinel_for<typename C::iterator>;
 		{ const_container.end() } -> std::sentinel_for<typename C::const_iterator>;
-
-		{ const_container.cbegin() } -> std::same_as<typename C::const_iterator>;
 		{ const_container.cend() } -> std::sentinel_for<typename C::const_iterator>;
 
+		{ const_container.size() } -> std::same_as<typename C::size_type>;
 		{ const_container.max_size() } -> std::same_as<typename C::size_type>;
 		{ const_container.empty() } -> std::same_as<bool>;
 	};
-
-template<class C>
-concept c_sized_container = c_container<C> && std::ranges::sized_range<C>;
 
 template<class C>
 concept c_constexpr_sized_container = c_container<C> && c_constexpr_sized_range<C>;
@@ -114,7 +184,7 @@ concept c_array_like = c_bounded_array<C> || c_std_array_like<C>;
 
 template<class C>
 concept c_list_like
-	= c_sized_container<C>
+	= c_container<C>
 	&& std::ranges::bidirectional_range<C>
 	&& !std::ranges::random_access_range<C>
 	&& requires(C& container, typename C::value_type v) {
@@ -130,9 +200,7 @@ concept c_list_like
 
 template<class C>
 concept c_vector_like
-	= c_sized_container<C>
-	&& std::ranges::random_access_range<C>
-	&& std::ranges::contiguous_range<C>
+	= c_contiguous_container<C>
 	&& requires(
 		C& mut_container,
 		const C& const_container,
@@ -160,9 +228,7 @@ concept c_vector_like
 
 template<class C>
 concept c_string_like
-	= c_sized_container<C>
-	&& std::ranges::random_access_range<C>
-	&& std::ranges::contiguous_range<C>
+	= c_contiguous_container<C>
 	&& c_default_constructible<C>
 	&& c_nothrow_movable<C>
 	&& std::copyable<C>
@@ -182,17 +248,7 @@ concept c_string_like
 		// Member functions
 		// ^^^^^^^^^^^^^^^^
 
-		{ mut_container.begin() } -> std::same_as<typename C::iterator>;
-		{ const_container.begin() } -> std::same_as<typename C::const_iterator>;
-
-		{ mut_container.end() } -> std::same_as<typename C::iterator>;
-		{ const_container.end() } -> std::same_as<typename C::const_iterator>;
-
-		{ const_container.cbegin() } -> std::same_as<typename C::const_iterator>;
-		{ const_container.cend() } -> std::same_as<typename C::const_iterator>;
-
 		{ mut_container.data() } -> std::same_as<typename C::value_type*>;
-		{ mut_container.size() } -> std::same_as<typename C::size_type>;
 		{ mut_container.length() } -> std::same_as<typename C::size_type>;
 
 		mut_container.clear();
@@ -242,12 +298,13 @@ concept c_span_like
 		// NOTE: no const propagation
 		{ mut_span.begin() } -> std::same_as<typename S::iterator>;
 		{ const_span.begin() } -> std::same_as<typename S::iterator>;
+#if 0
+		{ const_span.cbegin() } -> std::same_as<typename S::const_iterator>;
+#endif
 
 		{ mut_span.end() } -> std::same_as<typename S::iterator>;
 		{ const_span.end() } -> std::same_as<typename S::iterator>;
-
 #if 0
-		{ const_span.cbegin() } -> std::same_as<typename S::const_iterator>;
 		{ const_span.cend() } -> std::same_as<typename S::const_iterator>;
 #endif
 
@@ -297,11 +354,10 @@ concept c_string_view_like
 		// NOTE: `const_iterator`'s everywhere
 		{ mut_sview.begin() } -> std::same_as<typename S::const_iterator>;
 		{ const_sview.begin() } -> std::same_as<typename S::const_iterator>;
+		{ const_sview.cbegin() } -> std::same_as<typename S::const_iterator>;
 
 		{ mut_sview.end() } -> std::same_as<typename S::const_iterator>;
 		{ const_sview.end() } -> std::same_as<typename S::const_iterator>;
-
-		{ const_sview.cbegin() } -> std::same_as<typename S::const_iterator>;
 		{ const_sview.cend() } -> std::same_as<typename S::const_iterator>;
 
 		{ mut_sview.data() } -> std::same_as<typename S::const_pointer>;
@@ -313,56 +369,6 @@ concept c_string_view_like
 		{ mut_sview.substr(n, n) } -> std::same_as<S>;
 		{ mut_sview.find(const_sview, n) } -> std::same_as<typename S::size_type>;
 	};
-
-// Detection of other container-like classes
-// -----------------------------------------
-
-template<class O>
-concept c_optional_like
-	= std::default_initializable<O>
-	&& requires(O& mut_opt, const O& const_opt, typename O::value_type v) {
-		// Member types
-		// ^^^^^^^^^^^^
-		typename O::value_type;
-
-		// Member functions
-		// ^^^^^^^^^^^^^^^^
-
-		{ const_opt.operator->() } -> std::same_as<const typename O::value_type*>;
-		{ mut_opt.operator->() } -> std::same_as<typename O::value_type*>;
-
-		{ const_opt.operator*() } -> std::same_as<const typename O::value_type&>;
-		{ mut_opt.operator*() } -> std::same_as<typename O::value_type&>;
-
-		{ const_opt.operator bool() } -> std::same_as<bool>;
-		{ const_opt.has_value() } -> std::same_as<bool>;
-
-		{ const_opt.value() } -> std::same_as<const typename O::value_type&>;
-		{ mut_opt.value() } -> std::same_as<typename O::value_type&>;
-
-		{ const_opt.value_or(v) } -> std::same_as<typename O::value_type>;
-
-		{ mut_opt.reset() } -> std::same_as<void>;
-	};
-
-template<class V>
-concept c_variant_like = requires(V& mut_var, const V& const_var) {
-	{ const_var.index() } -> std::integral;
-	{ const_var.valueless_by_exception() } -> std::same_as<bool>;
-	visit([](auto&) { }, mut_var);
-	visit([](const auto&) { }, const_var);
-	{ get<0>(mut_var) } -> std::same_as<MpFirst<V>&>;
-	{ get<0>(const_var) } -> std::same_as<const MpFirst<V>&>;
-};
-/// @brief Detects tuple-like classes: `std::tuple`, `std::pair`, `std::ranges::subrange`,
-/// `std::array`, `std::complex`, etc.
-template<class T>
-concept c_tuple_like = requires {
-	{ std::tuple_size<T>::value } -> std::convertible_to<size_t>;
-};
-
-template<class T>
-concept c_record_like = c_aggregate<T> || c_tuple_like<T>;
 
 } // namespace fr
 #endif
