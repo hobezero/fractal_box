@@ -261,6 +261,54 @@ concept c_string_like
 		{ mut_container.find(const_container, n) } -> std::same_as<typename C::size_type>;
 	};
 
+template<class S>
+concept c_set_like
+	= c_container<S>
+	&& std::default_initializable<S>
+	&& requires(
+		S& mut_container,
+		const S& const_container,
+		typename S::value_type& v,
+		const typename S::value_type& cv,
+		typename S::iterator it,
+		typename S::const_iterator cit
+	) {
+		// Member types
+		// ^^^^^^^^^^^^
+
+		typename S::key_type;
+		typename S::value_type;
+		requires std::same_as<typename S::key_type, typename S::value_type>;
+		typename S::key_compare;
+		typename S::value_compare;
+		typename S::pointer;
+		typename S::const_pointer;
+		requires std::bidirectional_iterator<typename S::iterator>;
+		requires std::bidirectional_iterator<typename S::const_iterator>;
+
+		// Member functions
+		// ^^^^^^^^^^^^^^^^
+
+		mut_container.clear();
+		{ mut_container.insert(std::move(v)) } -> c_pair_of<typename S::iterator, bool>;
+		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename S::iterator>;
+		{ mut_container.emplace(std::move(v)) } -> c_pair_of<typename S::iterator, bool>;
+		{ mut_container.erase(it) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(cit) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(cit, cit) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(v) } -> std::same_as<typename S::size_type>;
+
+		mut_container.swap(mut_container);
+
+		{ const_container.count(cv) } -> std::same_as<typename S::size_type>;
+		{ mut_container.find(cv) } -> std::same_as<typename S::iterator>;
+		{ const_container.find(cv) } -> std::same_as<typename S::const_iterator>;
+		{ const_container.contains(cv) } -> std::same_as<bool>;
+
+		{ const_container.key_comp() } -> std::same_as<typename S::key_compare>;
+		{ const_container.value_comp() } -> std::same_as<typename S::value_compare>;
+	};
+
 // Detection of view types
 // -----------------------
 

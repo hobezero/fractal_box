@@ -7,11 +7,15 @@
 #include <deque>
 #include <forward_list>
 #include <list>
+#include <map>
 #include <memory>
+#include <set>
 #include <span>
 #include <string>
 #include <string_view>
 #include <unordered_map>
+#include <unordered_map>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 
@@ -269,6 +273,24 @@ TEST_CASE("c_string_like", "[u][engine][core][concepts]") {
 	STATIC_CHECK_FALSE(fr::c_string_like<std::span<int>>);
 	STATIC_CHECK_FALSE(fr::c_string_like<std::vector<char>>);
 	STATIC_CHECK_FALSE(fr::c_string_like<std::vector<char32_t>>);
+}
+
+TEST_CASE("c_set_like", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_set_like<std::set<int>>);
+	STATIC_CHECK(fr::c_set_like<std::set<std::string>>);
+
+	STATIC_CHECK_FALSE(fr::c_set_like<std::multiset<std::string>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::map<int, int>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::map<int, std::string>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::multimap<int, int>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::multimap<int, std::string>>);
+
+	STATIC_CHECK_FALSE(fr::c_set_like<std::unordered_set<int>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::unordered_multiset<int>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::unordered_map<int, int>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::unordered_map<int, std::string>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::unordered_multimap<int, int>>);
+	STATIC_CHECK_FALSE(fr::c_set_like<std::unordered_multimap<int, std::string>>);
 }
 
 TEST_CASE("c_span_like", "[u][engine][core][concepts]") {
