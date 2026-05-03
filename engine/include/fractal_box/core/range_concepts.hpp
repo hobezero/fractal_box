@@ -41,12 +41,7 @@ template<class O>
 concept c_optional_like
 	= std::default_initializable<O>
 	&& requires(O& mut_opt, const O& const_opt, typename O::value_type v) {
-		// Member types
-		// ^^^^^^^^^^^^
 		typename O::value_type;
-
-		// Member functions
-		// ^^^^^^^^^^^^^^^^
 
 		{ const_opt.operator->() } -> std::same_as<const typename O::value_type*>;
 		{ mut_opt.operator->() } -> std::same_as<typename O::value_type*>;
@@ -207,7 +202,6 @@ concept c_vector_like
 		typename C::value_type v,
 		typename C::size_type i
 	) {
-
 		mut_container.clear();
 		mut_container.push_back(v);
 		mut_container.pop_back();
@@ -237,16 +231,10 @@ concept c_string_like
 		typename C::size_type n,
 		typename C::value_type ch
 	) {
-		// Member types
-		// ^^^^^^^^^^^^
-
 		typename C::traits_type;
 		typename C::allocator_type;
 		typename C::pointer;
 		typename C::const_pointer;
-
-		// Member functions
-		// ^^^^^^^^^^^^^^^^
 
 		{ mut_container.data() } -> std::same_as<typename C::value_type*>;
 		{ mut_container.length() } -> std::same_as<typename C::size_type>;
@@ -270,12 +258,8 @@ concept c_set_like
 		const S& const_container,
 		typename S::value_type& v,
 		const typename S::value_type& cv,
-		typename S::iterator it,
 		typename S::const_iterator cit
 	) {
-		// Member types
-		// ^^^^^^^^^^^^
-
 		typename S::key_type;
 		typename S::value_type;
 		requires std::same_as<typename S::key_type, typename S::value_type>;
@@ -286,14 +270,10 @@ concept c_set_like
 		requires std::bidirectional_iterator<typename S::iterator>;
 		requires std::bidirectional_iterator<typename S::const_iterator>;
 
-		// Member functions
-		// ^^^^^^^^^^^^^^^^
-
 		mut_container.clear();
 		{ mut_container.insert(std::move(v)) } -> c_pair_of<typename S::iterator, bool>;
 		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename S::iterator>;
 		{ mut_container.emplace(std::move(v)) } -> c_pair_of<typename S::iterator, bool>;
-		{ mut_container.erase(it) } -> std::same_as<typename S::iterator>;
 		{ mut_container.erase(cit) } -> std::same_as<typename S::iterator>;
 		{ mut_container.erase(cit, cit) } -> std::same_as<typename S::iterator>;
 		{ mut_container.erase(v) } -> std::same_as<typename S::size_type>;
@@ -321,12 +301,8 @@ concept c_map_like
 		typename M::mapped_type& m,
 		const typename M::mapped_type& cm,
 		typename M::value_type& v,
-		typename M::iterator it,
 		typename M::const_iterator cit
 	) {
-		// Member types
-		// ^^^^^^^^^^^^
-
 		typename M::key_type;
 		typename M::mapped_type;
 		typename M::value_type; // a `pair<const key_type, mapped_type>` in std::map
@@ -335,9 +311,6 @@ concept c_map_like
 		typename M::const_pointer;
 		requires std::bidirectional_iterator<typename M::iterator>;
 		requires std::bidirectional_iterator<typename M::const_iterator>;
-
-		// Member functions
-		// ^^^^^^^^^^^^^^^^
 
 		{ mut_container[ck] } -> std::same_as<typename M::mapped_type&>;
 		{ mut_container[std::move(k)] } -> std::same_as<typename M::mapped_type&>;
@@ -350,7 +323,6 @@ concept c_map_like
 		{ mut_container.emplace(std::move(v)) } -> c_pair_of<typename M::iterator, bool>;
 		{ mut_container.try_emplace(std::move(k), std::move(m)) }
 			-> c_pair_of<typename M::iterator, bool>;
-		{ mut_container.erase(it) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(cit) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(cit, cit) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(ck) } -> std::same_as<typename M::size_type>;
@@ -364,6 +336,45 @@ concept c_map_like
 
 		{ const_container.key_comp() } -> std::same_as<typename M::key_compare>;
 		{ const_container.value_comp() } -> std::same_as<typename M::value_compare>;
+	};
+
+template<class S>
+concept c_unordered_set_like
+	= c_container<S>
+	&& std::default_initializable<S>
+	&& requires(
+		S& mut_container,
+		const S& const_container,
+		typename S::value_type& v,
+		const typename S::value_type& cv,
+		typename S::iterator it,
+		typename S::const_iterator cit
+	) {
+		typename S::key_type;
+		typename S::value_type;
+		requires std::same_as<typename S::key_type, typename S::value_type>;
+		typename S::hasher;
+		typename S::key_equal;
+		requires std::forward_iterator<typename S::iterator>;
+		requires std::forward_iterator<typename S::const_iterator>;
+
+		mut_container.clear();
+		{ mut_container.insert(std::move(v)) } -> c_pair_of<typename S::iterator, bool>;
+		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename S::iterator>;
+		{ mut_container.emplace(std::move(v)) } -> c_pair_of<typename S::iterator, bool>;
+		{ mut_container.erase(cit) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(cit, cit) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(v) } -> std::same_as<typename S::size_type>;
+
+		mut_container.swap(mut_container);
+
+		{ const_container.count(cv) } -> std::same_as<typename S::size_type>;
+		{ mut_container.find(cv) } -> std::same_as<typename S::iterator>;
+		{ const_container.find(cv) } -> std::same_as<typename S::const_iterator>;
+		{ const_container.contains(cv) } -> std::same_as<bool>;
+
+		{ const_container.hash_function() } -> std::same_as<typename S::hasher>;
+		{ const_container.key_eq() } -> std::same_as<typename S::key_equal>;
 	};
 
 // Detection of view types
