@@ -353,6 +353,26 @@ TEST_CASE("c_unordered_map_like", "[u][engine][core][concepts]") {
 	STATIC_CHECK_FALSE(fr::c_unordered_map_like<std::unordered_multimap<int, std::string>>);
 }
 
+TEST_CASE("c_multiset_like", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_multiset_like<std::multiset<int>>);
+	STATIC_CHECK(fr::c_multiset_like<std::multiset<std::string>>);
+	STATIC_CHECK(fr::c_multiset_like<std::pmr::multiset<int>>);
+	STATIC_CHECK(fr::c_multiset_like<std::pmr::multiset<std::string>>);
+
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::set<std::string>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::map<int, int>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::map<int, std::string>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::multimap<int, int>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::multimap<int, std::string>>);
+
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::unordered_set<int>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::unordered_multiset<int>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::unordered_map<int, int>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::unordered_map<int, std::string>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::unordered_multimap<int, int>>);
+	STATIC_CHECK_FALSE(fr::c_multiset_like<std::unordered_multimap<int, std::string>>);
+}
+
 TEST_CASE("c_span_like", "[u][engine][core][concepts]") {
 	STATIC_CHECK(fr::c_span_like<std::span<int>>);
 	STATIC_CHECK(fr::c_span_like<std::span<int, 5>>);
