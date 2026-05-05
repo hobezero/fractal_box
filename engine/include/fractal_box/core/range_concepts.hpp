@@ -467,6 +467,48 @@ concept c_multiset_like
 		{ const_container.value_comp() } -> std::same_as<typename S::value_compare>;
 	};
 
+template<class M>
+concept c_multimap_like
+	= c_container<M>
+	&& std::default_initializable<M>
+	&& requires(
+		M& mut_container,
+		const M& const_container,
+		typename M::key_type& k,
+		const typename M::key_type& ck,
+		typename M::mapped_type& m,
+		const typename M::mapped_type& cm,
+		typename M::value_type& v,
+		typename M::const_iterator cit
+	) {
+		typename M::key_type;
+		typename M::mapped_type;
+		typename M::value_type; // a `pair<const key_type, mapped_type>` in std::map
+		typename M::key_compare;
+		typename M::pointer;
+		typename M::const_pointer;
+		requires std::bidirectional_iterator<typename M::iterator>;
+		requires std::bidirectional_iterator<typename M::const_iterator>;
+
+		mut_container.clear();
+		{ mut_container.insert(std::move(v)) } -> std::same_as<typename M::iterator>;
+		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename M::iterator>;
+		{ mut_container.emplace(std::move(v)) } -> std::same_as<typename M::iterator>;
+		{ mut_container.erase(cit) } -> std::same_as<typename M::iterator>;
+		{ mut_container.erase(cit, cit) } -> std::same_as<typename M::iterator>;
+		{ mut_container.erase(ck) } -> std::same_as<typename M::size_type>;
+
+		mut_container.swap(mut_container);
+
+		{ const_container.count(ck) } -> std::same_as<typename M::size_type>;
+		{ mut_container.find(ck) } -> std::same_as<typename M::iterator>;
+		{ const_container.find(ck) } -> std::same_as<typename M::const_iterator>;
+		{ const_container.contains(ck) } -> std::same_as<bool>;
+
+		{ const_container.key_comp() } -> std::same_as<typename M::key_compare>;
+		{ const_container.value_comp() } -> std::same_as<typename M::value_compare>;
+	};
+
 // Detection of view types
 // -----------------------
 
