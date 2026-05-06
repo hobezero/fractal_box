@@ -289,6 +289,46 @@ concept c_set_like
 		{ const_container.value_comp() } -> std::same_as<typename S::value_compare>;
 	};
 
+template<class S>
+concept c_multiset_like
+	= c_container<S>
+	&& std::default_initializable<S>
+	&& requires(
+		S& mut_container,
+		const S& const_container,
+		typename S::value_type& v,
+		const typename S::value_type& cv,
+		typename S::const_iterator cit
+	) {
+		typename S::key_type;
+		typename S::value_type;
+		requires std::same_as<typename S::key_type, typename S::value_type>;
+		typename S::key_compare;
+		typename S::value_compare;
+		typename S::pointer;
+		typename S::const_pointer;
+		requires std::bidirectional_iterator<typename S::iterator>;
+		requires std::bidirectional_iterator<typename S::const_iterator>;
+
+		mut_container.clear();
+		{ mut_container.insert(std::move(v)) } -> std::same_as<typename S::iterator>;
+		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename S::iterator>;
+		{ mut_container.emplace(std::move(v)) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(cit) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(cit, cit) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(v) } -> std::same_as<typename S::size_type>;
+
+		mut_container.swap(mut_container);
+
+		{ const_container.count(cv) } -> std::same_as<typename S::size_type>;
+		{ mut_container.find(cv) } -> std::same_as<typename S::iterator>;
+		{ const_container.find(cv) } -> std::same_as<typename S::const_iterator>;
+		{ const_container.contains(cv) } -> std::same_as<bool>;
+
+		{ const_container.key_comp() } -> std::same_as<typename S::key_compare>;
+		{ const_container.value_comp() } -> std::same_as<typename S::value_compare>;
+	};
+
 template<class M>
 concept c_map_like
 	= c_container<M>
@@ -338,6 +378,49 @@ concept c_map_like
 		{ const_container.value_comp() } -> std::same_as<typename M::value_compare>;
 	};
 
+template<class M>
+concept c_multimap_like
+	= c_container<M>
+	&& std::default_initializable<M>
+	&& requires(
+		M& mut_container,
+		const M& const_container,
+		typename M::key_type& k,
+		const typename M::key_type& ck,
+		typename M::mapped_type& m,
+		const typename M::mapped_type& cm,
+		typename M::value_type& v,
+		typename M::const_iterator cit
+	) {
+		typename M::key_type;
+		typename M::mapped_type;
+		typename M::value_type; // a `pair<const key_type, mapped_type>` in std::map
+		typename M::key_compare;
+		typename M::pointer;
+		typename M::const_pointer;
+		requires std::bidirectional_iterator<typename M::iterator>;
+		requires std::bidirectional_iterator<typename M::const_iterator>;
+
+		mut_container.clear();
+		{ mut_container.insert(std::move(v)) } -> std::same_as<typename M::iterator>;
+		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename M::iterator>;
+		{ mut_container.emplace(std::move(v)) } -> std::same_as<typename M::iterator>;
+		{ mut_container.erase(cit) } -> std::same_as<typename M::iterator>;
+		{ mut_container.erase(cit, cit) } -> std::same_as<typename M::iterator>;
+		{ mut_container.erase(ck) } -> std::same_as<typename M::size_type>;
+
+		mut_container.swap(mut_container);
+
+		{ const_container.count(ck) } -> std::same_as<typename M::size_type>;
+		{ mut_container.find(ck) } -> std::same_as<typename M::iterator>;
+		{ const_container.find(ck) } -> std::same_as<typename M::const_iterator>;
+		{ const_container.contains(ck) } -> std::same_as<bool>;
+
+		{ const_container.key_comp() } -> std::same_as<typename M::key_compare>;
+		{ const_container.value_comp() } -> std::same_as<typename M::value_compare>;
+	};
+
+
 template<class S>
 concept c_unordered_set_like
 	= c_container<S>
@@ -362,6 +445,45 @@ concept c_unordered_set_like
 		{ mut_container.insert(std::move(v)) } -> c_pair_of<typename S::iterator, bool>;
 		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename S::iterator>;
 		{ mut_container.emplace(std::move(v)) } -> c_pair_of<typename S::iterator, bool>;
+		{ mut_container.erase(cit) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(cit, cit) } -> std::same_as<typename S::iterator>;
+		{ mut_container.erase(v) } -> std::same_as<typename S::size_type>;
+
+		mut_container.swap(mut_container);
+
+		{ const_container.count(cv) } -> std::same_as<typename S::size_type>;
+		{ mut_container.find(cv) } -> std::same_as<typename S::iterator>;
+		{ const_container.find(cv) } -> std::same_as<typename S::const_iterator>;
+		{ const_container.contains(cv) } -> std::same_as<bool>;
+
+		{ const_container.hash_function() } -> std::same_as<typename S::hasher>;
+		{ const_container.key_eq() } -> std::same_as<typename S::key_equal>;
+	};
+
+template<class S>
+concept c_unordered_multiset_like
+	= c_container<S>
+	&& std::default_initializable<S>
+	&& requires(
+		S& mut_container,
+		const S& const_container,
+		typename S::value_type& v,
+		const typename S::value_type& cv,
+		typename S::iterator it,
+		typename S::const_iterator cit
+	) {
+		typename S::key_type;
+		typename S::value_type;
+		requires std::same_as<typename S::key_type, typename S::value_type>;
+		typename S::hasher;
+		typename S::key_equal;
+		requires std::forward_iterator<typename S::iterator>;
+		requires std::forward_iterator<typename S::const_iterator>;
+
+		mut_container.clear();
+		{ mut_container.insert(std::move(v)) } -> std::same_as<typename S::iterator>;
+		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename S::iterator>;
+		{ mut_container.emplace(std::move(v)) } -> std::same_as<typename S::iterator>;
 		{ mut_container.erase(cit) } -> std::same_as<typename S::iterator>;
 		{ mut_container.erase(cit, cit) } -> std::same_as<typename S::iterator>;
 		{ mut_container.erase(v) } -> std::same_as<typename S::size_type>;
@@ -427,48 +549,8 @@ concept c_unordered_map_like
 		{ const_container.key_eq() } -> std::same_as<typename M::key_equal>;
 	};
 
-template<class S>
-concept c_multiset_like
-	= c_container<S>
-	&& std::default_initializable<S>
-	&& requires(
-		S& mut_container,
-		const S& const_container,
-		typename S::value_type& v,
-		const typename S::value_type& cv,
-		typename S::const_iterator cit
-	) {
-		typename S::key_type;
-		typename S::value_type;
-		requires std::same_as<typename S::key_type, typename S::value_type>;
-		typename S::key_compare;
-		typename S::value_compare;
-		typename S::pointer;
-		typename S::const_pointer;
-		requires std::bidirectional_iterator<typename S::iterator>;
-		requires std::bidirectional_iterator<typename S::const_iterator>;
-
-		mut_container.clear();
-		{ mut_container.insert(std::move(v)) } -> std::same_as<typename S::iterator>;
-		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename S::iterator>;
-		{ mut_container.emplace(std::move(v)) } -> std::same_as<typename S::iterator>;
-		{ mut_container.erase(cit) } -> std::same_as<typename S::iterator>;
-		{ mut_container.erase(cit, cit) } -> std::same_as<typename S::iterator>;
-		{ mut_container.erase(v) } -> std::same_as<typename S::size_type>;
-
-		mut_container.swap(mut_container);
-
-		{ const_container.count(cv) } -> std::same_as<typename S::size_type>;
-		{ mut_container.find(cv) } -> std::same_as<typename S::iterator>;
-		{ const_container.find(cv) } -> std::same_as<typename S::const_iterator>;
-		{ const_container.contains(cv) } -> std::same_as<bool>;
-
-		{ const_container.key_comp() } -> std::same_as<typename S::key_compare>;
-		{ const_container.value_comp() } -> std::same_as<typename S::value_compare>;
-	};
-
 template<class M>
-concept c_multimap_like
+concept c_unordered_multimap_like
 	= c_container<M>
 	&& std::default_initializable<M>
 	&& requires(
@@ -484,11 +566,12 @@ concept c_multimap_like
 		typename M::key_type;
 		typename M::mapped_type;
 		typename M::value_type; // a `pair<const key_type, mapped_type>` in std::map
-		typename M::key_compare;
+		typename M::hasher;
+		typename M::key_equal;
 		typename M::pointer;
 		typename M::const_pointer;
-		requires std::bidirectional_iterator<typename M::iterator>;
-		requires std::bidirectional_iterator<typename M::const_iterator>;
+		requires std::forward_iterator<typename M::iterator>;
+		requires std::forward_iterator<typename M::const_iterator>;
 
 		mut_container.clear();
 		{ mut_container.insert(std::move(v)) } -> std::same_as<typename M::iterator>;
@@ -505,9 +588,11 @@ concept c_multimap_like
 		{ const_container.find(ck) } -> std::same_as<typename M::const_iterator>;
 		{ const_container.contains(ck) } -> std::same_as<bool>;
 
-		{ const_container.key_comp() } -> std::same_as<typename M::key_compare>;
-		{ const_container.value_comp() } -> std::same_as<typename M::value_compare>;
+		{ const_container.hash_function() } -> std::same_as<typename M::hasher>;
+		{ const_container.key_eq() } -> std::same_as<typename M::key_equal>;
 	};
+
+// TODO: c_flat_set_like, c_flat_map_like
 
 // Detection of view types
 // -----------------------
