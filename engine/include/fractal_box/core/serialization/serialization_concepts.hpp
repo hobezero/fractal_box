@@ -228,7 +228,23 @@ auto get_serializability_impl() noexcept -> Serializability {
 	else if constexpr (c_vector_like<PT>) {
 		return {Vector, get_serializability<typename PT::value_type>().mode()};
 	}
-	// TODO: Map, Set
+	else if constexpr (
+		c_map_like<T>
+		|| c_multimap_like<T>
+		|| c_unordered_map_like<T>
+		|| c_unordered_multimap_like<T>
+	) {
+		return {Map, get_serializability<typename PT::key_type>()
+			&& get_serializability<typename PT::value_type>() ? Default : None};
+	}
+	else if constexpr (
+		c_set_like<PT>
+		|| c_multiset_like<PT>
+		|| c_unordered_set_like<PT>
+		|| c_unordered_multiset_like<PT>
+	) {
+		return {Set, get_serializability<typename PT::key_type>() ? Default : None};
+	}
 	else if constexpr (c_variant_like<PT>) {
 		return {Variant, mp_all_of<PT, IsSerializable> ? Default : None};
 	}

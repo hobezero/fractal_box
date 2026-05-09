@@ -2,6 +2,10 @@
 #include "fractal_box/core/serialization/serialization_concepts.hpp"
 
 #include <algorithm>
+#include <map>
+#include <set>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <catch2/catch_test_macros.hpp>
 
@@ -117,6 +121,45 @@ TEST_CASE("get_serializability", "[u][engine][core][serialization]") {
 		STATIC_CHECK(fr::get_serializability<std::vector<PrivateClass>>() == SA{Vector, None});
 		STATIC_CHECK(fr::get_serializability<std::vector<NoDefaultCtor>>() == SA{Vector, None});
 	}
+	SECTION("Map") {
+		STATIC_CHECK(fr::get_serializability<std::map<int, std::string>>() == SA{Map, Default});
+		STATIC_CHECK(fr::get_serializability<std::multimap<int, std::string>>()
+			== SA{Map, Default});
+		STATIC_CHECK(fr::get_serializability<std::unordered_map<int, std::string>>()
+			== SA{Map, Default});
+		STATIC_CHECK(fr::get_serializability<std::unordered_multimap<int, std::string>>()
+			== SA{Map, Default});
+
+		STATIC_CHECK(fr::get_serializability<std::map<PrivateClass, std::string>>()
+			== SA{Map, None});
+		STATIC_CHECK(fr::get_serializability<std::multimap<PrivateClass, std::string>>()
+			== SA{Map, None});
+		STATIC_CHECK(fr::get_serializability<std::unordered_map<PrivateClass, std::string>>()
+			== SA{Map, None});
+		STATIC_CHECK(fr::get_serializability<std::unordered_multimap<PrivateClass, std::string>>()
+			== SA{Map, None});
+		STATIC_CHECK(fr::get_serializability<std::map<int, PrivateClass>>() == SA{Map, None});
+		STATIC_CHECK(fr::get_serializability<std::multimap<int, PrivateClass>>()
+			== SA{Map, None});
+		STATIC_CHECK(fr::get_serializability<std::unordered_map<int, PrivateClass>>()
+			== SA{Map, None});
+		STATIC_CHECK(fr::get_serializability<std::unordered_multimap<int, PrivateClass>>()
+			== SA{Map, None});
+	}
+	SECTION("Set") {
+		STATIC_CHECK(fr::get_serializability<std::set<int>>() == SA{Set, Default});
+		STATIC_CHECK(fr::get_serializability<std::multiset<int>>() == SA{Set, Default});
+		STATIC_CHECK(fr::get_serializability<std::unordered_set<int>>() == SA{Set, Default});
+		STATIC_CHECK(fr::get_serializability<std::unordered_multiset<int>>() == SA{Set, Default});
+
+		STATIC_CHECK(fr::get_serializability<std::set<PrivateClass>>() == SA{Set, None});
+		STATIC_CHECK(fr::get_serializability<std::multiset<PrivateClass>>()
+			== SA{Set, None});
+		STATIC_CHECK(fr::get_serializability<std::unordered_set<PrivateClass>>()
+			== SA{Set, None});
+		STATIC_CHECK(fr::get_serializability<std::unordered_multiset<PrivateClass>>()
+			== SA{Set, None});
+	}
 	SECTION("Variant") {
 		STATIC_CHECK(fr::get_serializability<std::variant<int>>() == SA{Variant, Default});
 		STATIC_CHECK(fr::get_serializability<std::variant<int, std::monostate>>()
@@ -172,6 +215,14 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		std::vector<std::string>,
 		std::vector<int>&,
 		std::vector<CustomFriend>,
+		std::map<std::string, int>,
+		std::multimap<std::string, int>,
+		std::unordered_map<std::string, int>,
+		std::unordered_multimap<std::string, int>,
+		std::set<std::string>,
+		std::multiset<std::string>,
+		std::unordered_set<std::string>,
+		std::unordered_multiset<std::string>,
 		std::variant<int>,
 		std::variant<int>&,
 		std::variant<int, std::monostate>,
@@ -192,6 +243,18 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		PrivateClass[5],
 		std::vector<PrivateClass>,
 		std::vector<NoDefaultCtor>,
+		std::map<std::string, PrivateClass>,
+		std::multimap<std::string, PrivateClass>,
+		std::unordered_map<std::string, PrivateClass>,
+		std::unordered_multimap<std::string, PrivateClass>,
+		std::map<PrivateClass, int>,
+		std::multimap<PrivateClass, int>,
+		std::unordered_map<PrivateClass, int>,
+		std::unordered_multimap<PrivateClass, int>,
+		std::set<PrivateClass>,
+		std::multiset<PrivateClass>,
+		std::unordered_set<PrivateClass>,
+		std::unordered_multiset<PrivateClass>,
 		std::variant<std::nullptr_t>,
 		std::variant<int, PrivateClass, float>
 	>;
@@ -385,6 +448,96 @@ TEST_CASE("SbsDataFormat.custom", "[u][engine][core][serialization]") {
 	frt::named_typed_section<CustomStatic>("through static memer function", test_custom);
 }
 
+TEST_CASE("SbsDataFormat.optionals", "[u][engine][core][serialization]") {
+	SECTION("serializing into a vector") {
+		constexpr auto do_test = [] {
+			const auto in_value1 = std::optional<int>{};
+			const auto in_value2 = std::optional<int>{67};
+
+			static constexpr auto value1_size = sizeof(bool);
+			static constexpr auto value2_size = sizeof(bool) + sizeof(int);
+
+			auto buf = std::vector<unsigned char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value1) == value1_size);
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value2) == value2_size);
+
+			auto out_value1 = std::optional<int>{};
+			auto out_value2 = std::optional<int>{};
+			auto out_value3 = std::optional<int>{5};
+			auto out_value4 = std::optional<int>{5};
+
+			auto reader1 = fr::SpanReader{buf};
+			auto reader2 = fr::SpanReader{buf};
+
+			auto res1 = fr::SbsDataFormat::decode(reader1, out_value1);
+			FRT_REQUIRE(res1);
+			FRT_CHECK(*res1 == value1_size);
+			FRT_CHECK(out_value1 == in_value1);
+
+			auto res2 = fr::SbsDataFormat::decode(reader1, out_value2);
+			FRT_REQUIRE(res2);
+			FRT_CHECK(*res2 == value2_size);
+			FRT_CHECK(out_value2 == in_value2);
+
+			auto res3 = fr::SbsDataFormat::decode(reader2, out_value3);
+			FRT_REQUIRE(res3);
+			FRT_CHECK(*res3 == value1_size);
+			FRT_CHECK(out_value3 == in_value1);
+
+			auto res4 = fr::SbsDataFormat::decode(reader2, out_value4);
+			FRT_REQUIRE(res4);
+			FRT_CHECK(*res4 == value2_size);
+			FRT_CHECK(out_value4 == in_value2);
+
+			return true;
+		};
+
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+	SECTION("serialializing into an array which is too small") {
+		constexpr auto do_test = [] {
+			const auto in_value = std::optional<int>{5};
+			static constexpr auto value_size = sizeof(bool) + sizeof(int);
+
+			auto buf = std::array<std::byte, value_size - 3>{};
+			auto writer = fr::SpanWriter{buf};
+
+			auto res = fr::SbsDataFormat::encode(writer, in_value);
+			FRT_CHECK(!res);
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+	SECTION("deserializing from a span which is too small") {
+		constexpr auto do_test = [] {
+			auto in_value = std::optional<int>{66};
+			static constexpr auto value_size = sizeof(bool) + sizeof(int);
+
+			auto buf = std::vector<char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_REQUIRE(fr::SbsDataFormat::encode(writer, in_value));
+
+			auto out_value = std::optional<int>{};
+
+			auto reader = fr::SpanReader{std::span<char>(buf.data(), buf.data() + value_size - 2)};
+			auto res = fr::SbsDataFormat::decode(reader, out_value);
+			FRT_CHECK(!res);
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		STATIC_CHECK(do_test());
+	}
+}
+
 template<class C>
 constexpr auto string_lit1 = fr::detail::MpIllegal{};
 
@@ -491,96 +644,6 @@ static constexpr auto test_sbs_strings = []<class C> {
 	}
 };
 
-TEST_CASE("SbsDataFormat.optionals", "[u][engine][core][serialization]") {
-	SECTION("serializing into a vector") {
-		constexpr auto do_test = [] {
-			const auto in_value1 = std::optional<int>{};
-			const auto in_value2 = std::optional<int>{67};
-
-			static constexpr auto value1_size = sizeof(bool);
-			static constexpr auto value2_size = sizeof(bool) + sizeof(int);
-
-			auto buf = std::vector<unsigned char>{};
-			auto writer = fr::VectorWriter{buf};
-
-			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value1) == value1_size);
-			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value2) == value2_size);
-
-			auto out_value1 = std::optional<int>{};
-			auto out_value2 = std::optional<int>{};
-			auto out_value3 = std::optional<int>{5};
-			auto out_value4 = std::optional<int>{5};
-
-			auto reader1 = fr::SpanReader{buf};
-			auto reader2 = fr::SpanReader{buf};
-
-			auto res1 = fr::SbsDataFormat::decode(reader1, out_value1);
-			FRT_REQUIRE(res1);
-			FRT_CHECK(*res1 == value1_size);
-			FRT_CHECK(out_value1 == in_value1);
-
-			auto res2 = fr::SbsDataFormat::decode(reader1, out_value2);
-			FRT_REQUIRE(res2);
-			FRT_CHECK(*res2 == value2_size);
-			FRT_CHECK(out_value2 == in_value2);
-
-			auto res3 = fr::SbsDataFormat::decode(reader2, out_value3);
-			FRT_REQUIRE(res3);
-			FRT_CHECK(*res3 == value1_size);
-			FRT_CHECK(out_value3 == in_value1);
-
-			auto res4 = fr::SbsDataFormat::decode(reader2, out_value4);
-			FRT_REQUIRE(res4);
-			FRT_CHECK(*res4 == value2_size);
-			FRT_CHECK(out_value4 == in_value2);
-
-			return true;
-		};
-
-		do_test();
-		STATIC_CHECK(do_test());
-	}
-	SECTION("serialializing into an array which is too small") {
-		constexpr auto do_test = [] {
-			const auto in_value = std::optional<int>{5};
-			static constexpr auto value_size = sizeof(bool) + sizeof(int);
-
-			auto buf = std::array<std::byte, value_size - 3>{};
-			auto writer = fr::SpanWriter{buf};
-
-			auto res = fr::SbsDataFormat::encode(writer, in_value);
-			FRT_CHECK(!res);
-			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
-
-			return true;
-		};
-		do_test();
-		STATIC_CHECK(do_test());
-	}
-	SECTION("deserializing from a span which is too small") {
-		constexpr auto do_test = [] {
-			auto in_value = std::optional<int>{66};
-			static constexpr auto value_size = sizeof(bool) + sizeof(int);
-
-			auto buf = std::vector<char>{};
-			auto writer = fr::VectorWriter{buf};
-
-			FRT_REQUIRE(fr::SbsDataFormat::encode(writer, in_value));
-
-			auto out_value = std::optional<int>{};
-
-			auto reader = fr::SpanReader{std::span<char>(buf.data(), buf.data() + value_size - 2)};
-			auto res = fr::SbsDataFormat::decode(reader, out_value);
-			FRT_CHECK(!res);
-			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
-
-			return true;
-		};
-		do_test();
-		STATIC_CHECK(do_test());
-	}
-}
-
 TEST_CASE("SbsDataFormat.strings", "[u][engine][core][serialization]") {
 	frt::named_typed_section<char>("std::string", test_sbs_strings);
 	frt::named_typed_section<char16_t>("std::u16string", test_sbs_strings);
@@ -671,6 +734,90 @@ TEST_CASE("SbsDataFormat.arrays", "[u][engine][core][serialization]") {
 		do_test();
 		STATIC_CHECK(do_test());
 	}
+}
+
+static constexpr auto test_set = []<class T> {
+	SECTION("serializing into a vector") {
+		constexpr auto do_test = [] {
+			static constexpr int values[] = {22, 44, 66, 88};
+			auto in_value = T(std::from_range, values);
+			static constexpr auto value_size = sizeof(size_t) + sizeof(int) * std::size(values);
+
+			auto buf = std::vector<unsigned char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
+
+			auto out_value = T();
+			auto reader = fr::SpanReader{buf};
+
+			auto res = fr::SbsDataFormat::decode(reader, out_value);
+			FRT_REQUIRE(res);
+			FRT_CHECK(*res == value_size);
+			FRT_CHECK(out_value == in_value);
+
+			return true;
+		};
+
+		do_test();
+		// TODO: Uncomment once std::set gets constexpr support
+		// STATIC_CHECK(do_test());
+	}
+	SECTION("serialializing into an array which is too small") {
+		constexpr auto do_test = [] {
+			static constexpr int values[] = {22, 44, 66, 88};
+			auto in_value = T(std::from_range, values);
+			static constexpr auto value_size = sizeof(size_t) + sizeof(int) * std::size(values);
+
+			auto buf = std::array<std::byte, value_size - 5>{};
+			auto writer = fr::SpanWriter{buf};
+
+			auto res = fr::SbsDataFormat::encode(writer, in_value);
+			FRT_CHECK(!res);
+			FRT_CHECK(res.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		// TODO: Uncomment once std::set gets constexpr support
+		// STATIC_CHECK(do_test());
+	}
+	SECTION("deserializing from a span which is too small") {
+		constexpr auto do_test = [] {
+			static constexpr int values[] = {22, 44, 66, 88};
+			auto in_value = T(std::from_range, values);
+			static constexpr auto value_size = sizeof(size_t) + sizeof(int) * std::size(values);
+
+			auto buf = std::vector<char>{};
+			auto writer = fr::VectorWriter{buf};
+
+			FRT_REQUIRE(fr::SbsDataFormat::encode(writer, in_value));
+
+			auto out_value = T();
+
+			auto reader1 = fr::SpanReader{std::span<char>(buf.data(), buf.data() + 3)};
+			auto res1 = fr::SbsDataFormat::decode(reader1, out_value);
+			FRT_CHECK(!res1);
+			FRT_CHECK(res1.template has_error<fr::BufferOverrun>());
+
+			auto reader2 = fr::SpanReader{std::span<char>(buf.data(), buf.data() + value_size - 2)};
+			auto res2 = fr::SbsDataFormat::decode(reader2, out_value);
+			FRT_CHECK(!res2);
+			FRT_CHECK(res2.template has_error<fr::BufferOverrun>());
+
+			return true;
+		};
+		do_test();
+		// TODO: Uncomment once std::set gets constexpr support
+		// STATIC_CHECK(do_test());
+	}
+};
+
+TEST_CASE("SbsDataFormat.sets", "[u][engine][core][serialization]") {
+	frt::named_typed_section<std::set<int>>("std::set", test_set);
+	frt::named_typed_section<std::multiset<int>>("std::set", test_set);
+	frt::named_typed_section<std::unordered_set<int>>("std::set", test_set);
+	frt::named_typed_section<std::unordered_multiset<int>>("std::set", test_set);
 }
 
 TEST_CASE("SbsDataFormat.vectors", "[u][engine][core][serialization]") {
