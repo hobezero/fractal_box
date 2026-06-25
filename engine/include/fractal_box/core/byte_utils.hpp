@@ -87,7 +87,7 @@ auto partial_read64(const unsigned char* p) noexcept -> uint64_t {
 		return v;
 	}
 	else {
-		uint64_t v;
+		auto v = uint64_t{};
 		std::memcpy(&v, p, N);
 		if constexpr (std::endian::native == std::endian::little) {
 			return v;

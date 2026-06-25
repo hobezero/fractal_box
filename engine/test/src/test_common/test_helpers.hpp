@@ -15,6 +15,13 @@
 
 namespace frt {
 
+#define FRT_INFO(...) do { \
+	if !consteval { \
+		INFO((__VA_ARGS__)); \
+	} \
+} while (false)
+
+
 #define FRT_CHECK(...) do { \
 	if consteval { \
 		FR_PANIC_CHECK((__VA_ARGS__)); \
@@ -22,7 +29,7 @@ namespace frt {
 	else { \
 		CHECK(__VA_ARGS__); \
 	} \
-} while(false)
+} while (false)
 
 #define FRT_REQUIRE(...) do { \
 	if consteval { \
@@ -31,7 +38,7 @@ namespace frt {
 	else { \
 		REQUIRE(__VA_ARGS__); \
 	} \
-} while(false)
+} while (false)
 
 inline constexpr char lorem_text[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
 	"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";

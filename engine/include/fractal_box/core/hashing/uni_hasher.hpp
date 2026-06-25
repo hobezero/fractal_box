@@ -19,16 +19,20 @@
 #include "fractal_box/core/meta/reflection.hpp"
 
 /// Hashing algorithm
-/// 1. Build a typed representation of the hashing tree (preserve positional info)
-/// 2. Sort the tree in order:
-///    - Uncoditional: primitives, arrays, enums, aggregates, reflected classes
-///    - Containerss
-///    - Customized classes
-/// 3. Group uncoditional items into blocks
-/// 4. For each uncoditional block, pull the corresponding value from the hashing tree using
-///    positional info
-/// 5. Hash the remainder using push model. Accumulate data into blocks at runtime, then flush
+/// 1. Deconstruct the hashing tree into a list of lenses each of which record a path into the tree
+/// 2. Sort the lenses in order:
+///    - Byte-hashables: primitives, arrays, enums, aggregates, reflected classes
+///    - Others (non-byte-hashables): customized classes, containers, optionals, strings
+/// 3. For small number of byte-hashables, pack them together into a single buffer by pulling the
+///    corresponding values from the hashing tree using lenses. Rapidhash the buffer
+/// 4. For large number of byte-hashables, copy each individual word of each object into a buffer
+///    using lenses. Rapidhash the buffer
+/// 5. Hash the others objects using push model by calling operator() recursively on each
+///    object
 /// 6. Finalize
+/// TODO: Combine contiguous byte-hashable lenses into one (note: floats don't count)
+/// TODO: For non-byte-hashables, consider accumulating data into blocks at runtime, then flush.
+///   Alternatively, develop a streming version of Rapidhash
 
 namespace fr {
 
@@ -334,6 +338,8 @@ private:
 	}
 
 private:
+	// NOTE: byte_hashables include not only AsBytes object but also ephemeral byte-hashables
+	// (floating-point types)
 	std::vector<UniHashableLens1> _byte_hashables;
 	std::vector<UniHashableLens1> _others;
 };
@@ -536,6 +542,7 @@ public:
 		}
 
 		template<class T>
+		FR_FORCE_INLINE constexpr
 		void absorb_object_bytes(const T& obj) noexcept {
 			_result = RapidAlgo::template hash_obj_seeded<sizeof(T)>(obj, _result);
 		}
@@ -560,12 +567,19 @@ public:
 		template<c_hashable... Ts>
 		FR_FORCE_INLINE constexpr
 		void operator()(const Ts&... objects) const noexcept {
-			if constexpr (sizeof...(Ts) == 1zu) {
-				absorb_dispatch(objects...);
+			if constexpr (sizeof...(Ts) == 0zu) {
+				return;
 			}
 			else {
 				static constexpr auto lenses = detail::build_uni_hashable_lenses2(mp_list<Ts...>);
-				if constexpr (0zu < lenses.buffer_size
+				if constexpr (lenses.byte_hashables.size() == 1zu) {
+					static constexpr auto lens = lenses.byte_hashables[0zu];
+					const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
+					canonize_byte_hashable(obj, [&](const auto& canon) {
+						_state.absorb_object_bytes(canon);
+					});
+				}
+				else if constexpr (0zu < lenses.buffer_size
 					&& lenses.buffer_size <= RapidAlgo::max_short_size_bytes
 				) {
 					absorb_lensed_bytes<lenses>(objects...);
@@ -577,7 +591,7 @@ public:
 					unroll<lenses.byte_hashables.size()>([&]<size_t I> FR_FORCE_INLINE_L {
 						static constexpr auto lens = lenses.byte_hashables[I];
 						const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-						absorb_dispatch(obj);
+						operator()(obj);
 					});
 #endif
 				}
@@ -594,13 +608,13 @@ public:
 	private:
 		template<class T>
 		FR_FORCE_INLINE constexpr
-		void handle_byte_hashable(unsigned char* buffer, const T& obj) const noexcept {
+		void canonize_byte_hashable(const T& obj, auto&& callback) const noexcept {
 			if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {
-				const auto f = obj == T{} ? T{} : obj;
-				write_obj_as_bytes(buffer, f);
+				const auto canon = obj == T{} ? T{} : obj;
+				callback(canon);
 			}
 			else {
-				write_obj_as_bytes(buffer, obj);
+				callback(obj);
 			}
 		}
 
@@ -612,7 +626,9 @@ public:
 			unroll<Lenses.byte_hashables.size()>([&]<size_t I> FR_FORCE_INLINE_L {
 				static constexpr auto lens = Lenses.byte_hashables[I];
 				const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-				handle_byte_hashable(buffer + lens.byte_offset, obj);
+				canonize_byte_hashable(obj, [&](const auto& canon) {
+					write_obj_as_bytes(buffer + lens.byte_offset, canon);
+				});
 			});
 			_state.template absorb_fixed_bytes<Lenses.buffer_size>(buffer);
 		}
@@ -620,30 +636,34 @@ public:
 		template<auto Lenses, class... Ts>
 		FR_FORCE_INLINE constexpr
 		void absorb_lensed_blocks(const Ts&... objects) const noexcept {
-			Word words[Lenses.num_words];
+			Word words[Lenses.num_words] = {};
 			unroll<Lenses.byte_hashables.size()>([&]<size_t I> FR_FORCE_INLINE_L {
 				static constexpr auto lens = Lenses.byte_hashables[I];
 				const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-				if consteval {
-					const auto bytes = std::bit_cast<SimpleArray<unsigned char, sizeof(obj)>>(obj);
-					unroll<lens.num_words()>([&]<size_t WordOffset> FR_FORCE_INLINE_L {
-						static constexpr auto chunk = WordOffset + 1zu == lens.num_words()
-							? (lens.byte_size - sizeof(Word) * WordOffset)
-							: sizeof(Word);
-						words[lens.start_word_idx + WordOffset] = partial_read64<chunk>(
-							bytes.data() + sizeof(Word) * WordOffset);
-					});
-				}
-				else {
-					unroll<lens.num_words()>([&]<size_t WordOffset> FR_FORCE_INLINE_L {
-						static constexpr auto chunk = WordOffset + 1zu == lens.num_words()
-							? (lens.byte_size - sizeof(Word) * WordOffset)
-							: sizeof(Word);
-						words[lens.start_word_idx + WordOffset] = partial_read64<chunk>(
-							reinterpret_cast<const unsigned char*>(std::addressof(obj))
-							+ sizeof(Word) * WordOffset);
-					});
-				}
+				canonize_byte_hashable(obj, [&](const auto& canon) {
+					if consteval {
+						const auto bytes = std::bit_cast<SimpleArray<unsigned char, sizeof(canon)>>(
+							canon);
+						unroll<lens.num_words()>([&]<size_t WordOffset> FR_FORCE_INLINE_L {
+							static constexpr auto chunk = WordOffset + 1zu == lens.num_words()
+								? (lens.byte_size - sizeof(Word) * WordOffset)
+								: sizeof(Word);
+							words[lens.start_word_idx + WordOffset] = partial_read64<chunk>(
+								bytes.data() + sizeof(Word) * WordOffset);
+						});
+					}
+					else {
+						unroll<lens.num_words()>([&]<size_t WordOffset> FR_FORCE_INLINE_L {
+							static constexpr auto chunk = WordOffset + 1zu == lens.num_words()
+								? (lens.byte_size - sizeof(Word) * WordOffset)
+								: sizeof(Word);
+							auto word = partial_read64<chunk>(
+								reinterpret_cast<const unsigned char*>(std::addressof(canon))
+								+ sizeof(Word) * WordOffset);
+							words[lens.start_word_idx + WordOffset] = word;
+						});
+					}
+				});
 			});
 			auto stream = typename RapidAlgo::Stream{_state.result()};
 			_state.set_result(stream.absorb_words(words, Lenses.num_words));
@@ -655,6 +675,7 @@ public:
 			unroll<Lenses.others.size()>([&]<size_t I> FR_FORCE_INLINE_L {
 				static constexpr auto lens = Lenses.others[I];
 				const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
+				// NOTE: operator() would call absorb_dispatch() anyway
 				absorb_dispatch(obj);
 			});
 		}
@@ -769,7 +790,7 @@ public:
 		FR_FORCE_INLINE constexpr
 		void absorb_wrapper(Tuple<Ts...> tuple) const noexcept {
 			[&]<size_t... Is>(std::index_sequence<Is...>) FR_FORCE_INLINE_L {
-				(..., absorb_dispatch(std::get<Is>(tuple.args)));
+				operator()(std::get<Is>(tuple.args)...);
 			}(std::make_index_sequence<sizeof...(Ts)>{});
 		}
 
@@ -824,14 +845,14 @@ public:
 				}
 				else {
 					for (; range.begin != range.end; ++range.begin) {
-						absorb_dispatch(*range.begin);
+						operator()(*range.begin);
 					}
 				}
 			}
 			else {
 				for (; range.begin != range.end; ++range.begin) {
 					// _state.absorb_digest(UINT64_C(0x1010101010101010));
-					absorb_dispatch(*range.begin);
+					operator()(*range.begin);
 				}
 				// End marker to prevent collision with the subsequent element
 				_state.absorb_digest(UINT64_C(0xE1E2E3E4E5E6E7E8));
@@ -865,7 +886,7 @@ public:
 		void absorb_wrapper(Optional<T> opt) const noexcept {
 			if (opt.value) {
 				_state.absorb_digest(UINT64_C(0x8181818181818181));
-				absorb_dispatch(*opt.value);
+				operator()(*opt.value);
 			}
 			else {
 				_state.absorb_digest(UINT64_C(0x8080808080808080));
@@ -883,13 +904,14 @@ public:
 				if constexpr (mode == HashableMode::OptOut) {
 					[&]<class... Bases>(MpList<Bases...>) FR_FORCE_INLINE_L {
 						static_assert((true && ... && get_hashability<Bases>()));
-						(..., absorb_dispatch(static_cast<const Bases&>(obj)));
+						operator()(static_cast<const Bases&>(obj)...);
 					}(ReflBases<T>{});
 				}
 				else if constexpr (mode == HashableMode::OptIn) {
 					for_each_type<ReflBases<T>>([&]<class Base> FR_FORCE_INLINE_L {
+						// TODO: Combine multiple bases
 						if constexpr (get_hashability<Base>()) {
-							absorb_dispatch(static_cast<const Base&>(obj));
+							operator()(static_cast<const Base&>(obj));
 						}
 					});
 				}
@@ -899,7 +921,7 @@ public:
 						? refl_attribute_or<Child, Hashable, Hashable{true}>
 						: refl_attribute_or<Child, Hashable, Hashable{false}>;
 					if constexpr (should_hash) {
-						absorb_dispatch(get_field_or_property<Child>(obj));
+						operator()(get_field_or_property<Child>(obj));
 					}
 				});
 			}
@@ -955,7 +977,7 @@ public:
 			}
 			else if constexpr (mode == HashableMode::OptOut) {
 				visit_record_fields(obj, [&]<class... Fs>(const Fs&... fields) {
-					(..., absorb_dispatch(fields));
+					operator()(fields...);
 				});
 			}
 			else {

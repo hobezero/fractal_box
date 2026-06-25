@@ -371,7 +371,7 @@ struct DescribedHashableWithBasesAndProps: public BaseA, public BaseB, public Ba
 		std::string c_val,
 		int x,
 		std::string y,
-		int64_t z
+		double z
 	):
 		BaseA{a_val},
 		BaseB{b_val, std::move(c_val)},
@@ -391,12 +391,13 @@ struct DescribedHashableWithBasesAndProps: public BaseA, public BaseB, public Ba
 		>;
 	}
 
+	constexpr
 	auto y() const noexcept -> std::string_view { return _y; }
 
 private:
 	int _x;
 	std::string _y;
-	int64_t _z;
+	double _z;
 };
 
 struct HashableAggregate {
@@ -404,6 +405,18 @@ struct HashableAggregate {
 	std::string s;
 	std::array<int64_t, 2> a;
 	std::tuple<std::string, int8_t, std::string> a2;
+};
+
+struct SmallByteHashableAggregate {
+	float x;
+	double y;
+};
+
+struct LargeByteHashableAggregate {
+	int32_t a;
+	std::array<int64_t, 15> b;
+	float x;
+	double y;
 };
 
 struct ByteHashableAggregate {
@@ -546,6 +559,10 @@ TEST_CASE("UniHasher.lenses1", "[u][engine][core][hashing]") {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<char>};
 		CHECK(lenses.byte_hashables() == std::vector<L1>{{{}, 1}});
 	}
+	SECTION("one byte-hashable float") {
+		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<float>};
+		CHECK(lenses.byte_hashables() == std::vector<L1>{{{}, 4}});
+	}
 	SECTION("one other") {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<long double>};
 		CHECK(lenses.others() == std::vector<L1>{{{}, 0}});
@@ -562,17 +579,24 @@ TEST_CASE("UniHasher.lenses1", "[u][engine][core][hashing]") {
 
 		CHECK(lenses.byte_hashables().size() == 9);
 
+		// int32_t
 		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{0}, 4}));
+		// DescribedOptInClass::_x
 		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{2, 0}, 4}));
+		// char
 		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{3}, 1}));
-		// Aggregate
+		// HashableAggregate::i
 		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{4, 0}, 4}));
+		// HashableAggregate::a
 		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{4, 2}, 16}));
+		// HashableAggregate::a2[1]
 		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{4, 3, 1}, 1}));
-		// WithBasesAndProps
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 0}, 4})); // BaseA::a
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 1, 0}, 2})); // BaseB::b
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 4}, 8})); // _z
+		// WithBasesAndProps::BaseA::a
+		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 0}, 4}));
+		// WithBasesAndProps::BaseA::b
+		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 1, 0}, 2}));
+		// WithBasesAndProps::_z
+		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 4}, 8}));
 
 		CHECK(lenses.others() == std::vector<L1>{
 			{{1}, 0},
@@ -699,6 +723,20 @@ auto make_hasher() -> Hasher {
 		return Hasher{123456};
 	else
 		return Hasher{};
+}
+
+static
+auto test_all_hashers(auto do_test) {
+	fr::for_each_type<ConstexprHashers>([&]<class Hasher> {
+		do_test.template operator()<Hasher>();
+		STATIC_CHECK([&] {
+			do_test.template operator()<Hasher>();
+			return true;
+		}());
+	});
+	fr::for_each_type<UnstableHashers>([&]<class Hasher> {
+		do_test.template operator()<Hasher>();
+	});
 }
 
 TEST_CASE("UIntOfSize", "[u][engine][core][hashing]") {
@@ -862,7 +900,44 @@ TEST_CASE("UniHasher.primitives", "[u][engine][core][hashing]") {
 		CHECK(hasher(-0.l) == hasher(0.l));
 		CHECK(hasher(1.l) != hasher(2.l));
 
+		CHECK(hasher(std::nan("1")) != hasher(std::nan("2")));
+
 		CHECK(hasher(nullptr) == hasher(nullptr));
+	});
+}
+
+TEST_CASE("UniHasher.ephemeral-byte-hashable", "[u][engine][core][hashing]") {
+	test_all_hashers([]<class Hasher> {
+		FRT_INFO(fr::unqualified_type_name<Hasher>);
+		const auto hasher = make_hasher<Hasher>();
+
+		static_assert(sizeof(SmallByteHashableAggregate) <= fr::RapidhashNano<true, false>
+			::max_short_size_bytes);
+		{ // Short (float)
+			const auto a = SmallByteHashableAggregate{+0.f, 2.};
+			const auto b = SmallByteHashableAggregate{-0.f, 2.};
+
+			FRT_CHECK(hasher(a) == hasher(b));
+		}
+		{ // Short (double)
+			const auto a = SmallByteHashableAggregate{+0.f, 2.};
+			const auto b = SmallByteHashableAggregate{-0.f, 2.};
+
+			FRT_CHECK(hasher(a) == hasher(b));
+		}
+		{ // Long (float)
+			const auto a = LargeByteHashableAggregate{1, {}, +0.f, 2.};
+			const auto b = LargeByteHashableAggregate{1, {}, -0.f, 2.};
+
+			FRT_CHECK(hasher(a) == hasher(b));
+		}
+		{ // Long (double)
+			const auto a = LargeByteHashableAggregate{1, {}, 1.f, +0.};
+			const auto b = LargeByteHashableAggregate{1, {}, 1.f, -0.};
+
+			FRT_CHECK(hasher(a) == hasher(b));
+		}
+		return true;
 	});
 }
 
@@ -1024,60 +1099,60 @@ TEST_CASE("UniHasher.custom", "[u][engine][core][hashing]") {
 
 TEST_CASE("UniHasher.described", "[u][engine][core][hashing]") {
 	SECTION("OptOut") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = DescribedOptOutClass{1, 15, "aaaaa"};
 			const auto b = DescribedOptOutClass{2, 15, "bbbbb"};
 			const auto c = DescribedOptOutClass{1, 15, "ccccc"};
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 	SECTION("OptIn") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = DescribedOptInClass{1, 15, "aaaaa"};
 			const auto b = DescribedOptInClass{1, 15, "bbbbb"};
 			const auto c = DescribedOptInClass{1, 35, "aaaaa"};
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 	SECTION("AsBytes") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = DescribedAsBytesClass{1, 15, 18};
 			const auto b = DescribedAsBytesClass{1, 15, 24};
 			const auto c = DescribedAsBytesClass{1, 15, 18};
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 	SECTION("Hashable{true}") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = DescribedHashableClass{1, 15, "aaa"};
 			const auto b = DescribedHashableClass{1, 15, "bbb"};
 			const auto c = DescribedHashableClass{1, 15, "aaa"};
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 	SECTION("WithBasesAndProps{true}") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 			using enum SimpleEnum;
 
@@ -1088,79 +1163,79 @@ TEST_CASE("UniHasher.described", "[u][engine][core][hashing]") {
 			const auto e = DescribedHashableWithBasesAndProps{E1, 15, "aaa", 1, "Y", 55};
 			const auto f = DescribedHashableWithBasesAndProps{E1, 15, "aaa", 1, "yy", 60};
 
-			CHECK(hasher(a) == hasher(b));
-			CHECK(hasher(a) != hasher(c));
-			CHECK(hasher(a) != hasher(d));
-			CHECK(hasher(a) != hasher(e));
-			CHECK(hasher(a) != hasher(f));
+			FRT_CHECK(hasher(a) == hasher(b));
+			FRT_CHECK(hasher(a) != hasher(c));
+			FRT_CHECK(hasher(a) != hasher(d));
+			FRT_CHECK(hasher(a) != hasher(e));
+			FRT_CHECK(hasher(a) != hasher(f));
 		});
 	}
 }
 
 TEST_CASE("UniHasher.records", "[u][engine][core][hashing]") {
 	SECTION("HashableAggregate") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = HashableAggregate{10, "aaa", {25, 35}, {"a0", 12, "a2"}};
 			const auto b = HashableAggregate{10, "aaa", {35, 25}, {"b0", 13, "b2"}};
 			const auto c = HashableAggregate{10, "aaa", {25, 35}, {"a0", 12, "a2"}};
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 	SECTION("ByteHashableAggregate") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = ByteHashableAggregate{10, -34, -56};
 			const auto b = ByteHashableAggregate{10, -55, -56};
 			const auto c = ByteHashableAggregate{10, -34, -56};
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 	SECTION("PaddedHashableAggregate") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = PaddedHashableAggregate{10, 34};
 			const auto b = PaddedHashableAggregate{34, 34};
 			const auto c = PaddedHashableAggregate{10, 34};
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 	SECTION("std::tuple") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = std::make_tuple(10, 34, 53);
 			const auto b = std::make_tuple(10, 20, 53);
 			const auto c = std::make_tuple(10, 34, 53);
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 	SECTION("std::pair") {
-		fr::for_each_type<Hashers>([]<class Hasher> {
-			INFO(fr::unqualified_type_name<Hasher>);
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
 			const auto a = std::make_pair(10, 34);
 			const auto b = std::make_pair(10, 20);
 			const auto c = std::make_pair(10, 34);
 
-			CHECK(hasher(a) != hasher(b));
-			CHECK(hasher(a) == hasher(c));
+			FRT_CHECK(hasher(a) != hasher(b));
+			FRT_CHECK(hasher(a) == hasher(c));
 		});
 	}
 }
@@ -1257,24 +1332,33 @@ TEST_CASE("UniHasher.range", "[u][engine][core][hashing]") {
 }
 
 TEST_CASE("UniHasher.provided-static-seed", "[u][engine][core][hashing]") {
-	using HasherA = fr::UniHasher<{.seeding = Stable, .seed = 25}>;
-	using HasherB = fr::UniHasher<{.seeding = Stable, .seed = 46}>;
-	using HasherC = fr::UniHasher<{.seeding = Stable, .seed = 25}>;
+	constexpr auto do_test = [] {
+		using HasherA = fr::UniHasher<{.seeding = Stable, .seed = 25}>;
+		using HasherB = fr::UniHasher<{.seeding = Stable, .seed = 46}>;
+		using HasherC = fr::UniHasher<{.seeding = Stable, .seed = 25}>;
 
-	constexpr auto hasher_a = HasherA{};
-	constexpr auto hasher_b = HasherB{};
-	constexpr auto hasher_c = HasherC{};
+		constexpr auto hasher_a = HasherA{};
+		constexpr auto hasher_b = HasherB{};
+		constexpr auto hasher_c = HasherC{};
 
-	STATIC_CHECK(hasher_a.seed() == 25);
-	STATIC_CHECK(hasher_b.seed() == 46);
-	STATIC_CHECK(hasher_c.seed() == 25);
+		FRT_CHECK(hasher_a.seed() == 25);
+		FRT_CHECK(hasher_b.seed() == 46);
+		FRT_CHECK(hasher_c.seed() == 25);
 
-	STATIC_CHECK(hasher_a("abc") == hasher_c("abc"));
-	STATIC_CHECK(hasher_a(123u) == hasher_c(123u));
+		// TODO: Investigate why you can't pass the literal directly
+		static constexpr char str[] = "abc";
+		FRT_CHECK(hasher_a(str) == hasher_c(str));
+		FRT_CHECK(hasher_a(123u) == hasher_c(123u));
 
-	STATIC_CHECK(hasher_a("abc") != hasher_b("abc"));
-	STATIC_CHECK(hasher_a(123u) != hasher_b(123u));
-	STATIC_CHECK(hasher_a(46) != hasher_b(25));
+		FRT_CHECK(hasher_a(str) != hasher_b(str));
+		FRT_CHECK(hasher_a(123u) != hasher_b(123u));
+		FRT_CHECK(hasher_a(46) != hasher_b(25));
+
+		return true;
+	};
+
+	do_test();
+	STATIC_CHECK(do_test());
 }
 
 TEST_CASE("UniHasher.provided-seed", "[u][engine][core][hashing]") {
