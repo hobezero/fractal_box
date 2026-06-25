@@ -575,7 +575,7 @@ public:
 				if constexpr (lenses.byte_hashables.size() == 1zu) {
 					static constexpr auto lens = lenses.byte_hashables[0zu];
 					const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-					canonize_byte_hashable(obj, [&](const auto& canon) {
+					canonicalize_byte_hashable(obj, [&](const auto& canon) {
 						_state.absorb_object_bytes(canon);
 					});
 				}
@@ -608,7 +608,7 @@ public:
 	private:
 		template<class T>
 		FR_FORCE_INLINE constexpr
-		void canonize_byte_hashable(const T& obj, auto&& callback) const noexcept {
+		void canonicalize_byte_hashable(const T& obj, auto&& callback) const noexcept {
 			if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {
 				const auto canon = obj == T{} ? T{} : obj;
 				callback(canon);
@@ -626,7 +626,7 @@ public:
 			unroll<Lenses.byte_hashables.size()>([&]<size_t I> FR_FORCE_INLINE_L {
 				static constexpr auto lens = Lenses.byte_hashables[I];
 				const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-				canonize_byte_hashable(obj, [&](const auto& canon) {
+				canonicalize_byte_hashable(obj, [&](const auto& canon) {
 					write_obj_as_bytes(buffer + lens.byte_offset, canon);
 				});
 			});
@@ -640,7 +640,7 @@ public:
 			unroll<Lenses.byte_hashables.size()>([&]<size_t I> FR_FORCE_INLINE_L {
 				static constexpr auto lens = Lenses.byte_hashables[I];
 				const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-				canonize_byte_hashable(obj, [&](const auto& canon) {
+				canonicalize_byte_hashable(obj, [&](const auto& canon) {
 					if consteval {
 						const auto bytes = std::bit_cast<SimpleArray<unsigned char, sizeof(canon)>>(
 							canon);
