@@ -6,6 +6,7 @@
 #include <ranges>
 #include <string>
 #include <string_view>
+#include <vector>
 
 #include <catch2/catch_template_test_macros.hpp>
 #include <catch2/catch_test_macros.hpp>
@@ -27,11 +28,15 @@ using HVB = fr::HasherVisitorBase;
 namespace {
 
 struct HashTuple {
-	auto data() const noexcept -> const unsigned char* {
-		return reinterpret_cast<const unsigned char*>(str.data());
-	}
+	constexpr
+	auto size() const noexcept -> size_t { return str.size(); }
 
-	auto size() const noexcept { return str.size(); }
+	constexpr
+	auto bytes() const noexcept -> std::vector<unsigned char> {
+		return std::vector<unsigned char>(std::from_range, str | std::views::transform([](auto c) {
+			return static_cast<unsigned char>(c);
+		}));
+	}
 
 public:
 	std::string_view str;
@@ -101,44 +106,59 @@ TEST_CASE("rapidhash.values", "[u][engine][core][hashing]") {
 		},
 	};
 
-	SECTION("rapidhash") {
-		using RH = fr::Rapidhash<true, false, true>;
-		for (const auto& x : inputs) {
-			INFO(fmt::format("({}): '{}'", x.size(), x.str));
-			CHECK(RH::hash_bytes_seeded(x.data(), x.size(), seed) == x.digest_default);
+	frt::double_test([] {
+		{
+			FRT_INFO("rapidhash");
+			using RH = fr::Rapidhash<true, false, true>;
+			for (const auto& x : inputs) {
+				FRT_INFO(fmt::format("({}): '{}'", x.size(), x.str));
+				const auto bytes = x.bytes();
+				FRT_CHECK(RH::hash_bytes_seeded(bytes.data(), bytes.size(), seed)
+					== x.digest_default);
+			}
 		}
-	}
-	SECTION("rapidhash_micro") {
-		using RH = fr::RapidhashMicro<true, false>;
-		for (const auto& x : inputs) {
-			INFO(fmt::format("({}): '{}'", x.size(), x.str));
-			CHECK(RH::hash_bytes_seeded(x.data(), x.size(), seed) == x.digest_micro);
+		{
+			FRT_INFO("rapidhash_micro");
+			using RH = fr::RapidhashMicro<true, false>;
+			for (const auto& x : inputs) {
+				FRT_INFO(fmt::format("({}): '{}'", x.size(), x.str));
+				const auto bytes = x.bytes();
+				FRT_CHECK(RH::hash_bytes_seeded(bytes.data(), bytes.size(), seed)
+					== x.digest_micro);
+			}
 		}
-	}
-	SECTION("rapidhash_nano") {
-		using RH = fr::RapidhashNano<true, false>;
-		for (const auto& x : inputs) {
-			INFO(fmt::format("({}): '{}'", x.size(), x.str));
-			CHECK(RH::hash_bytes_seeded(x.data(), x.size(), seed) == x.digest_nano);
+		{
+			FRT_INFO("rapidhash_nano");
+			using RH = fr::RapidhashNano<true, false>;
+			for (const auto& x : inputs) {
+				FRT_INFO(fmt::format("({}): '{}'", x.size(), x.str));
+				const auto bytes = x.bytes();
+				FRT_CHECK(RH::hash_bytes_seeded(bytes.data(), bytes.size(), seed)
+					== x.digest_nano);
+			}
 		}
-	}
+	});
 }
 
 TEST_CASE("hash_mix_commutative") {
-	STATIC_CHECK(fr::hash_mix_commutative(0x1020_digest16, 0x1020_digest16)
-		!= fr::HashDigest16{});
-	STATIC_CHECK(fr::hash_mix_commutative(0x1020_digest32, 0x1929_digest32)
-		== fr::hash_mix_commutative(0x1929_digest32, 0x1020_digest32));
+	frt::double_test([] {
+		FRT_CHECK(fr::hash_mix_commutative(0x1020_digest16, 0x1020_digest16)
+			!= fr::HashDigest16{});
+		FRT_CHECK(fr::hash_mix_commutative(0x1020_digest32, 0x1929_digest32)
+			== fr::hash_mix_commutative(0x1929_digest32, 0x1020_digest32));
 
-	STATIC_CHECK(fr::hash_mix_commutative(0x10203040_digest32, 0x10203040_digest32)
-		!= fr::HashDigest32{});
-	STATIC_CHECK(fr::hash_mix_commutative(0x10203040_digest32, 0x19293949_digest32)
-		== fr::hash_mix_commutative(0x19293949_digest32, 0x10203040_digest32));
+		FRT_CHECK(fr::hash_mix_commutative(0x10203040_digest32, 0x10203040_digest32)
+			!= fr::HashDigest32{});
+		FRT_CHECK(fr::hash_mix_commutative(0x10203040_digest32, 0x19293949_digest32)
+			== fr::hash_mix_commutative(0x19293949_digest32, 0x10203040_digest32));
 
-	STATIC_CHECK(fr::hash_mix_commutative(0x1020304050607080_digest64, 0x1020304050607080_digest64)
-		!= fr::HashDigest32{});
-	STATIC_CHECK(fr::hash_mix_commutative(0x1020304050607080_digest64, 0x1929394959697989_digest64)
-		== fr::hash_mix_commutative(0x1929394959697989_digest64, 0x1020304050607080_digest64));
+		FRT_CHECK(fr::hash_mix_commutative(0x1020304050607080_digest64, 0x1020304050607080_digest64)
+			!= fr::HashDigest32{});
+		FRT_CHECK(fr::hash_mix_commutative(0x1020304050607080_digest64, 0x1929394959697989_digest64)
+			== fr::hash_mix_commutative(0x1929394959697989_digest64, 0x1020304050607080_digest64));
+
+		return true;
+	});
 }
 
 // Hashability tests
@@ -726,7 +746,7 @@ auto make_hasher() -> Hasher {
 }
 
 static
-auto test_all_hashers(auto do_test) {
+auto test_constexpr_hashers(auto do_test) {
 	fr::for_each_type<ConstexprHashers>([&]<class Hasher> {
 		do_test.template operator()<Hasher>();
 		STATIC_CHECK([&] {
@@ -734,9 +754,19 @@ auto test_all_hashers(auto do_test) {
 			return true;
 		}());
 	});
+}
+
+static
+auto test_unstable_hashers(auto do_test) {
 	fr::for_each_type<UnstableHashers>([&]<class Hasher> {
 		do_test.template operator()<Hasher>();
 	});
+}
+
+static
+auto test_all_hashers(auto do_test) {
+	test_constexpr_hashers(do_test);
+	test_unstable_hashers(do_test);
 }
 
 TEST_CASE("UIntOfSize", "[u][engine][core][hashing]") {
@@ -882,27 +912,37 @@ TEST_CASE("UniHasher.type-properties", "[u][engine][core][hashing]") {
 }
 
 TEST_CASE("UniHasher.primitives", "[u][engine][core][hashing]") {
-	fr::for_each_type<Hashers>([]<class Hasher> {
-		INFO(fr::unqualified_type_name<Hasher>);
+	test_constexpr_hashers([]<class Hasher> {
+		FRT_INFO(fr::unqualified_type_name<Hasher>);
 		const auto hasher = make_hasher<Hasher>();
 
-		CHECK(hasher(true) != hasher(false));
+		FRT_CHECK(hasher(true) != hasher(false));
 
-		CHECK(hasher(23) != hasher(-23));
-		CHECK(hasher(23u) != hasher(24u));
+		FRT_CHECK(hasher(23) != hasher(-23));
+		FRT_CHECK(hasher(23u) != hasher(24u));
 
-		CHECK(hasher(-0.f) == hasher(0.f));
-		CHECK(hasher(1.f) != hasher(2.f));
+		FRT_CHECK(hasher(-0.f) == hasher(0.f));
+		FRT_CHECK(hasher(1.f) != hasher(2.f));
 
-		CHECK(hasher(-0.) == hasher(0.));
-		CHECK(hasher(1.) != hasher(2.));
+		FRT_CHECK(hasher(-0.) == hasher(0.));
+		FRT_CHECK(hasher(1.) != hasher(2.));
+	});
 
-		CHECK(hasher(-0.l) == hasher(0.l));
-		CHECK(hasher(1.l) != hasher(2.l));
+	fr::for_each_type<Hashers>([]<class Hasher> {
+		FRT_INFO(fr::unqualified_type_name<Hasher>);
+		const auto hasher = make_hasher<Hasher>();
 
-		CHECK(hasher(std::nan("1")) != hasher(std::nan("2")));
+		FRT_CHECK(hasher(nullptr) == hasher(nullptr));
 
-		CHECK(hasher(nullptr) == hasher(nullptr));
+		FRT_CHECK(hasher(std::nanf("1")) != hasher(std::nanf("2")));
+		FRT_CHECK(hasher(std::nan("1")) != hasher(std::nan("2")));
+		// NOTE: All NaN hashes are identical for long double since there is no portable way to
+		// extract NaN payload. However, this is not a violation of the hashing contract -
+		// collisions are undesirable, but allowed (and inevitable)
+		// FRT_CHECK(hasher(std::nanl("1")) != hasher(std::nanl("2")));
+
+		FRT_CHECK(hasher(-0.l) == hasher(0.l));
+		FRT_CHECK(hasher(1.l) != hasher(2.l));
 	});
 }
 
@@ -937,7 +977,6 @@ TEST_CASE("UniHasher.ephemeral-byte-hashable", "[u][engine][core][hashing]") {
 
 			FRT_CHECK(hasher(a) == hasher(b));
 		}
-		return true;
 	});
 }
 
@@ -956,28 +995,28 @@ TEST_CASE("UniHasher.wrapper-Ptr", "[u][engine][core][hashing]") {
 }
 
 TEST_CASE("UniHasher.wrapper-Commutative", "[u][engine][core][hashing]") {
-	fr::for_each_type<Hashers>([]<class Hasher> {
-		INFO(fr::unqualified_type_name<Hasher>);
+	test_all_hashers([]<class Hasher> {
+		FRT_INFO(fr::unqualified_type_name<Hasher>);
 		const auto hasher = make_hasher<Hasher>();
 
-		CHECK(hasher(HVB::commutative_tuple('a', 'b'))
+		FRT_CHECK(hasher(HVB::commutative_tuple('a', 'b'))
 			== hasher(HVB::commutative_tuple('b', 'a')));
 
-		CHECK(hasher(HVB::commutative_tuple('a', 'b', 0xC0))
+		FRT_CHECK(hasher(HVB::commutative_tuple('a', 'b', 0xC0))
 			== hasher(HVB::commutative_tuple('b', 0xC0, 'a')));
-		CHECK(hasher(HVB::commutative_tuple('a', 'b', 0xC0, 0xD0))
+		FRT_CHECK(hasher(HVB::commutative_tuple('a', 'b', 0xC0, 0xD0))
 			== hasher(HVB::commutative_tuple('a', 0xC0, 'b', 0xD0)));
 
-		CHECK(hasher(HVB::tuple(2, HVB::commutative_tuple('a', 'b', 'c'), 3, 4))
+		FRT_CHECK(hasher(HVB::tuple(2, HVB::commutative_tuple('a', 'b', 'c'), 3, 4))
 			== hasher(HVB::tuple(2, HVB::commutative_tuple('b', 'c', 'a'), 3, 4)));
 
-		CHECK(hasher(HVB::tuple(2, HVB::commutative_tuple('a', 'b', 'c'), 3, 4))
+		FRT_CHECK(hasher(HVB::tuple(2, HVB::commutative_tuple('a', 'b', 'c'), 3, 4))
 			!= hasher(HVB::tuple(2, HVB::commutative_tuple('b', 'c', 'a'), 4, 3)));
 
-		CHECK(hasher(HVB::commutative_range(std::vector{'a', 'b', 'c'}))
+		FRT_CHECK(hasher(HVB::commutative_range(std::vector{'a', 'b', 'c'}))
 			== hasher(HVB::commutative_range(std::vector{'c', 'a', 'b'})));
 
-		CHECK(hasher(HVB::tuple(2, HVB::commutative_range(std::vector{'a', 'b', 'c'}), 3, 4))
+		FRT_CHECK(hasher(HVB::tuple(2, HVB::commutative_range(std::vector{'a', 'b', 'c'}), 3, 4))
 			== hasher(HVB::tuple(2, HVB::commutative_range(std::vector{'b', 'c', 'a'}), 3, 4))
 		);
 	});
@@ -1066,20 +1105,21 @@ TEST_CASE("UniHasher.strings", "[u][engine][core][hashing]") {
 
 TEST_CASE("UniHasher.custom", "[u][engine][core][hashing]") {
 	SECTION("equal objects => equal hash codes") {
-		fr::for_each_type<ConstexprHashers>([]<class Hasher> {
+		test_all_hashers([]<class Hasher> {
+			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
-			STATIC_CHECK(hasher(CustomStruct{2, 3, -11.f, true})
+			FRT_CHECK(hasher(CustomStruct{2, 3, -11.f, true})
 				== hasher(CustomStruct{2, 3, -11.f, true}));
 		});
 	}
 	SECTION("non-equal objects => different hash codes") {
-		fr::for_each_type<ConstexprHashers>([]<class Hasher> {
+		test_all_hashers([]<class Hasher> {
 			constexpr auto hasher = make_hasher<Hasher>();
 
-			STATIC_CHECK(hasher(CustomStruct{2, 3, -11.f, true})
+			FRT_CHECK(hasher(CustomStruct{2, 3, -11.f, true})
 				!= hasher(CustomStruct{2, 3, 11.f, true}));
-			STATIC_CHECK(hasher(CustomStruct{2, 3, -11.f, true})
+			FRT_CHECK(hasher(CustomStruct{2, 3, -11.f, true})
 				!= hasher(CustomStruct{3, 2, -11.f, true}));
 		});
 	}
@@ -1241,16 +1281,16 @@ TEST_CASE("UniHasher.records", "[u][engine][core][hashing]") {
 }
 
 TEST_CASE("UniHasher.enum", "[u][engine][core][hashing]") {
-	fr::for_each_type<Hashers>([]<class Hasher> {
-		INFO(fr::unqualified_type_name<Hasher>);
+	test_all_hashers([]<class Hasher> {
+		FRT_INFO(fr::unqualified_type_name<Hasher>);
 		constexpr auto hasher = make_hasher<Hasher>();
 
 		const auto a = SimpleEnum::E1;
 		const auto b = SimpleEnum::E0;
 		const auto c = SimpleEnum::E1;
 
-		CHECK(hasher(a) != hasher(b));
-		CHECK(hasher(a) == hasher(c));
+		FRT_CHECK(hasher(a) != hasher(b));
+		FRT_CHECK(hasher(a) == hasher(c));
 	});
 }
 
@@ -1332,7 +1372,7 @@ TEST_CASE("UniHasher.range", "[u][engine][core][hashing]") {
 }
 
 TEST_CASE("UniHasher.provided-static-seed", "[u][engine][core][hashing]") {
-	constexpr auto do_test = [] {
+	frt::double_test([] {
 		using HasherA = fr::UniHasher<{.seeding = Stable, .seed = 25}>;
 		using HasherB = fr::UniHasher<{.seeding = Stable, .seed = 46}>;
 		using HasherC = fr::UniHasher<{.seeding = Stable, .seed = 25}>;
@@ -1353,35 +1393,33 @@ TEST_CASE("UniHasher.provided-static-seed", "[u][engine][core][hashing]") {
 		FRT_CHECK(hasher_a(str) != hasher_b(str));
 		FRT_CHECK(hasher_a(123u) != hasher_b(123u));
 		FRT_CHECK(hasher_a(46) != hasher_b(25));
-
-		return true;
-	};
-
-	do_test();
-	STATIC_CHECK(do_test());
+	});
 }
 
 TEST_CASE("UniHasher.provided-seed", "[u][engine][core][hashing]") {
-	using Hasher = fr::UniHasher<{.seeding = Provided}>;
+	frt::double_test([] {
+		using Hasher = fr::UniHasher<{.seeding = Provided}>;
 
-	const auto hasher_a = Hasher{25};
-	auto hasher_b = Hasher{46};
-	const auto hasher_c = Hasher{25};
+		const auto hasher_a = Hasher{25};
+		auto hasher_b = Hasher{46};
+		const auto hasher_c = Hasher{25};
 
-	CHECK(hasher_a.seed() == 25);
-	CHECK(hasher_b.seed() == 46);
-	CHECK(hasher_c.seed() == 25);
+		FRT_CHECK(hasher_a.seed() == 25);
+		FRT_CHECK(hasher_b.seed() == 46);
+		FRT_CHECK(hasher_c.seed() == 25);
 
-	CHECK(hasher_a("abc") == hasher_c("abc"));
-	CHECK(hasher_a(123u) == hasher_c(123u));
+		static constexpr char str[] = "abc";
+		FRT_CHECK(hasher_a(str) == hasher_c(str));
+		FRT_CHECK(hasher_a(123u) == hasher_c(123u));
 
-	CHECK(hasher_a("abc") != hasher_b("abc"));
-	CHECK(hasher_a(123u) != hasher_b(123u));
-	CHECK(hasher_a(46) != hasher_b(25));
+		FRT_CHECK(hasher_a(str) != hasher_b(str));
+		FRT_CHECK(hasher_a(123u) != hasher_b(123u));
+		FRT_CHECK(hasher_a(46) != hasher_b(25));
 
-	hasher_b.reseed(25);
-	CHECK(hasher_b.seed() == 25);
+		hasher_b.reseed(25);
+		FRT_CHECK(hasher_b.seed() == 25);
 
-	CHECK(hasher_a("abc") == hasher_b("abc"));
-	CHECK(hasher_a(123u) == hasher_b(123u));
+		FRT_CHECK(hasher_a(str) == hasher_b(str));
+		FRT_CHECK(hasher_a(123u) == hasher_b(123u));
+	});
 }

@@ -15,12 +15,30 @@
 
 namespace frt {
 
+/// @brief Doesn't work for now: is disabled at both compile time and runtime
 #define FRT_INFO(...) do { \
 	if !consteval { \
-		INFO((__VA_ARGS__)); \
+		INFO(__VA_ARGS__); \
 	} \
 } while (false)
 
+#if 0
+#define FRT_INFO(...) \
+	const auto INTERNAL_CATCH_UNIQUE_NAME(scoped_message) = [&] { \
+		if consteval { \
+			return ::Catch::ScopedMessage{}; \
+		} \
+		else { \
+			return ::Catch::ScopedMessage{ \
+				::Catch::MessageBuilder( \
+					"INFO"##_catch_sr, \
+					CATCH_INTERNAL_LINEINFO, \
+					::Catch::ResultWas::Info \
+				) << (__VA_ARGS__) \
+			}; \
+		} \
+	}
+#endif
 
 #define FRT_CHECK(...) do { \
 	if consteval { \
@@ -39,6 +57,15 @@ namespace frt {
 		REQUIRE(__VA_ARGS__); \
 	} \
 } while (false)
+
+inline constexpr
+void double_test(auto do_test) {
+	do_test();
+	STATIC_CHECK([&] {
+		do_test();
+		return true;
+	}());
+}
 
 inline constexpr char lorem_text[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
 	"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";

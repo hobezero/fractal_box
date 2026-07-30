@@ -11,6 +11,8 @@
 
 #include "fractal_box/core/string_literal.hpp"
 
+#include "test_common/test_helpers.hpp"
+
 namespace {
 
 struct A { };
@@ -296,14 +298,16 @@ TEST_CASE("MpPackAt", "[u][engine][core][meta]") {
 }
 
 TEST_CASE("mp_pack_at", "[u][engine][core][meta]") {
-	auto c = 'c';
-	const auto i = 34;
-	CHECK(fr::mp_pack_at<0>(i, 23.f, c) == i);
-	CHECK(fr::mp_pack_at<1>(i, 23.f, c) == 23.f);
-	CHECK(fr::mp_pack_at<2>(i, 23.f, c) == c);
-	CHECK(std::same_as<decltype(fr::mp_pack_at<0>(i, 23.f, c)), const int&>);
-	CHECK(std::same_as<decltype(fr::mp_pack_at<2>(i, 23.f, c)), char&>);
-	CHECK(std::same_as<decltype(fr::mp_pack_at<2>(i, 23.f, std::move(c))), char&&>);
+	frt::double_test([] {
+		auto c = 'c';
+		const auto i = 34;
+		FRT_CHECK(fr::mp_pack_at<0>(i, 23.f, c) == i);
+		FRT_CHECK(fr::mp_pack_at<1>(i, 23.f, c) == 23.f);
+		FRT_CHECK(fr::mp_pack_at<2>(i, 23.f, c) == c);
+		FRT_CHECK(std::same_as<decltype(fr::mp_pack_at<0>(i, 23.f, c)), const int&>);
+		FRT_CHECK(std::same_as<decltype(fr::mp_pack_at<2>(i, 23.f, c)), char&>);
+		FRT_CHECK(std::same_as<decltype(fr::mp_pack_at<2>(i, 23.f, std::move(c))), char&&>);
+	});
 }
 
 TEST_CASE("mp_find", "[u][engine][core][meta]") {
