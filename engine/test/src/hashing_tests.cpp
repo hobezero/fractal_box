@@ -474,17 +474,17 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 	using HA = fr::Hashability;
 
 	SECTION("Primitive") {
-		STATIC_CHECK(fr::get_hashability<bool>() == HA{Primitive, AsBytes});
-		STATIC_CHECK(fr::get_hashability<signed char>() == HA{Primitive, AsBytes});
-		STATIC_CHECK(fr::get_hashability<unsigned char>() == HA{Primitive, AsBytes});
-		STATIC_CHECK(fr::get_hashability<char>() == HA{Primitive, AsBytes});
-		STATIC_CHECK(fr::get_hashability<short>() == HA{Primitive, AsBytes});
-		STATIC_CHECK(fr::get_hashability<int>() == HA{Primitive, AsBytes});
-		STATIC_CHECK(fr::get_hashability<unsigned long>() == HA{Primitive, AsBytes});
-		STATIC_CHECK(fr::get_hashability<float>() == HA{Primitive, OptOut});
-		STATIC_CHECK(fr::get_hashability<long double>() == HA{Primitive, OptOut});
-		STATIC_CHECK(fr::get_hashability<std::nullptr_t>() == HA{Primitive, AsBytes});
-		STATIC_CHECK(fr::get_hashability<void>() == HA{Primitive, None});
+		STATIC_CHECK(fr::get_hashability<bool>() == HA{Fundamental, AsBytes});
+		STATIC_CHECK(fr::get_hashability<signed char>() == HA{Fundamental, AsBytes});
+		STATIC_CHECK(fr::get_hashability<unsigned char>() == HA{Fundamental, AsBytes});
+		STATIC_CHECK(fr::get_hashability<char>() == HA{Fundamental, AsBytes});
+		STATIC_CHECK(fr::get_hashability<short>() == HA{Fundamental, AsBytes});
+		STATIC_CHECK(fr::get_hashability<int>() == HA{Fundamental, AsBytes});
+		STATIC_CHECK(fr::get_hashability<unsigned long>() == HA{Fundamental, AsBytes});
+		STATIC_CHECK(fr::get_hashability<float>() == HA{Fundamental, OptOut});
+		STATIC_CHECK(fr::get_hashability<long double>() == HA{Fundamental, OptOut});
+		STATIC_CHECK(fr::get_hashability<std::nullptr_t>() == HA{Fundamental, AsBytes});
+		STATIC_CHECK(fr::get_hashability<void>() == HA{Fundamental, None});
 	}
 	SECTION("Wrapper") {
 		STATIC_CHECK(fr::get_hashability<HVB::Digest<fr::HashDigest32>>() == HA{Wrapper, AsBytes});
@@ -575,17 +575,17 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 
 TEST_CASE("UniHasher.lenses1", "[u][engine][core][hashing]") {
 	using L1 = fr::detail::UniHashableLens1;
-	SECTION("one byte-hashable") {
+	SECTION("one transparent") {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<char>};
-		CHECK(lenses.byte_hashables() == std::vector<L1>{{{}, 1}});
+		CHECK(lenses.transparents() == std::vector<L1>{{{}, 1}});
 	}
-	SECTION("one byte-hashable float") {
+	SECTION("one transparent float") {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<float>};
-		CHECK(lenses.byte_hashables() == std::vector<L1>{{{}, 4}});
+		CHECK(lenses.transparents() == std::vector<L1>{{{}, 4}});
 	}
-	SECTION("one other") {
+	SECTION("one opaque") {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<long double>};
-		CHECK(lenses.others() == std::vector<L1>{{{}, 0}});
+		CHECK(lenses.opaques() == std::vector<L1>{{{}, 0}});
 	}
 	SECTION("many") {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<
@@ -597,28 +597,28 @@ TEST_CASE("UniHasher.lenses1", "[u][engine][core][hashing]") {
 			DescribedHashableWithBasesAndProps
 		>};
 
-		CHECK(lenses.byte_hashables().size() == 9);
+		CHECK(lenses.transparents().size() == 9);
 
 		// int32_t
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{0}, 4}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{0}, 4}));
 		// DescribedOptInClass::_x
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{2, 0}, 4}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{2, 0}, 4}));
 		// char
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{3}, 1}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{3}, 1}));
 		// HashableAggregate::i
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{4, 0}, 4}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 0}, 4}));
 		// HashableAggregate::a
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{4, 2}, 16}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 2}, 16}));
 		// HashableAggregate::a2[1]
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{4, 3, 1}, 1}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 3, 1}, 1}));
 		// WithBasesAndProps::BaseA::a
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 0}, 4}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 0}, 4}));
 		// WithBasesAndProps::BaseA::b
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 1, 0}, 2}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 1, 0}, 2}));
 		// WithBasesAndProps::_z
-		CHECK(std::ranges::contains(lenses.byte_hashables(), L1{{5, 4}, 8}));
+		CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 4}, 8}));
 
-		CHECK(lenses.others() == std::vector<L1>{
+		CHECK(lenses.opaques() == std::vector<L1>{
 			{{1}, 0},
 			{{2, 2}, 0},
 			// Aggregate
@@ -652,15 +652,15 @@ public:
 } // namespace
 
 TEST_CASE("UniHasher.lenses2", "[u][engine][core][hashing]") {
-	SECTION("one byte-hashable") {
+	SECTION("one transparent") {
 		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_list<char>);
-		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.byte_hashables[0]>('a') == 'a');
+		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.transparents[0]>('a') == 'a');
 	}
-	SECTION("one other") {
+	SECTION("one opaque") {
 		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_list<long double>);
-		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.others[0]>(1.l) == 1.l);
+		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.opaques[0]>(1.l) == 1.l);
 	}
-	SECTION("many") {
+	SECTION("many transparents and opaques") {
 		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_list<
 			int32_t,
 			long double,
@@ -670,27 +670,27 @@ TEST_CASE("UniHasher.lenses2", "[u][engine][core][hashing]") {
 			DescribedHashableWithBasesAndProps
 		>);
 
-		REQUIRE(lenses2.byte_hashables.size() == 9);
-		REQUIRE(lenses2.others.size() == 7);
+		REQUIRE(lenses2.transparents.size() == 9);
+		REQUIRE(lenses2.opaques.size() == 7);
 
 		const auto tester = LensTester{};
-		// CHECK(tester.get<lenses2.byte_hashables[0]>() == 0);
-		// CHECK(tester.get<lenses2.byte_hashables[1]>() == 2);
-		// CHECK(tester.get<lenses2.byte_hashables[2]>() == '3');
-		// CHECK(tester.get<lenses2.byte_hashables[3]>() == 4);
-		// CHECK(tester.get<lenses2.byte_hashables[4]>() == std::array<int64_t, 2>{43, 45});
-		// CHECK(tester.get<lenses2.byte_hashables[5]>() == 46);
-		// CHECK(tester.get<lenses2.byte_hashables[6]>() == BaseA{SimpleEnum::E5});
-		// CHECK(tester.get<lenses2.byte_hashables[7]>() == 50);
-		// CHECK(tester.get<lenses2.byte_hashables[8]>() == 5020);
+		// CHECK(tester.get<lenses2.transparents[0]>() == 0);
+		// CHECK(tester.get<lenses2.transparents[1]>() == 2);
+		// CHECK(tester.get<lenses2.transparents[2]>() == '3');
+		// CHECK(tester.get<lenses2.transparents[3]>() == 4);
+		// CHECK(tester.get<lenses2.transparents[4]>() == std::array<int64_t, 2>{43, 45});
+		// CHECK(tester.get<lenses2.transparents[5]>() == 46);
+		// CHECK(tester.get<lenses2.transparents[6]>() == BaseA{SimpleEnum::E5});
+		// CHECK(tester.get<lenses2.transparents[7]>() == 50);
+		// CHECK(tester.get<lenses2.transparents[8]>() == 5020);
 
-		CHECK(tester.get<lenses2.others[0]>() == 1.l);
-		CHECK(tester.get<lenses2.others[1]>() == "desc");
-		CHECK(tester.get<lenses2.others[2]>() == "aggr");
-		CHECK(tester.get<lenses2.others[3]>() == "t0");
-		CHECK(tester.get<lenses2.others[4]>() == "t2");
-		CHECK(tester.get<lenses2.others[5]>() == "bp");
-		CHECK(tester.get<lenses2.others[6]>() == "BP");
+		CHECK(tester.get<lenses2.opaques[0]>() == 1.l);
+		CHECK(tester.get<lenses2.opaques[1]>() == "desc");
+		CHECK(tester.get<lenses2.opaques[2]>() == "aggr");
+		CHECK(tester.get<lenses2.opaques[3]>() == "t0");
+		CHECK(tester.get<lenses2.opaques[4]>() == "t2");
+		CHECK(tester.get<lenses2.opaques[5]>() == "bp");
+		CHECK(tester.get<lenses2.opaques[6]>() == "BP");
 	}
 }
 

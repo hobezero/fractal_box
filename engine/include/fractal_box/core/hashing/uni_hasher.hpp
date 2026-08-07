@@ -18,21 +18,54 @@
 #include "fractal_box/core/hashing/rapidhash.hpp"
 #include "fractal_box/core/meta/reflection.hpp"
 
-/// Hashing algorithm
-/// 1. Deconstruct the hashing tree into a list of lenses each of which record a path into the tree
-/// 2. Sort the lenses in order:
-///    - Byte-hashables: primitives, arrays, enums, aggregates, reflected classes
-///    - Others (non-byte-hashables): customized classes, containers, optionals, strings
-/// 3. For small number of byte-hashables, pack them together into a single buffer by pulling the
-///    corresponding values from the hashing tree using lenses. Rapidhash the buffer
-/// 4. For large number of byte-hashables, copy each individual word of each object into a buffer
-///    using lenses. Rapidhash the buffer
-/// 5. Hash the others objects using push model by calling operator() recursively on each
-///    object
-/// 6. Finalize
-/// TODO: Combine contiguous byte-hashable lenses into one (note: floats don't count)
-/// TODO: For non-byte-hashables, consider accumulating data into blocks at runtime, then flush.
+/// ## Idea
+/// `UniHasher` is a fast, general-purpose, non-cryptographic hasher that can be fine-tuned to a
+/// specific use case via `UniHasherOpts`. `UniHasher` aims to generate a somewhat optimal hashing
+/// strategy for each specific list of paramaters by examining the object structure at compile time.
+/// The most important optimization is merging/batching together as many input values as possible.
+/// Compared to the "default" setup of `std::hash` + manual `boost::hash_combine`, `UniHasher` is
+/// automatic, offers far better hashing quality and beats the default in performance in most cases.
+/// However, `UniHasher` might be slower than `std::hash` for primitive types as standard libraries
+/// often just use identity function instead of doing any hashing. See `hashing_benchmarks.cpp` for
+/// details.
+/// The downside of our approach is high compilation overhead and binary bloat. You can mitigate
+/// both issues by extracting `fr_custom_hash` for specific hashers into a separate compilation
+/// unit instead of making it inline, but you will lose most optimization opportunities. We advise
+/// to use `RapidhashAlgo::Nano` as it produces significantly fewer instructions compared to
+/// `Micro`/`Full` at the cost of lower throughput on large objects.
+///
+/// ## Terminology
+/// - Lens: a unique path, a list of integers that describes how to reach a specific subobject
+///   given the hasher arguments. For example, with `struct S { std::string x, y; }` and a list of
+///   arguments `int a, S s`, `a` object would have the path (0), `s.x` would have (1, 1) and `s.y`
+///   would have (1, 1). Lensing is the mechanism which enables batching optimizations.
+/// - Transparent objects: lensed objects that follow the pull model.
+///   All of the numeric values that participate in hashing of a transparent object can be
+///   retrieved independently in any order at any time at any level of nesting - hence "pulled"
+///   by the hasher. Each transparent object is a fixed set of byte-hashable primitivies.
+///   Categories: fundamentals (except `long double`), enums, arrays, tuples, aggregates, described
+///   classes.
+/// - Opaque objects: lensed objects that follow the push model.
+///   Hashing an opaque object involves complex logic with loops/conditionals, or a function call
+///   boundary. In both cases we can't at compile time decompose them into a fixed set of
+///   byte-hashable primitives, so our batching optimizations became inapplicable. Hasher has to
+///   call the appropriate function which "pushes" the object into the hashing state.
+///   Categories: customized classes, most wrappers, containers, optionals, strings.
+///
+/// ## Hashing algorithm
+/// 1. Deconstruct the hashing tree into a list of lenses.
+/// 2. Sort the lenses in order: transparents first, opaques last.
+/// 3. If all transparent objects fit into the algorithm's short limit, pack them together into a
+///    single buffer by pulling the corresponding values from the hashing tree using lenses.
+///    Rapidhash the buffer in one go.
+/// 4. Otherwise, copy each individual word of each transparent object into a word buffer using
+///    lenses. Rapidhash-stream the buffer.
+/// 5. Hash the opaque objects by calling operator() recursively on each object
+/// 6. Finalize by truncating the 64-bit hash state into desired digest size
+///
+/// TODO: For opaques, consider accumulating data into blocks at runtime, then flush.
 ///   Alternatively, develop a streming version of Rapidhash
+/// TODO: Add a customization point for types to communicate the desired performance/bloat tradeoff.
 
 namespace fr {
 
@@ -78,6 +111,7 @@ struct UniHashableLens1 {
 	constexpr
 	auto operator==(const UniHashableLens1&) const -> bool = default;
 
+	/// @brief The smallest number of rapidhash words needed to store all of the bytes of the object
 	FR_FORCE_INLINE constexpr
 	auto num_words() const noexcept -> size_t {
 		return byte_size / sizeof(uint64_t) + (byte_size % sizeof(uint64_t) == 0zu ? 0zu : 1zu);
@@ -102,7 +136,7 @@ struct UniHashableLens2 {
 		path{},
 		path_size{lens.path.size()},
 		byte_size{lens.byte_size},
-		byte_offset{offset},
+		byte_buffer_offset{offset},
 		start_word_idx{start_word},
 		end_word_idx{end_word}
 	{
@@ -123,9 +157,13 @@ struct UniHashableLens2 {
 public:
 	std::array<size_t, MaxSize> path;
 	size_t path_size;
+	/// @note Non-zero for transparent lenses, zero for opaque lenses
 	size_t byte_size;
-	size_t byte_offset;
+	/// @brief Starting byte index of the lensed object in the short buffer
+	size_t byte_buffer_offset;
+	/// @brief Starting word index of the lensed object in the word buffer
 	size_t start_word_idx;
+	/// @brief Ending word index of the lensed object in the word buffer
 	size_t end_word_idx;
 };
 
@@ -190,19 +228,19 @@ public:
 	explicit constexpr
 	UniHashableLenses1(MpList<Ts...>) {
 		build<Ts...>();
-		std::ranges::sort(_byte_hashables, std::ranges::greater{}, [](const auto& lens) {
+		std::ranges::sort(_transparents, std::ranges::greater{}, [](const auto& lens) {
 			return lens.byte_size;
 		});
 	}
 
 	constexpr
-	auto byte_hashables() const noexcept -> const std::vector<UniHashableLens1>& {
-		return _byte_hashables;
+	auto transparents() const noexcept -> const std::vector<UniHashableLens1>& {
+		return _transparents;
 	}
 
 	constexpr
-	auto others() const noexcept -> const std::vector<UniHashableLens1>& {
-		return _others;
+	auto opaques() const noexcept -> const std::vector<UniHashableLens1>& {
+		return _opaques;
 	}
 
 private:
@@ -229,13 +267,13 @@ private:
 		constexpr auto category = hashability.category();
 
 		if constexpr (mode == AsBytes) {
-			add_byte_hashable(path, sizeof(PT));
+			add_transparent(path, sizeof(PT));
 		}
-		else if constexpr (category == Primitive) {
+		else if constexpr (category == Fundamental) {
 			if constexpr (std::is_same_v<PT, float> || std::is_same_v<PT, double>)
-				add_byte_hashable(path, sizeof(PT));
+				add_transparent(path, sizeof(PT));
 			else
-				add_other(path);
+				add_opaque(path);
 		}
 		else if constexpr (category == Wrapper) {
 			if constexpr (is_hvb_wrapper_tuple<PT>) {
@@ -244,11 +282,11 @@ private:
 				}(std::make_index_sequence<T::size>{});
 			}
 			else {
-				add_other(path);
+				add_opaque(path);
 			}
 		}
 		else if constexpr (category == Custom) {
-			add_other(path);
+			add_opaque(path);
 		}
 		else if constexpr (category == Described) {
 			static constexpr auto base_count = mp_size<ReflBases<T>>;
@@ -266,13 +304,13 @@ private:
 		}
 		else if constexpr (category == Enum) {
 			// Non-byte-hashable enums exist?
-			add_other(path);
+			add_opaque(path);
 		}
 		else if constexpr (category == Optional) {
-			add_other(path);
+			add_opaque(path);
 		}
 		else if constexpr (category == String) {
-			add_other(path);
+			add_opaque(path);
 		}
 		else if constexpr (category == Array || category == Range) {
 			// Non-byte-hashable ranges
@@ -282,7 +320,7 @@ private:
 				}
 			}
 			else {
-				add_other(path);
+				add_opaque(path);
 			}
 		}
 		else if constexpr (category == Record) {
@@ -298,13 +336,13 @@ private:
 	}
 
 	constexpr
-	void add_byte_hashable(std::vector<size_t> path, size_t byte_size) {
-		_byte_hashables.emplace_back(std::move(path), byte_size);
+	void add_transparent(std::vector<size_t> path, size_t byte_size) {
+		_transparents.emplace_back(std::move(path), byte_size);
 	}
 
 	constexpr
-	void add_other(std::vector<size_t> path) {
-		_others.emplace_back(std::move(path));
+	void add_opaque(std::vector<size_t> path) {
+		_opaques.emplace_back(std::move(path));
 	}
 
 	template<HashableMode mode, class Base, size_t Idx>
@@ -338,47 +376,49 @@ private:
 	}
 
 private:
-	// NOTE: byte_hashables include not only AsBytes object but also ephemeral byte-hashables
+	// NOTE: transparents include not only AsBytes object but also ephemeral byte-hashables
 	// (floating-point types)
-	std::vector<UniHashableLens1> _byte_hashables;
-	std::vector<UniHashableLens1> _others;
+	std::vector<UniHashableLens1> _transparents;
+	std::vector<UniHashableLens1> _opaques;
 };
 
 struct UniHashableLenses2Sizes {
-	size_t num_byte_hashables;
-	size_t num_others;
-	size_t max_byte_hashables_path_size;
-	size_t max_others_path_size;
+	size_t num_transparents;
+	size_t num_opaques;
+	size_t max_transparent_path_size;
+	size_t max_opaque_path_size;
 };
 
 template<UniHashableLenses2Sizes Sizes>
 struct UniHashableLenses2 {
-	using ByteHashableLens = UniHashableLens2<Sizes.max_byte_hashables_path_size>;
-	using OtherLens = UniHashableLens2<Sizes.max_others_path_size>;
+	using TransparentLens = UniHashableLens2<Sizes.max_transparent_path_size>;
+	using OpaqueLens = UniHashableLens2<Sizes.max_opaque_path_size>;
 	static constexpr auto sizes = Sizes;
 
 	explicit consteval
 	UniHashableLenses2(const UniHashableLenses1& lenses) noexcept {
-		FR_ASSERT(lenses.byte_hashables().size() == Sizes.num_byte_hashables);
-		FR_ASSERT(lenses.others().size() == Sizes.num_others);
+		FR_ASSERT(lenses.transparents().size() == Sizes.num_transparents);
+		FR_ASSERT(lenses.opaques().size() == Sizes.num_opaques);
 
-		for (auto i = 0zu; i < Sizes.num_byte_hashables; ++i) {
-			const auto& lens1 = lenses.byte_hashables()[i];
-			this->byte_hashables[i] = ByteHashableLens{lens1, this->buffer_size, this->num_words,
+		auto byte_buffer_offset = 0zu;
+		for (auto i = 0zu; i < Sizes.num_transparents; ++i) {
+			const auto& lens1 = lenses.transparents()[i];
+			this->transparents[i] = TransparentLens{lens1, byte_buffer_offset, this->num_words,
 				this->num_words + lens1.num_words()};
-			this->buffer_size += lens1.byte_size;
+			byte_buffer_offset += lens1.byte_size;
 			this->num_words += lens1.num_words();
 		}
+		this->byte_buffer_size = byte_buffer_offset;
 
-		for (auto i = 0zu; i < Sizes.num_others; ++i) {
-			this->others[i] = OtherLens{lenses.others()[i]};
+		for (auto i = 0zu; i < Sizes.num_opaques; ++i) {
+			this->opaques[i] = OpaqueLens{lenses.opaques()[i]};
 		}
 	}
 
 public:
-	std::array<ByteHashableLens, Sizes.num_byte_hashables> byte_hashables {};
-	std::array<OtherLens, Sizes.num_others> others {};
-	size_t buffer_size = 0zu;
+	std::array<TransparentLens, Sizes.num_transparents> transparents {};
+	std::array<OpaqueLens, Sizes.num_opaques> opaques {};
+	size_t byte_buffer_size = 0zu;
 	size_t num_words = 0;
 };
 
@@ -387,24 +427,24 @@ inline consteval
 auto build_uni_hashable_lenses2_sizes(MpList<Ts...> types) noexcept {
 	const auto lenses1 = UniHashableLenses1{types};
 
-	const auto max_byte_hashables_path_size
-		= lenses1.byte_hashables().empty()
+	const auto max_transparents_path_size
+		= lenses1.transparents().empty()
 		? 1zu
-		: std::ranges::max_element(lenses1.byte_hashables(), {}, [](const auto& lens) {
+		: std::ranges::max_element(lenses1.transparents(), {}, [](const auto& lens) {
 			return lens.path.size();
 		})->path.size();
 
-	const auto max_others_path_size = lenses1.others().empty()
+	const auto max_opaques_path_size = lenses1.opaques().empty()
 		? 1zu
-		: std::ranges::max_element(lenses1.others(), {}, [](const auto& lens) {
+		: std::ranges::max_element(lenses1.opaques(), {}, [](const auto& lens) {
 			return lens.path.size();
 		})->path.size();
 
 	return UniHashableLenses2Sizes{
-		lenses1.byte_hashables().size(),
-		lenses1.others().size(),
-		max_byte_hashables_path_size,
-		max_others_path_size
+		lenses1.transparents().size(),
+		lenses1.opaques().size(),
+		max_transparents_path_size,
+		max_opaques_path_size
 	};
 }
 
@@ -447,19 +487,19 @@ public:
 		State(HashDigest64 seed) noexcept: _result{seed} { }
 
 		FR_FORCE_INLINE constexpr
-		void absorb_primitive(bool obj) noexcept {
+		void absorb_fundamental(bool obj) noexcept {
 			_result = city_hash_128_to_64(_result, obj
 				? UINT64_C(0x66006600660066) : UINT64_C(0x99009900990099));
 		}
 
 		FR_FORCE_INLINE constexpr
-		void absorb_primitive(std::nullptr_t) noexcept {
-			return absorb_primitive(std::uintptr_t{});
+		void absorb_fundamental(std::nullptr_t) noexcept {
+			return absorb_fundamental(std::uintptr_t{});
 		}
 
 		template<std::integral T>
 		FR_FORCE_INLINE constexpr
-		void absorb_primitive(T obj) noexcept {
+		void absorb_fundamental(T obj) noexcept {
 			if constexpr (Opts.bits <= 64) {
 				_result = RapidAlgo::template hash_obj_seeded<sizeof(obj)>(obj, _result);
 			}
@@ -470,13 +510,13 @@ public:
 
 		template<std::floating_point T>
 		FR_FORCE_INLINE constexpr
-		void absorb_primitive(T obj) noexcept {
+		void absorb_fundamental(T obj) noexcept {
 			// The issue with `long double` is that it might have unused bytes
 			if constexpr (std::is_same_v<T, long double>) {
 				// Based on the Abseil algorithm.
 				// PERF: About 10x slower than the `float` version
 				const auto category = std::fpclassify(obj);
-				absorb_primitive(category); // To minimize collisions across different FP classes
+				absorb_fundamental(category); // To minimize collisions across different FP classes
 				switch (category) {
 					case FP_NORMAL:
 					case FP_SUBNORMAL: {
@@ -485,7 +525,7 @@ public:
 						break;
 					}
 					case FP_INFINITE: {
-						absorb_primitive(std::signbit(obj));
+						absorb_fundamental(std::signbit(obj));
 						break;
 					}
 					case FP_NAN:
@@ -498,7 +538,7 @@ public:
 				// Ensure that -0.0 and +0.0 have the same hash code
 				if (obj == T{})
 					obj = T{};
-				absorb_primitive(std::bit_cast<UIntOfSize<sizeof(T)>>(obj));
+				absorb_fundamental(std::bit_cast<UIntOfSize<sizeof(T)>>(obj));
 			}
 		}
 
@@ -526,7 +566,7 @@ public:
 		template<c_byte_like B, class SizeType>
 		FR_FORCE_INLINE constexpr
 		void absorb_bytes(const B* data, SizeType size) noexcept {
-			absorb_primitive(size);
+			absorb_fundamental(size);
 			_result = RapidAlgo::hash_bytes_seeded(data, static_cast<size_t>(size), _result);
 		}
 
@@ -572,32 +612,32 @@ public:
 			}
 			else {
 				static constexpr auto lenses = detail::build_uni_hashable_lenses2(mp_list<Ts...>);
-				if constexpr (lenses.byte_hashables.size() == 1zu) {
-					static constexpr auto lens = lenses.byte_hashables[0zu];
+				if constexpr (lenses.transparents.size() == 1zu) {
+					static constexpr auto lens = lenses.transparents[0zu];
 					const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-					canonicalize_byte_hashable(obj, [&](const auto& canon) {
+					canonicalize_transparent(obj, [&](const auto& canon) {
 						_state.absorb_object_bytes(canon);
 					});
 				}
-				else if constexpr (0zu < lenses.buffer_size
-					&& lenses.buffer_size <= RapidAlgo::max_short_size_bytes
+				else if constexpr (0zu < lenses.byte_buffer_size
+					&& lenses.byte_buffer_size <= RapidAlgo::max_short_size_bytes
 				) {
 					absorb_lensed_bytes<lenses>(objects...);
 				}
-				else if constexpr (lenses.byte_hashables.size() != 0zu) {
+				else if constexpr (lenses.transparents.size() != 0zu) {
 #if 1
 					absorb_lensed_blocks<lenses>(objects...);
 #else
-					unroll<lenses.byte_hashables.size()>([&]<size_t I> FR_FORCE_INLINE_L {
-						static constexpr auto lens = lenses.byte_hashables[I];
+					unroll<lenses.transparents.size()>([&]<size_t I> FR_FORCE_INLINE_L {
+						static constexpr auto lens = lenses.transparents[I];
 						const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
 						operator()(obj);
 					});
 #endif
 				}
 
-				if constexpr (lenses.others.size() != 0zu) {
-					absorb_lensed_other_objects<lenses>(objects...);
+				if constexpr (lenses.opaques.size() != 0zu) {
+					absorb_lensed_opaques<lenses>(objects...);
 				}
 			}
 		}
@@ -608,7 +648,7 @@ public:
 	private:
 		template<class T>
 		FR_FORCE_INLINE constexpr
-		void canonicalize_byte_hashable(const T& obj, auto&& callback) const noexcept {
+		void canonicalize_transparent(const T& obj, auto&& callback) const noexcept {
 			if constexpr (std::is_same_v<T, float> || std::is_same_v<T, double>) {
 				const auto canon = obj == T{} ? T{} : obj;
 				callback(canon);
@@ -621,26 +661,26 @@ public:
 		template<auto Lenses, class... Ts>
 		FR_FORCE_INLINE constexpr
 		void absorb_lensed_bytes(const Ts&... objects) const noexcept {
-			static_assert(Lenses.buffer_size <= RapidAlgo::max_short_size_bytes);
-			alignas(Word) unsigned char buffer[Lenses.buffer_size];
-			unroll<Lenses.byte_hashables.size()>([&]<size_t I> FR_FORCE_INLINE_L {
-				static constexpr auto lens = Lenses.byte_hashables[I];
+			static_assert(Lenses.byte_buffer_size <= RapidAlgo::max_short_size_bytes);
+			alignas(Word) unsigned char buffer[Lenses.byte_buffer_size];
+			unroll<Lenses.transparents.size()>([&]<size_t I> FR_FORCE_INLINE_L {
+				static constexpr auto lens = Lenses.transparents[I];
 				const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-				canonicalize_byte_hashable(obj, [&](const auto& canon) {
-					write_obj_as_bytes(buffer + lens.byte_offset, canon);
+				canonicalize_transparent(obj, [&](const auto& canon) {
+					write_obj_as_bytes(buffer + lens.byte_buffer_offset, canon);
 				});
 			});
-			_state.template absorb_fixed_bytes<Lenses.buffer_size>(buffer);
+			_state.template absorb_fixed_bytes<Lenses.byte_buffer_size>(buffer);
 		}
 
 		template<auto Lenses, class... Ts>
 		FR_FORCE_INLINE constexpr
 		void absorb_lensed_blocks(const Ts&... objects) const noexcept {
 			Word words[Lenses.num_words] = {};
-			unroll<Lenses.byte_hashables.size()>([&]<size_t I> FR_FORCE_INLINE_L {
-				static constexpr auto lens = Lenses.byte_hashables[I];
+			unroll<Lenses.transparents.size()>([&]<size_t I> FR_FORCE_INLINE_L {
+				static constexpr auto lens = Lenses.transparents[I];
 				const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
-				canonicalize_byte_hashable(obj, [&](const auto& canon) {
+				canonicalize_transparent(obj, [&](const auto& canon) {
 					if consteval {
 						const auto bytes = std::bit_cast<SimpleArray<unsigned char, sizeof(canon)>>(
 							canon);
@@ -671,9 +711,9 @@ public:
 
 		template<auto Lenses, class... Ts>
 		FR_FORCE_INLINE constexpr
-		void absorb_lensed_other_objects(const Ts&... objects) const noexcept {
-			unroll<Lenses.others.size()>([&]<size_t I> FR_FORCE_INLINE_L {
-				static constexpr auto lens = Lenses.others[I];
+		void absorb_lensed_opaques(const Ts&... objects) const noexcept {
+			unroll<Lenses.opaques.size()>([&]<size_t I> FR_FORCE_INLINE_L {
+				static constexpr auto lens = Lenses.opaques[I];
 				const auto& obj = detail::apply_uni_hashable_lens<lens>(objects...);
 				// NOTE: operator() would call absorb_dispatch() anyway
 				absorb_dispatch(obj);
@@ -686,8 +726,8 @@ public:
 			using enum HashableCategory;
 			static constexpr auto hashability = get_hashability<T>();
 			static_assert(hashability);
-			if constexpr (hashability.category() == Primitive) {
-				_state.absorb_primitive(obj);
+			if constexpr (hashability.category() == Fundamental) {
+				_state.absorb_fundamental(obj);
 			}
 			else if constexpr (hashability.category() == Wrapper) {
 				absorb_wrapper(obj);
@@ -782,8 +822,8 @@ public:
 		template<class T>
 		FR_FORCE_INLINE
 		void absorb_wrapper(Ptr<T> ptr) const noexcept {
-			// NOTE: Must sync with whatever `absorb_primitive(std::nullptr_t)` is doing
-			_state.absorb_primitive(std::bit_cast<uintptr_t>(ptr.get()));
+			// NOTE: Must sync with whatever `absorb_fundamental(std::nullptr_t)` is doing
+			_state.absorb_fundamental(std::bit_cast<uintptr_t>(ptr.get()));
 		}
 
 		template<class... Ts>
@@ -824,7 +864,7 @@ public:
 					? static_cast<size_t>(std::ranges::distance(range.begin, range.end))
 					: Size;
 				if constexpr (Size == npos) {
-					_state.absorb_primitive(real_size);
+					_state.absorb_fundamental(real_size);
 				}
 				if constexpr (std::contiguous_iterator<Iter>
 					&& get_hashability<V>().mode() == HashableMode::AsBytes
@@ -864,7 +904,7 @@ public:
 		FR_FORCE_INLINE constexpr
 		void absorb_wrapper(CommutativeRange<Iter, Sentinel, Size> range) const noexcept {
 			if constexpr (std::sized_sentinel_for<Sentinel, Iter> && Size == npos) {
-				_state.absorb_primitive(range.end - range.begin);
+				_state.absorb_fundamental(range.end - range.begin);
 			}
 
 			if (range.begin == range.end)
@@ -893,9 +933,13 @@ public:
 			}
 		}
 
+		/// @note Technically, this is dead code. Described types are always considered transparent,
+		/// so `absorb_described` won't get called. We keep it anyway as a way to communicate the
+		/// behavior and as a fallback in case lensing mechanism gets removed/replaced]
 		template<c_described_class T>
 		FR_FORCE_INLINE constexpr
 		void absorb_described(const T& obj) const noexcept {
+			// TODO: Pass all bases in one operator() call
 			static constexpr auto mode = get_hashability<T>().mode();
 			if constexpr (mode == HashableMode::AsBytes) {
 				_state.absorb_object_bytes(obj);
@@ -908,14 +952,16 @@ public:
 					}(ReflBases<T>{});
 				}
 				else if constexpr (mode == HashableMode::OptIn) {
+					// NOTE: Ideally, we would want to hash all bases in one operator() call
 					for_each_type<ReflBases<T>>([&]<class Base> FR_FORCE_INLINE_L {
-						// TODO: Combine multiple bases
 						if constexpr (get_hashability<Base>()) {
 							operator()(static_cast<const Base&>(obj));
 						}
 					});
 				}
 
+				// NOTE: Ideally, we would want to hash all fields and properties in one operator()
+				// call
 				for_each_type<ReflFieldsAndProperties<T>>([&]<class Child> FR_FORCE_INLINE_L {
 					static constexpr auto should_hash = mode == HashableMode::OptOut
 						? refl_attribute_or<Child, Hashable, Hashable{true}>
@@ -930,7 +976,7 @@ public:
 		template<c_enum T>
 		FR_FORCE_INLINE constexpr
 		void absorb_enum(T e) const noexcept {
-			_state.absorb_primitive(to_underlying(e));
+			_state.absorb_fundamental(to_underlying(e));
 		}
 
 		template<c_optional_like O>

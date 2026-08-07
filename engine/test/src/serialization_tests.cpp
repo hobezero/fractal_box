@@ -282,7 +282,7 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 	STATIC_CHECK(fr::c_serializable<std::vector<std::string>>);
 }
 
-TEST_CASE("SbsDataFormat.primitives", "[u][engine][core][serialization]") {
+TEST_CASE("SbsDataFormat.fundamentals", "[u][engine][core][serialization]") {
 	SECTION("serializing into a vector") {
 		frt::double_test([] {
 			const auto in_value1 = uint16_t{0x0A0B};

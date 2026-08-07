@@ -30,7 +30,7 @@ concept c_hashable_by = requires(const T& object, Hasher& hasher) {
 
 enum class HashableCategory: uint8_t {
 	Unhashable,
-	Primitive,
+	Fundamental,
 	Wrapper,
 	Custom,
 	Described,
@@ -136,13 +136,13 @@ auto get_hashability() noexcept -> Hashability {
 	if constexpr (std::is_fundamental_v<PT>) {
 		static_assert(!c_has_custom_hash<PT>, "Can't customize hashing for primitives");
 		if constexpr (std::is_arithmetic_v<PT>) {
-			return {Primitive, std::is_integral_v<PT> && has_unique_repr ? AsBytes : Default};
+			return {Fundamental, std::is_integral_v<PT> && has_unique_repr ? AsBytes : Default};
 		}
 		else if constexpr (std::is_same_v<PT, std::nullptr_t>) {
-			return {Primitive, AsBytes};
+			return {Fundamental, AsBytes};
 		}
 		else {
-			return {Primitive, None};
+			return {Fundamental, None};
 		}
 	}
 	else if constexpr (is_hvb_wrapper<PT>) {
