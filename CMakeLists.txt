@@ -22,7 +22,7 @@ option(
 	${PROJECT_IS_TOP_LEVEL}
 )
 
-set(FR_OVERRIDE_ASSERT_LEVEL "AUTO" CACHE STRING "Override FR_ASSERT_LEVEL")
+set(FR_OVERRIDE_ASSERT_LEVEL "AUTO" CACHE STRING "Force a specific FR_ASSERT_LEVEL")
 set(valid_assert_levels AUTO NONE FAST DEFAULT AUDIT MAX)
 set_property(CACHE FR_OVERRIDE_ASSERT_LEVEL PROPERTY STRINGS ${valid_assert_levels})
 if(NOT "${FR_OVERRIDE_ASSERT_LEVEL}" IN_LIST valid_assert_levels)
@@ -30,7 +30,7 @@ if(NOT "${FR_OVERRIDE_ASSERT_LEVEL}" IN_LIST valid_assert_levels)
 		"FractalBox: Invalid FR_OVERRIDE_ASSERT_LEVEL. Acceptable values: ${valid_assert_levels}")
 endif()
 
-set(FR_OVERRIDE_LOG_LEVEL "AUTO" CACHE STRING "Override FR_LOG_LEVEL")
+set(FR_OVERRIDE_LOG_LEVEL "AUTO" CACHE STRING "Force a specific FR_LOG_LEVEL")
 set(valid_log_levels AUTO NONE FATAL ERROR WARN INFO DEBUG TRACE MAX)
 set_property(CACHE FR_OVERRIDE_LOG_LEVEL PROPERTY STRINGS ${valid_log_levels})
 if(NOT "${FR_OVERRIDE_LOG_LEVEL}" IN_LIST valid_log_levels)
@@ -38,15 +38,14 @@ if(NOT "${FR_OVERRIDE_LOG_LEVEL}" IN_LIST valid_log_levels)
 		"Acceptable values: ${valid_log_levels}")
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
-	(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang" AND NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
-)
+set(comp_gcc_like (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
+	(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang" AND NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")))
+
+if(UNIX AND comp_gcc_like)
 	option(FR_ENABLE_GPROF "FractalBox: Enable gprof instrumentation support" OFF)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR
-	(CMAKE_CXX_COMPILER_ID MATCHES ".*Clang" AND NOT CMAKE_CXX_SIMULATE_ID STREQUAL "MSVC")
-)
+if(comp_gcc_like)
 	# For pretty output to the terminal
 	option(FR_FORCE_COLORED_OUTPUT "FractalBox: Force compiler to produce ANSI-colored output" OFF)
 endif()

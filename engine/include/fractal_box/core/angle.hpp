@@ -17,13 +17,17 @@ public:
 
 	Deg() = default;
 
-	explicit constexpr Deg(T value) noexcept: _value(value) { }
+	explicit constexpr
+	Deg(T value) noexcept: _value(value) { }
 
-	constexpr Deg(Rad<T> rad) noexcept: _value(glm::degrees(rad.value())) { }
+	constexpr
+	Deg(Rad<T> rad) noexcept: _value(glm::degrees(rad.value())) { }
 
-	constexpr auto value() const noexcept -> const T& { return _value; }
+	constexpr
+	auto value() const noexcept -> const T& { return _value; }
 
-	explicit constexpr operator T() const noexcept { return _value; }
+	explicit constexpr
+	operator T() const noexcept { return _value; }
 
 	constexpr auto operator-() const noexcept -> Deg { return Deg{-_value}; }
 	constexpr auto operator+() const noexcept -> Deg { return *this; }
