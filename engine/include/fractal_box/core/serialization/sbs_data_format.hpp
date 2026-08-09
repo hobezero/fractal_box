@@ -135,7 +135,7 @@ public:
 			return encode_variant(writer, obj);
 		}
 		else if constexpr (serializability.category() == Record) {
-			static_assert(false);
+			return encode_record(writer, obj);
 		}
 		else {
 			static_assert(false);
@@ -188,7 +188,7 @@ public:
 			return decode_variant(reader, obj);
 		}
 		else if constexpr (serializability.category() == Record) {
-			static_assert(false);
+			return decode_record(reader, obj);
 		}
 		else {
 			static_assert(false);
@@ -775,6 +775,69 @@ private:
 			static_assert(false);
 		}
 		return ret;
+	}
+
+	// Records
+	// ^^^^^^^
+
+	template<class Writer, class T>
+	static constexpr
+	auto encode_record(Writer& writer, const T& obj) -> EncodeResult<Writer> {
+		return visit_record_fields(obj, [&]<class... Fs>(const Fs&... fields) {
+			if constexpr (c_result<EncodeResult<Writer>>) {
+				auto ret = EncodeResult<Writer>{0zu};
+				(... && [&](const auto& field) {
+					auto res = SbsDataFormat::encode(writer, field);
+					if (res) {
+						*ret += *res;
+						return true;
+					}
+					else {
+						ret = std::move(res);
+						return false;
+					}
+				}(fields));
+				return ret;
+			}
+			else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
+				auto sum = 0zu;
+				(..., (sum += SbsDataFormat::encode(writer, fields)));
+				return sum;
+			}
+			else {
+				static_assert(false);
+			}
+		});
+	}
+
+	template<class Reader, class T>
+	static constexpr
+	auto decode_record(Reader& reader, T& obj) -> DecodeResult<Reader> {
+		return visit_record_fields(obj, [&](auto&... fields) {
+			if constexpr (c_result<DecodeResult<Reader>>) {
+				auto ret = DecodeResult<Reader>{0zu};
+				static_cast<void>((... && [&](auto& field) {
+					auto res = SbsDataFormat::decode(reader, field);
+					if (res) {
+						*ret += *res;
+						return true;
+					}
+					else {
+						ret = std::move(res);
+						return false;
+					}
+				}(fields)));
+				return ret;
+			}
+			else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
+				auto sum = 0zu;
+				(..., (sum += SbsDataFormat::decode(reader, fields)));
+				return sum;
+			}
+			else {
+				static_assert(false);
+			}
+		});
 	}
 };
 

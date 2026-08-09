@@ -47,5 +47,12 @@ auto str_length(const T& str) noexcept -> size_t {
 	}
 }
 
+template<class T>
+FR_FORCE_INLINE constexpr
+auto str_length_bytes(const T& str) noexcept -> size_t {
+	using Char = std::remove_cvref_t<decltype(str[0])>;
+	return sizeof(Char) * str_length(str);
+}
+
 } // namespace fr
 #endif // include guard

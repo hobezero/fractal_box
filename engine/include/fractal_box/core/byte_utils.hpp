@@ -162,17 +162,17 @@ void read_str_from_bytes(Target* dest, size_t dest_size, const Source* src) noex
 				dest[i] = static_cast<Target>(src[i]);
 			}
 			else if constexpr (sizeof(Target) == sizeof(char16_t)) {
-				dest[i] = static_cast<char16_t>(
+				dest[i] = static_cast<Target>(
 					static_cast<uint16_t>(src[2zu * i])
 					| static_cast<uint16_t>(src[2zu * i + 1zu]) << 8u
 				);
 			}
 			else if constexpr (sizeof(Target) == sizeof(char32_t)) {
-				dest[i] = static_cast<char32_t>(
-					static_cast<uint16_t>(src[4zu * i])
-					| static_cast<uint16_t>(src[4zu * i + 1zu]) << 8u
-					| static_cast<uint16_t>(src[4zu * i + 2zu]) << 16u
-					| static_cast<uint16_t>(src[4zu * i + 3zu]) << 24u
+				dest[i] = static_cast<Target>(
+					static_cast<uint32_t>(src[4zu * i])
+					| static_cast<uint32_t>(src[4zu * i + 1zu]) << 8u
+					| static_cast<uint32_t>(src[4zu * i + 2zu]) << 16u
+					| static_cast<uint32_t>(src[4zu * i + 3zu]) << 24u
 				);
 			}
 		}

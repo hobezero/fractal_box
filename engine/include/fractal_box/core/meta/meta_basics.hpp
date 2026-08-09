@@ -36,8 +36,8 @@ struct ValueC {
 	explicit(false) constexpr
 	operator ValueType() const noexcept { return V; }
 
-	constexpr
-	auto operator()() const noexcept -> ValueType { return V; }
+	static constexpr
+	auto operator()() noexcept -> ValueType { return V; }
 };
 
 template<auto V>
@@ -181,6 +181,18 @@ using IsValueCOfType = BoolC<is_value_c_of_type<T, U>>;
 
 template<class T, class U>
 concept c_value_c_of_type = is_value_c_of_type<T, U>;
+
+// c_size_c
+// ^^^^^^^^
+
+template<class T>
+inline constexpr auto is_size_c = false;
+
+template<size_t V>
+inline constexpr auto is_size_c<SizeC<V>> = true;
+
+template<class T>
+concept c_size_c = is_size_c<T>;
 
 // c_type_list
 // ^^^^^^^^^^^

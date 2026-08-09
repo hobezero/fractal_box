@@ -58,17 +58,70 @@ namespace frt {
 	} \
 } while (false)
 
+
+template<bool IsCompTestEnabled = true>
 inline constexpr
-void double_test(auto do_test) {
+void double_test(std::invocable<> auto do_test) {
 	do_test();
-	STATIC_CHECK([&] {
-		do_test();
-		return true;
-	}());
+	if constexpr (IsCompTestEnabled) {
+		STATIC_CHECK([&] {
+			do_test();
+			return true;
+		}());
+	};
 }
+
+template<bool IsCompTestEnabled = true>
+inline constexpr
+void double_test(const std::string& name, std::invocable<> auto do_test) {
+	INFO(name);
+	double_test<IsCompTestEnabled>(do_test);
+}
+
+/// @brief Text short enough to fit inside a small buffer in SBO-based string types
+template<fr::c_character Ch>
+inline constexpr auto small_text_for = fr::detail::MpIllegal{};
+
+template<>
+inline constexpr char small_text_for<char>[] = "12345";
+
+template<>
+inline constexpr wchar_t small_text_for<wchar_t>[] = L"12345";
+
+template<>
+inline constexpr char8_t small_text_for<char8_t>[] = u8"12345";
+
+template<>
+inline constexpr char16_t small_text_for<char16_t>[] = u"12345";
+
+template<>
+inline constexpr char32_t small_text_for<char32_t>[] = U"12345";
 
 inline constexpr char lorem_text[] = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, "
 	"sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+template<fr::c_character Ch>
+inline constexpr auto lorem_text_for = fr::detail::MpIllegal{};
+
+template<>
+inline constexpr char lorem_text_for<char>[] = "Lorem ipsum dolor sit amet, consectetur "
+	"adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+template<>
+inline constexpr wchar_t lorem_text_for<wchar_t>[] = L"Lorem ipsum dolor sit amet, consectetur "
+	"adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+template<>
+inline constexpr char8_t lorem_text_for<char8_t>[] = u8"Lorem ipsum dolor sit amet, consectetur "
+	"adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+template<>
+inline constexpr char16_t lorem_text_for<char16_t>[] = u"Lorem ipsum dolor sit amet, consectetur "
+	"adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
+
+template<>
+inline constexpr char32_t lorem_text_for<char32_t>[] = U"Lorem ipsum dolor sit amet, consectetur "
+	"adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.";
 
 inline constexpr char lorem_text_long[] =
 	R"(Sed ut perspiciatis, unde omnis iste natus error sit voluptatem accusantium doloremque

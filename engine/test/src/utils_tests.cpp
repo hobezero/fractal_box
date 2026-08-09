@@ -505,6 +505,16 @@ TEST_CASE("str_length", "[u][engine][core][utils][string_utils]") {
 			FRT_CHECK(fr::str_length(p) == 6zu);
 		});
 	}
+	SECTION("wchar_t") {
+		frt::double_test("array", [] {
+			const wchar_t a[] = L"abcdef";
+			FRT_CHECK(fr::str_length(a) == 6zu);
+		});
+		frt::double_test("pointer", [] {
+			const wchar_t* p = L"abcdef";
+			FRT_CHECK(fr::str_length(p) == 6zu);
+		});
+	}
 	SECTION("char8_t") {
 		frt::double_test("array", [] {
 			const char8_t a[] = u8"abcdef";
@@ -532,16 +542,6 @@ TEST_CASE("str_length", "[u][engine][core][utils][string_utils]") {
 		});
 		frt::double_test("pointer", [] {
 			const char32_t* p = U"abcdef";
-			FRT_CHECK(fr::str_length(p) == 6zu);
-		});
-	}
-	SECTION("wchar_t") {
-		frt::double_test("array", [] {
-			const wchar_t a[] = L"abcdef";
-			FRT_CHECK(fr::str_length(a) == 6zu);
-		});
-		frt::double_test("pointer", [] {
-			const wchar_t* p = L"abcdef";
 			FRT_CHECK(fr::str_length(p) == 6zu);
 		});
 	}
