@@ -35,6 +35,7 @@ target_sources(fractal_box_engine PUBLIC FILE_SET HEADERS FILES
 	relocation.hpp
 	scope.hpp
 	string_literal.hpp
+	string_utils.hpp
 	timeline.hpp
 	type_index.hpp
 )

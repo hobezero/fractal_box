@@ -18,8 +18,8 @@ many important features that were deliberately omitted from here.
 ## Platform Support
 
 Currently tested targets:
- - x64 Linux GCC X11 OpenGL
- - x64 Linux Clang X11 OpenGL
+ - x86_64 Linux GCC X11 OpenGL
+ - x86_64 Linux Clang X11 OpenGL
 
 Prospective targets: Vulkan, Wayland, Windows, web (WASM + WebGPU + Emscripten), Android, AArch64,
 and MSVC.
@@ -88,24 +88,25 @@ On Linux, you can use the script `scripts/conan_install.sh` to install all depen
 common configurations of GCC and Clang in the specified build directory. *Note:* Conan profiles
 named `gcc` and `clang` must be configured beforehand.
 
-### CMake options
+### CMake Options
 
-Option                         | Description                              | Possible Values                                 | Default Value
--------------------------------|------------------------------------------|-------------------------------------------------|---------------
-FR_INSTALL                     | Enable install target                    | ON/OFF                                          | ON
-FR_BUILD_TESTING               | Build unit test targets                  | ON/OFF                                          | ON if top-level
-FR_BUILD_BENCH                 | Build benchmarking targets               | ON/OFF                                          | ON if top-level
-FR_BUILD_EXAMPLES              | Build example targets                    | ON/OFF                                          | ON if top-level
-FR_DEV_MODE                    | Build with developer defaults            | ON/OFF                                          | ON if top-level
-FR_OVERRIDE_ASSERT_LEVEL       | Force a specific FR_ASSERT_LEVEL         | AUTO/NONE/FAST/DEFAULT/AUDIT/MAX                | AUTO
-FR_OVERRIDE_LOG_LEVEL          | Force a specific FR_LOG_LEVEL            | AUTO/NONE/FATAL/ERROR/WARN/INFO/DEBUG/TRACE/MAX | AUTO
-FR_ENABLE_COVERAGE             | Enable coverage instrumentation          | ON/OFF                                          | OFF
-FR_ENABLE_GPROF                | Enable gprof instrumentation support     | ON/OFF                                          | OFF
-FR_ENABLE_SANITIZER_ADDRESS    | Enable address sanitizer                 | ON/OFF                                          | OFF
-FR_ENABLE_SANITIZER_LEAK       | Enable leak sanitizer                    | ON/OFF                                          | OFF
-FR_ENABLE_SANITIZER_MEMORY     | Enable memory sanitizer                  | ON/OFF                                          | OFF
-FR_ENABLE_SANITIZER_THREAD     | Enable thread sanitizer                  | ON/OFF                                          | OFF
-FR_ENABLE_SANITIZER_UB         | Enable UB sanitizer                      | ON/OFF                                          | OFF
+Option                         | Description                                   | Possible Values                                 | Default Value
+-------------------------------|-----------------------------------------------|-------------------------------------------------|---------------
+FR_INSTALL                     | Enable install target                         | ON/OFF                                          | ON
+FR_BUILD_TESTING               | Build unit test targets                       | ON/OFF                                          | ON if top-level
+FR_BUILD_BENCH                 | Build benchmarking targets                    | ON/OFF                                          | ON if top-level
+FR_BUILD_EXAMPLES              | Build example targets                         | ON/OFF                                          | ON if top-level
+FR_DEV_MODE                    | Build with developer defaults                 | ON/OFF                                          | ON if top-level
+FR_OVERRIDE_ASSERT_LEVEL       | Force a specific FR_ASSERT_LEVEL              | AUTO/NONE/FAST/DEFAULT/AUDIT/MAX                | AUTO
+FR_OVERRIDE_LOG_LEVEL          | Force a specific FR_LOG_LEVEL                 | AUTO/NONE/FATAL/ERROR/WARN/INFO/DEBUG/TRACE/MAX | AUTO
+FR_ENABLE_COVERAGE             | Enable coverage instrumentation               | ON/OFF                                          | OFF
+FR_ENABLE_GPROF                | Enable gprof instrumentation support          | ON/OFF                                          | OFF
+FR_ENABLE_COLORED_OUTPUT       | Force compiler to produce ANSI-colored output | ON/OFF                                          | OFF
+FR_ENABLE_SANITIZER_ADDRESS    | Enable address sanitizer                      | ON/OFF                                          | OFF
+FR_ENABLE_SANITIZER_LEAK       | Enable leak sanitizer                         | ON/OFF                                          | OFF
+FR_ENABLE_SANITIZER_MEMORY     | Enable memory sanitizer                       | ON/OFF                                          | OFF
+FR_ENABLE_SANITIZER_THREAD     | Enable thread sanitizer                       | ON/OFF                                          | OFF
+FR_ENABLE_SANITIZER_UB         | Enable UB sanitizer                           | ON/OFF                                          | OFF
 
 ### Building
 

@@ -1,9 +1,12 @@
+#include "fractal_box/core/default_utils.hpp"
+#include "fractal_box/core/enum_utils.hpp"
+#include "fractal_box/core/string_utils.hpp"
+
 #include <span>
 
 #include <catch2/catch_test_macros.hpp>
 
-#include "fractal_box/core/default_utils.hpp"
-#include "fractal_box/core/enum_utils.hpp"
+#include "test_common/test_helpers.hpp"
 
 namespace {
 
@@ -26,11 +29,11 @@ struct SwapMock {
 
 } // namespace
 
-TEST_CASE("WithDefault", "[u][engine][core][utils]") {
+TEST_CASE("WithDefault", "[u][engine][core][utils][default_utils]") {
 	SECTION("type properties") {
 		using SimpleWithDefault = fr::WithDefault<int, 1>;
 
-		CHECK(std::regular<SimpleWithDefault>);
+		STATIC_CHECK(std::regular<SimpleWithDefault>);
 
 		SECTION("default constructor") {
 			STATIC_REQUIRE(std::is_default_constructible_v<SimpleWithDefault>);
@@ -263,7 +266,7 @@ struct Catch::StringMaker<MyFlags> {
 	}
 };
 
-TEST_CASE("Flags", "[u][engine][core][utils]") {
+TEST_CASE("Flags", "[u][engine][core][utils][enum_utils]") {
 	using enum MyFlag;
 
 	SECTION("type properties") {
@@ -488,5 +491,58 @@ TEST_CASE("Flags", "[u][engine][core][utils]") {
 		CHECK((MyFlags{f1} &= B) == MyFlags{});
 		CHECK((MyFlags{f1} ^= D) == MyFlags{A});
 		CHECK((MyFlags{f1} ^= B) == MyFlags{{A, B, D}});
+	}
+}
+
+TEST_CASE("str_length", "[u][engine][core][utils][string_utils]") {
+	SECTION("char") {
+		frt::double_test("array", [] {
+			const char a[] = "abcdef";
+			FRT_CHECK(fr::str_length(a) == 6zu);
+		});
+		frt::double_test("pointer", [] {
+			const char* p = "abcdef";
+			FRT_CHECK(fr::str_length(p) == 6zu);
+		});
+	}
+	SECTION("char8_t") {
+		frt::double_test("array", [] {
+			const char8_t a[] = u8"abcdef";
+			FRT_CHECK(fr::str_length(a) == 6zu);
+		});
+		frt::double_test("pointer", [] {
+			const char8_t* p = u8"abcdef";
+			FRT_CHECK(fr::str_length(p) == 6zu);
+		});
+	}
+	SECTION("char16_t") {
+		frt::double_test("array", [] {
+			const char16_t a[] = u"abcdef";
+			FRT_CHECK(fr::str_length(a) == 6zu);
+		});
+		frt::double_test("pointer", [] {
+			const char16_t* p = u"abcdef";
+			FRT_CHECK(fr::str_length(p) == 6zu);
+		});
+	}
+	SECTION("char32_t") {
+		frt::double_test("array", [] {
+			const char32_t a[] = U"abcdef";
+			FRT_CHECK(fr::str_length(a) == 6zu);
+		});
+		frt::double_test("pointer", [] {
+			const char32_t* p = U"abcdef";
+			FRT_CHECK(fr::str_length(p) == 6zu);
+		});
+	}
+	SECTION("wchar_t") {
+		frt::double_test("array", [] {
+			const wchar_t a[] = L"abcdef";
+			FRT_CHECK(fr::str_length(a) == 6zu);
+		});
+		frt::double_test("pointer", [] {
+			const wchar_t* p = L"abcdef";
+			FRT_CHECK(fr::str_length(p) == 6zu);
+		});
 	}
 }
