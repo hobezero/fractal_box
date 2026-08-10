@@ -20,7 +20,7 @@
 namespace {
 
 struct FriendCustomizedStruct {
-	auto operator<=>(const FriendCustomizedStruct&) const -> bool = default;
+	auto operator==(const FriendCustomizedStruct&) const -> bool = default;
 
 	template<class Ar>
 	friend constexpr
@@ -42,7 +42,7 @@ public:
 };
 
 struct StaticCustomizedStruct {
-	auto operator<=>(const StaticCustomizedStruct&) const -> bool = default;
+	auto operator==(const StaticCustomizedStruct&) const -> bool = default;
 
 	static constexpr
 	auto fr_custom_serialize(auto& archive, auto& self) {
@@ -81,7 +81,7 @@ enum class SimpleEnum {
 };
 
 struct SimpleAggregate {
-	auto operator<=>(const SimpleAggregate&) const -> bool = default;
+	auto operator==(const SimpleAggregate&) const -> bool = default;
 
 	constexpr
 	auto serialized_size() const noexcept -> size_t { return sizeof(x) + sizeof(y); }
@@ -92,7 +92,7 @@ public:
 };
 
 struct ComplexAggregate {
-	auto operator<=>(const ComplexAggregate&) const -> bool = default;
+	auto operator==(const ComplexAggregate&) const -> bool = default;
 
 	constexpr
 	auto serialized_size() const noexcept -> size_t {
@@ -108,6 +108,249 @@ public:
 struct AggregateWithUnserializableField {
 	int a;
 	PrivateClass b;
+};
+
+struct DescribedIgnorantClass {
+	using Self = DescribedIgnorantClass;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Field<&Self::_x>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z>
+		>;
+	}
+
+public: // NOTE: Make this also an aggregate to see if serializer respects description
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedOptOutClass {
+	using Self = DescribedOptOutClass;
+
+	DescribedOptOutClass() = default;
+
+	constexpr
+	DescribedOptOutClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
+
+	auto operator==(const Self&) const -> bool = default;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::SerializableMode::OptOut>,
+			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
+		>;
+	}
+
+	constexpr
+	auto serialized_size() const noexcept { return sizeof(_x) + sizeof(_y); }
+
+private:
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedOptInClass {
+	using Self = DescribedOptInClass;
+
+	DescribedOptInClass() = default;
+
+	constexpr
+	DescribedOptInClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
+
+	auto operator==(const Self&) const -> bool = default;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::SerializableMode::OptIn>,
+			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{true}>>
+		>;
+	}
+
+	constexpr
+	auto serialized_size() const noexcept {
+		return sizeof(_x) + sizeof(size_t) + _z.size();
+	}
+
+private:
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedNoneClass {
+	using Self = DescribedNoneClass;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::SerializableMode::None>,
+			fr::Field<&Self::_x>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z>
+		>;
+	}
+
+public: // NOTE: Make this also an aggregate to see if serializer respects description
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedSerializableClass {
+	using Self = DescribedSerializableClass;
+
+	DescribedSerializableClass() = default;
+
+	constexpr
+	DescribedSerializableClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
+
+	auto operator==(const Self&) const -> bool = default;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::Serializable{}>,
+			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
+		>;
+	}
+
+	constexpr
+	auto serialized_size() const noexcept { return sizeof(_x) + sizeof(_y); }
+
+private:
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedSerializableFalseClass {
+	using Self = DescribedSerializableFalseClass;
+
+	DescribedSerializableFalseClass() = default;
+
+	constexpr
+	DescribedSerializableFalseClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::Serializable{false}>,
+			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
+		>;
+	}
+
+private:
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct BaseA {
+	[[maybe_unused]] constexpr
+	auto operator==(const BaseA&) const -> bool = default;
+
+public:
+	SimpleEnum a;
+};
+
+struct BaseB {
+	[[maybe_unused]] constexpr
+	auto operator==(const BaseB&) const -> bool = default;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const BaseB&) {
+		return fr::class_desc<
+			fr::Attributes<fr::Serializable{}>,
+			fr::Field<&BaseB::b>,
+			fr::Field<&BaseB::c>
+		>;
+	}
+
+	constexpr
+	auto serialized_size() const noexcept {
+		return sizeof(this->b) + sizeof(size_t) + this->c.size();
+	}
+
+public:
+	int16_t b {};
+	std::string c;
+};
+
+struct BaseC {
+	[[maybe_unused]] constexpr
+	auto operator==(const BaseC&) const -> bool = default;
+
+public:
+	float* ptr = nullptr;
+};
+
+struct DescribedWithBasesAndProps: public BaseA, public BaseB, public BaseC {
+	using Self = DescribedWithBasesAndProps;
+
+	DescribedWithBasesAndProps() = default;
+
+	constexpr
+	DescribedWithBasesAndProps(
+		SimpleEnum a_val,
+		int16_t b_val,
+		std::string c_val,
+		int x,
+		std::string y,
+		double z
+	):
+		BaseA{a_val},
+		BaseB{b_val, std::move(c_val)},
+		_x{x},
+		_y{std::move(y)},
+		_z{z}
+	{ }
+
+	auto operator==(const Self&) const -> bool = default;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Bases<BaseA, BaseB, BaseC>,
+			fr::Attributes<fr::SerializableMode::OptIn>,
+			fr::Field<&Self::_x>,
+			fr::Property<"y", std::string, &Self::y, &Self::set_y,
+				fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{}>>
+		>;
+	}
+
+	constexpr
+	auto serialized_size() const noexcept {
+		return sizeof(BaseA::a) + BaseB::serialized_size() + sizeof(size_t) + _y.size()
+			+ sizeof(_z);
+	}
+
+	/// @note Returns by value to simulate properties calculated on the fly
+	constexpr
+	auto y() const -> std::string { return _y; }
+
+	constexpr
+	void set_y(std::string value) { _y = std::move(value); }
+
+private:
+	int _x {};
+	std::string _y;
+	double _z {};
 };
 
 template<
@@ -219,7 +462,8 @@ auto test_common_serde_scenarios(
 template<
 	bool IsCompTestEnabled = true,
 	std::invocable<> Factory,
-	fr::c_size_c FallbackSize = fr::SizeC<0zu>>
+	fr::c_size_c FallbackSize = fr::SizeC<0zu>
+>
 static constexpr
 auto test_common_serde_scenarios(
 	const std::string& name,
@@ -229,212 +473,6 @@ auto test_common_serde_scenarios(
 	return test_common_serde_scenarios<IsCompTestEnabled>(name, Factory{}, Factory{},
 		fallback_size, fallback_size);
 }
-
-struct DescribedIgnorantClass {
-	using Self = DescribedIgnorantClass;
-
-	[[maybe_unused]] friend consteval
-	auto fr_describe(const Self&) {
-		return fr::class_desc<
-			fr::Field<&Self::_x>,
-			fr::Field<&Self::_y>,
-			fr::Field<&Self::_z>
-		>;
-	}
-
-public: // NOTE: Make this also an aggregate to see if serializer respects description
-	int _x {};
-	int _y {};
-	std::string _z;
-};
-
-struct DescribedOptOutClass {
-	using Self = DescribedOptOutClass;
-
-	DescribedOptOutClass() = default;
-
-	constexpr
-	DescribedOptOutClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
-
-	[[maybe_unused]] friend consteval
-	auto fr_describe(const Self&) {
-		return fr::class_desc<
-			fr::Attributes<fr::SerializableMode::OptOut>,
-			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
-			fr::Field<&Self::_y>,
-			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
-		>;
-	}
-
-private:
-	int _x {};
-	int _y {};
-	std::string _z;
-};
-
-struct DescribedOptInClass {
-	using Self = DescribedOptInClass;
-
-	DescribedOptInClass() = default;
-
-	constexpr
-	DescribedOptInClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
-
-	[[maybe_unused]] friend consteval
-	auto fr_describe(const Self&) {
-		return fr::class_desc<
-			fr::Attributes<fr::SerializableMode::OptIn>,
-			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
-			fr::Field<&Self::_y>,
-			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{true}>>
-		>;
-	}
-
-private:
-	int _x {};
-	int _y {};
-	std::string _z;
-};
-
-struct DescribedNoneClass {
-	using Self = DescribedNoneClass;
-
-	[[maybe_unused]] friend consteval
-	auto fr_describe(const Self&) {
-		return fr::class_desc<
-			fr::Attributes<fr::SerializableMode::None>,
-			fr::Field<&Self::_x>,
-			fr::Field<&Self::_y>,
-			fr::Field<&Self::_z>
-		>;
-	}
-
-public: // NOTE: Make this also an aggregate to see if serializer respects description
-	int _x {};
-	int _y {};
-	std::string _z;
-};
-
-struct DescribedSerializableClass {
-	using Self = DescribedSerializableClass;
-
-	DescribedSerializableClass() = default;
-
-	constexpr
-	DescribedSerializableClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
-
-	[[maybe_unused]] friend consteval
-	auto fr_describe(const Self&) {
-		return fr::class_desc<
-			fr::Attributes<fr::Serializable{}>,
-			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
-			fr::Field<&Self::_y>,
-			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
-		>;
-	}
-
-private:
-	int _x {};
-	int _y {};
-	std::string _z;
-};
-
-struct DescribedSerializableFalseClass {
-	using Self = DescribedSerializableFalseClass;
-
-	DescribedSerializableFalseClass() = default;
-
-	constexpr
-	DescribedSerializableFalseClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
-
-	[[maybe_unused]] friend consteval
-	auto fr_describe(const Self&) {
-		return fr::class_desc<
-			fr::Attributes<fr::Serializable{false}>,
-			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
-			fr::Field<&Self::_y>,
-			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
-		>;
-	}
-
-private:
-	int _x {};
-	int _y {};
-	std::string _z;
-};
-
-struct BaseA {
-	[[maybe_unused]] constexpr
-	auto operator==(const BaseA&) const -> bool = default;
-
-public:
-	SimpleEnum a;
-};
-
-struct BaseB {
-	[[maybe_unused]] friend consteval
-	auto fr_describe(const BaseB&) {
-		return fr::class_desc<
-			fr::Attributes<fr::Serializable{}>,
-			fr::Field<&BaseB::b>,
-			fr::Field<&BaseB::c>
-		>;
-	}
-
-public:
-	int16_t b {};
-	std::string c;
-};
-
-struct BaseC {
-	float* ptr = nullptr;
-};
-
-struct DescribedWithBasesAndProps: public BaseA, public BaseB, public BaseC {
-	using Self = DescribedWithBasesAndProps;
-
-	DescribedWithBasesAndProps() = default;
-
-	constexpr
-	DescribedWithBasesAndProps(
-		SimpleEnum a_val,
-		int16_t b_val,
-		std::string c_val,
-		int x,
-		std::string y,
-		double z
-	):
-		BaseA{a_val},
-		BaseB{b_val, std::move(c_val)},
-		_x{x},
-		_y{std::move(y)},
-		_z{z}
-	{ }
-
-	[[maybe_unused]] friend consteval
-	auto fr_describe(const Self&) {
-		return fr::class_desc<
-			fr::Bases<BaseA, BaseB, BaseC>,
-			fr::Attributes<fr::SerializableMode::OptIn>,
-			fr::Field<&Self::_x>,
-			fr::Property<"y", std::string, &Self::y, &Self::set_y,
-				fr::Attributes<fr::Serializable{}>>,
-			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{}>>
-		>;
-	}
-
-	/// @note Returns by value to simulate properties calculated on the fly
-	constexpr
-	auto y() const -> std::string { return _y; }
-
-	constexpr
-	void set_y(std::string value) { _y = std::move(value); }
-
-private:
-	int _x {};
-	std::string _y;
-	double _z {};
-};
 
 } // namespace
 
@@ -765,6 +803,125 @@ TEST_CASE("SbsDataFormat.custom", "[u][engine][core][serialization]") {
 	});
 	test_common_serde_scenarios("using a static member function", [] static {
 		return StaticCustomizedStruct{55, "abcdef"};
+	});
+}
+
+TEST_CASE("SbsDataFormat.described", "[u][engine][core][serialization]") {
+	frt::double_test("OptOut mode serializes fields unless explicitly opted out", [] {
+		// _x: explicit Serializable{true} -> included
+		// _y: no attribute, defaults to included in OptOut mode -> included
+		// _z: explicit Serializable{false} -> excluded
+		const auto in_value = DescribedOptOutClass{11, 22, "abcdef"};
+		const auto value_size = in_value.serialized_size();
+
+		auto buf = std::vector<unsigned char>{};
+		auto writer = fr::VectorWriter{buf};
+
+		FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
+
+		auto out_value = DescribedOptOutClass{99, 99, "untouched"};
+		auto reader = fr::SpanReader{buf};
+
+		auto res = fr::SbsDataFormat::decode(reader, out_value);
+		FRT_REQUIRE(res);
+		FRT_CHECK(*res == value_size);
+		FRT_CHECK(out_value == DescribedOptOutClass{11, 22, "untouched"});
+		FRT_CHECK(out_value != in_value);
+	});
+	frt::double_test<false>("OptIn mode serializes fields only when explicitly opted in", [] {
+		// _x: explicit Serializable{true} -> included
+		// _y: no attribute, defaults to excluded in OptIn mode -> excluded
+		// _z: explicit Serializable{true} -> included
+		const auto in_value = DescribedOptInClass{11, 22, "abcdef"};
+		const auto value_size = in_value.serialized_size();
+
+		auto buf = std::vector<unsigned char>{};
+		auto writer = fr::VectorWriter{buf};
+
+		FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
+
+		auto out_value = DescribedOptInClass{99, 99, "untouched"};
+		auto reader = fr::SpanReader{buf};
+
+		auto res = fr::SbsDataFormat::decode(reader, out_value);
+		FRT_REQUIRE(res);
+		FRT_CHECK(*res == value_size);
+		FRT_CHECK(out_value == DescribedOptInClass{11, 99, "abcdef"});
+		FRT_CHECK(out_value != in_value);
+	});
+	frt::double_test<false>("class-level Serializable{true} attribute behaves like OptOut", [] {
+		const auto in_value = DescribedSerializableClass{11, 22, "abcdef"};
+		const auto value_size = in_value.serialized_size();
+
+		auto buf = std::vector<unsigned char>{};
+		auto writer = fr::VectorWriter{buf};
+
+		FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
+
+		auto out_value = DescribedSerializableClass{99, 99, "untouched"};
+		auto reader = fr::SpanReader{buf};
+
+		auto res = fr::SbsDataFormat::decode(reader, out_value);
+		FRT_REQUIRE(res);
+		FRT_CHECK(*res == value_size);
+		FRT_CHECK(out_value == DescribedSerializableClass{11, 22, "untouched"});
+	});
+	frt::double_test<false>("bases, fields and properties, respecting inclusion rules", [] {
+		// BaseA: aggregate, serializable -> included (OptIn: opted in via serializability)
+		// BaseB: described, class-level Serializable{true} -> included
+		// BaseC: raw pointer field, unserializable -> excluded
+		// _x: no attribute, defaults to excluded in OptIn mode -> excluded
+		// y (property): explicit Serializable{true} -> included
+		// _z: explicit Serializable{true} -> included
+		const auto in_value = DescribedWithBasesAndProps{
+			SimpleEnum::B, 5, "hello", 77, "world", 3.5
+		};
+		const auto value_size = in_value.serialized_size();
+
+		auto buf = std::vector<unsigned char>{};
+		auto writer = fr::VectorWriter{buf};
+
+		FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
+
+		auto out_value = DescribedWithBasesAndProps{
+			SimpleEnum::A, 0, "", 0, "", 0.0
+		};
+		auto reader = fr::SpanReader{buf};
+
+		auto res = fr::SbsDataFormat::decode(reader, out_value);
+		FRT_REQUIRE(res);
+		FRT_CHECK(*res == value_size);
+		FRT_CHECK(out_value == (DescribedWithBasesAndProps{
+			SimpleEnum::B, 5, "hello", 0, "world", 3.5
+		}));
+		FRT_CHECK(out_value != in_value);
+	});
+	frt::double_test("serialializing into an array which is too small", [] {
+		const auto get_value = [] { return DescribedOptOutClass{11, 22, "abcdef"}; };
+		const auto in_value = get_value();
+		static constexpr auto value_size = get_value().serialized_size();
+
+		auto buf = std::array<std::byte, value_size - 2zu>{};
+		auto writer = fr::SpanWriter{buf};
+
+		auto res = fr::SbsDataFormat::encode(writer, in_value);
+		FRT_CHECK(!res);
+		FRT_CHECK(res.template has_error<fr::BufferOverrun>());
+	});
+	frt::double_test("deserializing from a span which is too small", [] {
+		const auto in_value = DescribedOptInClass{11, 22, "abcdef"};
+
+		auto buf = std::vector<char>{};
+		auto writer = fr::VectorWriter{buf};
+
+		FRT_REQUIRE(fr::SbsDataFormat::encode(writer, in_value));
+
+		auto out_value = DescribedOptInClass{};
+
+		auto reader = fr::SpanReader{std::span<char>(buf.data(), buf.data() + 2zu)};
+		auto res = fr::SbsDataFormat::decode(reader, out_value);
+		FRT_CHECK(!res);
+		FRT_CHECK(res.template has_error<fr::BufferOverrun>());
 	});
 }
 

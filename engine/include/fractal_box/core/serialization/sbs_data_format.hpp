@@ -330,7 +330,7 @@ private:
 			}
 		};
 
-		unroll<mp_size<ReflBases<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L {
+		unroll<mp_size<ReflBases<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L -> bool {
 			using Base = MpAt<ReflBases<T>, Idx>;
 			if constexpr (mode == OptOut) {
 				return encode_one(static_cast<const Base&>(obj));
@@ -340,12 +340,10 @@ private:
 					return encode_one(static_cast<const Base&>(obj));
 				}
 			}
-			else {
-				return true;
-			}
+			return true;
 		});
 
-		unroll<mp_size<ReflFieldsAndProperties<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L {
+		unroll<mp_size<ReflFieldsAndProperties<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L -> bool {
 			using Child = MpAt<ReflFieldsAndProperties<T>, Idx>;
 			static constexpr auto should_include = mode == OptOut
 				? refl_attribute_or<Child, Serializable, Serializable{true}>
@@ -353,9 +351,7 @@ private:
 			if constexpr (should_include) {
 				return encode_one(get_field_or_property<Child>(obj));
 			}
-			else {
-				return true;
-			}
+			return true;
 		});
 
 		return ret;
@@ -392,7 +388,7 @@ private:
 			}
 		};
 
-		unroll<mp_size<ReflBases<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L {
+		unroll<mp_size<ReflBases<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L -> bool {
 			using Base = MpAt<ReflBases<T>, Idx>;
 			if constexpr (mode == OptOut) {
 				return decode_one(static_cast<Base&>(obj));
@@ -402,12 +398,10 @@ private:
 					return decode_one(static_cast<Base&>(obj));
 				}
 			}
-			else {
-				return true;
-			}
+			return true;
 		});
 
-		unroll<mp_size<ReflFieldsAndProperties<T>>>([&]<size_t Idx> {
+		unroll<mp_size<ReflFieldsAndProperties<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L -> bool {
 			using Child = MpAt<ReflFieldsAndProperties<T>, Idx>;
 			static constexpr auto should_include = mode == OptOut
 				? refl_attribute_or<Child, Serializable, Serializable{true}>
@@ -425,9 +419,7 @@ private:
 					return decode_one(apply_field<Child>(obj));
 				}
 			}
-			else {
-				return true;
-			}
+			return true;
 		});
 
 		return ret;
