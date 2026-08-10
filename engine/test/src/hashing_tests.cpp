@@ -474,6 +474,8 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 	using HA = fr::Hashability;
 
 	SECTION("Unhashable") {
+		STATIC_CHECK(fr::get_hashability<int*>() == HA{Unhashable, None});
+		STATIC_CHECK(fr::get_hashability<int (*)()>() == HA{Unhashable, None});
 		STATIC_CHECK(fr::get_hashability<AbstractClass>() == HA{Unhashable, None});
 		STATIC_CHECK(fr::get_hashability<PrivateClass>() == HA{Unhashable, None});
 	}

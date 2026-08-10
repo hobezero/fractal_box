@@ -108,7 +108,7 @@ public:
 			}
 		}
 		else if constexpr (serializability.category() == Described) {
-			static_assert(false);
+			return encode_described(writer, obj);
 		}
 		else if constexpr (serializability.category() == Enum) {
 			return encode_enum(writer, obj);
@@ -161,7 +161,7 @@ public:
 			}
 		}
 		else if constexpr (serializability.category() == Described) {
-			static_assert(false);
+			return decode_described(reader, obj);
 		}
 		else if constexpr (serializability.category() == Enum) {
 			return decode_enum(reader, obj);
@@ -296,6 +296,143 @@ private:
 		}
 	}
 
+	// Described
+	// ^^^^^^^^^
+
+	template<class Writer, class T>
+	static constexpr
+	auto encode_described(Writer& writer, const T& obj) -> EncodeResult<Writer> {
+		using enum SerializableMode;
+		static constexpr auto mode = get_serializability<T>().mode();
+
+		auto ret = EncodeResult<Writer>{0zu};
+
+		const auto encode_one = [&](const auto& value) FR_FORCE_INLINE_L -> bool {
+			if constexpr (c_result<EncodeResult<Writer>>) {
+				if (!ret)
+					return false;
+				auto res = SbsDataFormat::encode(writer, value);
+				if (res) {
+					*ret += *res;
+					return true;
+				}
+				else {
+					ret = std::move(res);
+					return false;
+				}
+			}
+			else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
+				ret += SbsDataFormat::encode(writer, value);
+				return true;
+			}
+			else {
+				static_assert(false);
+			}
+		};
+
+		unroll<mp_size<ReflBases<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L {
+			using Base = MpAt<ReflBases<T>, Idx>;
+			if constexpr (mode == OptOut) {
+				return encode_one(static_cast<const Base&>(obj));
+			}
+			else if constexpr (mode == OptIn) {
+				if constexpr (get_serializability<Base>()) {
+					return encode_one(static_cast<const Base&>(obj));
+				}
+			}
+			else {
+				return true;
+			}
+		});
+
+		unroll<mp_size<ReflFieldsAndProperties<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L {
+			using Child = MpAt<ReflFieldsAndProperties<T>, Idx>;
+			static constexpr auto should_include = mode == OptOut
+				? refl_attribute_or<Child, Serializable, Serializable{true}>
+				: refl_attribute_or<Child, Serializable, Serializable{false}>;
+			if constexpr (should_include) {
+				return encode_one(get_field_or_property<Child>(obj));
+			}
+			else {
+				return true;
+			}
+		});
+
+		return ret;
+	}
+
+	template<class Reader, class T>
+	static constexpr
+	auto decode_described(Reader& reader, T& obj) -> DecodeResult<Reader> {
+		using enum SerializableMode;
+		static constexpr auto mode = get_serializability<T>().mode();
+
+		auto ret = DecodeResult<Reader>{0zu};
+
+		const auto decode_one = [&](auto& value) FR_FORCE_INLINE_L -> bool {
+			if constexpr (c_result<DecodeResult<Reader>>) {
+				if (!ret)
+					return false;
+				auto res = SbsDataFormat::decode(reader, value);
+				if (res) {
+					*ret += *res;
+					return true;
+				}
+				else {
+					ret = std::move(res);
+					return false;
+				}
+			}
+			else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
+				ret += SbsDataFormat::decode(reader, value);
+				return true;
+			}
+			else {
+				static_assert(false);
+			}
+		};
+
+		unroll<mp_size<ReflBases<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L {
+			using Base = MpAt<ReflBases<T>, Idx>;
+			if constexpr (mode == OptOut) {
+				return decode_one(static_cast<Base&>(obj));
+			}
+			else if constexpr (mode == OptIn) {
+				if constexpr (get_serializability<Base>()) {
+					return decode_one(static_cast<Base&>(obj));
+				}
+			}
+			else {
+				return true;
+			}
+		});
+
+		unroll<mp_size<ReflFieldsAndProperties<T>>>([&]<size_t Idx> {
+			using Child = MpAt<ReflFieldsAndProperties<T>, Idx>;
+			static constexpr auto should_include = mode == OptOut
+				? refl_attribute_or<Child, Serializable, Serializable{true}>
+				: refl_attribute_or<Child, Serializable, Serializable{false}>;
+			if constexpr (should_include) {
+				if constexpr (c_description_property<Child>) {
+					using ValueType = ReflPropertyType<Child>;
+					auto tmp = ValueType{};
+					if (!decode_one(tmp))
+						return false;
+					set_property<Child>(obj, std::move(tmp));
+					return true;
+				}
+				else {
+					return decode_one(apply_field<Child>(obj));
+				}
+			}
+			else {
+				return true;
+			}
+		});
+
+		return ret;
+	}
+
 	// Enums
 	// ^^^^^
 
@@ -313,6 +450,9 @@ private:
 		obj = static_cast<E>(value);
 		return result;
 	}
+
+	// Optionals
+	// ^^^^^^^^^
 
 	template<class Writer, class T>
 	static constexpr

@@ -19,12 +19,15 @@
 
 namespace {
 
-struct CustomFriend {
-	auto operator<=>(const CustomFriend&) const -> bool = default;
+struct FriendCustomizedStruct {
+	auto operator<=>(const FriendCustomizedStruct&) const -> bool = default;
 
 	template<class Ar>
 	friend constexpr
-	auto fr_custom_serialize(Ar& archive, fr::AddConstIf<CustomFriend, Ar::is_encoding>& self) {
+	auto fr_custom_serialize(
+		Ar& archive,
+		fr::AddConstIf<FriendCustomizedStruct, Ar::is_encoding>& self
+	) {
 		return archive(self.x, self.y);
 	}
 
@@ -38,8 +41,8 @@ public:
 	std::string y;
 };
 
-struct CustomStatic {
-	auto operator<=>(const CustomStatic&) const -> bool = default;
+struct StaticCustomizedStruct {
+	auto operator<=>(const StaticCustomizedStruct&) const -> bool = default;
 
 	static constexpr
 	auto fr_custom_serialize(auto& archive, auto& self) {
@@ -72,7 +75,7 @@ struct NoDefaultCtor {
 	NoDefaultCtor(int) { }
 };
 
-enum class MyEnum {
+enum class SimpleEnum {
 	A,
 	B
 };
@@ -97,12 +100,12 @@ struct ComplexAggregate {
 	}
 
 public:
-	CustomFriend x;
+	FriendCustomizedStruct x;
 	SimpleAggregate y;
 	std::array<int16_t, 3> z;
 };
 
-struct AggregateWithPrivateField {
+struct AggregateWithUnserializableField {
 	int a;
 	PrivateClass b;
 };
@@ -227,6 +230,212 @@ auto test_common_serde_scenarios(
 		fallback_size, fallback_size);
 }
 
+struct DescribedIgnorantClass {
+	using Self = DescribedIgnorantClass;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Field<&Self::_x>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z>
+		>;
+	}
+
+public: // NOTE: Make this also an aggregate to see if serializer respects description
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedOptOutClass {
+	using Self = DescribedOptOutClass;
+
+	DescribedOptOutClass() = default;
+
+	constexpr
+	DescribedOptOutClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::SerializableMode::OptOut>,
+			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
+		>;
+	}
+
+private:
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedOptInClass {
+	using Self = DescribedOptInClass;
+
+	DescribedOptInClass() = default;
+
+	constexpr
+	DescribedOptInClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::SerializableMode::OptIn>,
+			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{true}>>
+		>;
+	}
+
+private:
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedNoneClass {
+	using Self = DescribedNoneClass;
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::SerializableMode::None>,
+			fr::Field<&Self::_x>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z>
+		>;
+	}
+
+public: // NOTE: Make this also an aggregate to see if serializer respects description
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedSerializableClass {
+	using Self = DescribedSerializableClass;
+
+	DescribedSerializableClass() = default;
+
+	constexpr
+	DescribedSerializableClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::Serializable{}>,
+			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
+		>;
+	}
+
+private:
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct DescribedSerializableFalseClass {
+	using Self = DescribedSerializableFalseClass;
+
+	DescribedSerializableFalseClass() = default;
+
+	constexpr
+	DescribedSerializableFalseClass(int x, int y, std::string z): _x{x}, _y{y}, _z(std::move(z)) { }
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Attributes<fr::Serializable{false}>,
+			fr::Field<&Self::_x, fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_y>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{false}>>
+		>;
+	}
+
+private:
+	int _x {};
+	int _y {};
+	std::string _z;
+};
+
+struct BaseA {
+	[[maybe_unused]] constexpr
+	auto operator==(const BaseA&) const -> bool = default;
+
+public:
+	SimpleEnum a;
+};
+
+struct BaseB {
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const BaseB&) {
+		return fr::class_desc<
+			fr::Attributes<fr::Serializable{}>,
+			fr::Field<&BaseB::b>,
+			fr::Field<&BaseB::c>
+		>;
+	}
+
+public:
+	int16_t b {};
+	std::string c;
+};
+
+struct BaseC {
+	float* ptr = nullptr;
+};
+
+struct DescribedWithBasesAndProps: public BaseA, public BaseB, public BaseC {
+	using Self = DescribedWithBasesAndProps;
+
+	DescribedWithBasesAndProps() = default;
+
+	constexpr
+	DescribedWithBasesAndProps(
+		SimpleEnum a_val,
+		int16_t b_val,
+		std::string c_val,
+		int x,
+		std::string y,
+		double z
+	):
+		BaseA{a_val},
+		BaseB{b_val, std::move(c_val)},
+		_x{x},
+		_y{std::move(y)},
+		_z{z}
+	{ }
+
+	[[maybe_unused]] friend consteval
+	auto fr_describe(const Self&) {
+		return fr::class_desc<
+			fr::Bases<BaseA, BaseB, BaseC>,
+			fr::Attributes<fr::SerializableMode::OptIn>,
+			fr::Field<&Self::_x>,
+			fr::Property<"y", std::string, &Self::y, &Self::set_y,
+				fr::Attributes<fr::Serializable{}>>,
+			fr::Field<&Self::_z, fr::Attributes<fr::Serializable{}>>
+		>;
+	}
+
+	/// @note Returns by value to simulate properties calculated on the fly
+	constexpr
+	auto y() const -> std::string { return _y; }
+
+	constexpr
+	void set_y(std::string value) { _y = std::move(value); }
+
+private:
+	int _x {};
+	std::string _y;
+	double _z {};
+};
+
 } // namespace
 
 TEST_CASE("get_serializability", "[u][engine][core][serialization]") {
@@ -234,6 +443,12 @@ TEST_CASE("get_serializability", "[u][engine][core][serialization]") {
 	using enum fr::SerializableCategory;
 	using SA = fr::Serializability;
 
+	SECTION("Unserializable") {
+		STATIC_CHECK(fr::get_serializability<AbstractClass>() == SA{Unserializable, None});
+		STATIC_CHECK(fr::get_serializability<PrivateClass>() == SA{Unserializable, None});
+		STATIC_CHECK(fr::get_serializability<int*>() == SA{Unserializable, None});
+		STATIC_CHECK(fr::get_serializability<void (*)(int)>() == SA{Unserializable, None});
+	}
 	SECTION("Primitive") {
 		STATIC_CHECK(fr::get_serializability<bool>() == SA{Primitive, Default});
 		STATIC_CHECK(fr::get_serializability<signed char>() == SA{Primitive, Default});
@@ -247,15 +462,26 @@ TEST_CASE("get_serializability", "[u][engine][core][serialization]") {
 		STATIC_CHECK(fr::get_serializability<std::nullptr_t>() == SA{Primitive, None});
 	}
 	SECTION("Custom") {
-		STATIC_CHECK(fr::get_serializability<CustomFriend>() == SA{Custom, Default});
-		STATIC_CHECK(fr::get_serializability<CustomStatic>() == SA{Custom, Default});
+		STATIC_CHECK(fr::get_serializability<FriendCustomizedStruct>() == SA{Custom, Default});
+		STATIC_CHECK(fr::get_serializability<StaticCustomizedStruct>() == SA{Custom, Default});
+	}
+	SECTION("Described") {
+		STATIC_CHECK(fr::get_serializability<DescribedIgnorantClass>() == SA{Described, None});
+		STATIC_CHECK(fr::get_serializability<DescribedOptOutClass>() == SA{Described, OptOut});
+		STATIC_CHECK(fr::get_serializability<DescribedOptInClass>() == SA{Described, OptIn});
+		STATIC_CHECK(fr::get_serializability<DescribedNoneClass>() == SA{Described, None});
+		STATIC_CHECK(fr::get_serializability<DescribedSerializableClass>()
+			== SA{Described, OptOut});
+		STATIC_CHECK(fr::get_serializability<DescribedSerializableFalseClass>()
+			== SA{Described, None});
+		STATIC_CHECK(fr::get_serializability<DescribedWithBasesAndProps>() == SA{Described, OptIn});
 	}
 	SECTION("Enum") {
-		STATIC_CHECK(fr::get_serializability<MyEnum>() == SA{Enum, Default});
+		STATIC_CHECK(fr::get_serializability<SimpleEnum>() == SA{Enum, Default});
 	}
 	SECTION("Optional") {
 		STATIC_CHECK(fr::get_serializability<std::optional<int>>() == SA{Optional, Default});
-		STATIC_CHECK(fr::get_serializability<std::optional<CustomFriend>>()
+		STATIC_CHECK(fr::get_serializability<std::optional<FriendCustomizedStruct>>()
 			== SA{Optional, Default});
 
 		STATIC_CHECK(fr::get_serializability<std::optional<PrivateClass>>()
@@ -279,7 +505,8 @@ TEST_CASE("get_serializability", "[u][engine][core][serialization]") {
 	}
 	SECTION("Vector") {
 		STATIC_CHECK(fr::get_serializability<std::vector<int>>() == SA{Vector, Default});
-		STATIC_CHECK(fr::get_serializability<std::vector<CustomFriend>>() == SA{Vector, Default});
+		STATIC_CHECK(fr::get_serializability<std::vector<FriendCustomizedStruct>>()
+			== SA{Vector, Default});
 
 		STATIC_CHECK(fr::get_serializability<std::vector<PrivateClass>>() == SA{Vector, None});
 		STATIC_CHECK(fr::get_serializability<std::vector<NoDefaultCtor>>() == SA{Vector, None});
@@ -327,7 +554,7 @@ TEST_CASE("get_serializability", "[u][engine][core][serialization]") {
 		STATIC_CHECK(fr::get_serializability<std::variant<int>>() == SA{Variant, Default});
 		STATIC_CHECK(fr::get_serializability<std::variant<int, std::monostate>>()
 			== SA{Variant, Default});
-		STATIC_CHECK(fr::get_serializability<std::variant<int, CustomFriend, float>>()
+		STATIC_CHECK(fr::get_serializability<std::variant<int, FriendCustomizedStruct, float>>()
 			== SA{Variant, Default});
 
 		STATIC_CHECK(fr::get_serializability<std::variant<std::nullptr_t>>()
@@ -344,17 +571,20 @@ TEST_CASE("get_serializability", "[u][engine][core][serialization]") {
 		STATIC_CHECK(fr::get_serializability<std::pair<int, std::string>>() == SA{Record, Default});
 
 		STATIC_CHECK(fr::get_serializability<std::tuple<int, PrivateClass>>() == SA{Record, None});
-		STATIC_CHECK(fr::get_serializability<AggregateWithPrivateField>() == SA{Record, None});
+		STATIC_CHECK(fr::get_serializability<AggregateWithUnserializableField>()
+			== SA{Record, None});
 	}
 }
 
 TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 	SECTION("c_data_format") {
+		// TODO: Negative cases
 		STATIC_CHECK(fr::c_data_format<fr::SbsDataFormat>);
 	}
 	SECTION("c_has_custom_serialize") {
-		STATIC_CHECK(fr::c_has_custom_serialize<CustomFriend>);
-		STATIC_CHECK(fr::c_has_custom_serialize<CustomStatic>);
+		// TODO: Negative cases
+		STATIC_CHECK(fr::c_has_custom_serialize<FriendCustomizedStruct>);
+		STATIC_CHECK(fr::c_has_custom_serialize<StaticCustomizedStruct>);
 	}
 
 	using SerializableTypes = fr::MpList<
@@ -365,14 +595,14 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		unsigned long,
 		float,
 		long double,
-		CustomFriend,
-		CustomStatic,
-		CustomStatic&,
-		MyEnum,
-		MyEnum&,
+		FriendCustomizedStruct,
+		StaticCustomizedStruct,
+		StaticCustomizedStruct&,
+		SimpleEnum,
+		SimpleEnum&,
 		std::optional<int>,
 		std::optional<int>&,
-		std::optional<CustomFriend>,
+		std::optional<FriendCustomizedStruct>,
 		std::string,
 		std::string&,
 		std::u16string,
@@ -385,7 +615,7 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		std::vector<int>,
 		std::vector<std::string>,
 		std::vector<int>&,
-		std::vector<CustomFriend>,
+		std::vector<FriendCustomizedStruct>,
 		std::map<std::string, int>,
 		std::multimap<std::string, int>,
 		std::unordered_map<std::string, int>,
@@ -397,12 +627,12 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		std::variant<int>,
 		std::variant<int>&,
 		std::variant<int, std::monostate>,
-		std::variant<int, CustomFriend, float>,
+		std::variant<int, FriendCustomizedStruct, float>,
 		std::monostate,
 		SimpleAggregate,
 		ComplexAggregate,
-		std::tuple<int, std::string, CustomStatic>,
-		std::pair<int, CustomStatic>
+		std::tuple<int, std::string, StaticCustomizedStruct>,
+		std::pair<int, StaticCustomizedStruct>
 	>;
 
 	using UnserializableTypes = fr::MpList<
@@ -434,7 +664,7 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		std::variant<std::nullptr_t>,
 		std::variant<int, PrivateClass, float>,
 		std::tuple<int, PrivateClass>,
-		AggregateWithPrivateField
+		AggregateWithUnserializableField
 	>;
 
 	SECTION("c_serializable") {
@@ -454,8 +684,8 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		});
 	}
 	STATIC_CHECK(fr::c_serializable<int>);
-	STATIC_CHECK(fr::c_serializable<CustomFriend>);
-	STATIC_CHECK(fr::c_serializable<CustomStatic>);
+	STATIC_CHECK(fr::c_serializable<FriendCustomizedStruct>);
+	STATIC_CHECK(fr::c_serializable<StaticCustomizedStruct>);
 	STATIC_CHECK(fr::c_serializable<std::string>);
 	STATIC_CHECK(fr::c_serializable<std::vector<std::string>>);
 }
@@ -531,10 +761,10 @@ TEST_CASE("SbsDataFormat.fundamentals", "[u][engine][core][serialization]") {
 
 TEST_CASE("SbsDataFormat.custom", "[u][engine][core][serialization]") {
 	test_common_serde_scenarios("using a friend function", [] static {
-		return CustomFriend{55, "abcdef"};
+		return FriendCustomizedStruct{55, "abcdef"};
 	});
 	test_common_serde_scenarios("using a static member function", [] static {
-		return CustomStatic{55, "abcdef"};
+		return StaticCustomizedStruct{55, "abcdef"};
 	});
 }
 
@@ -734,12 +964,12 @@ TEST_CASE("SbsDataFormat.vectors", "[u][engine][core][serialization]") {
 }
 
 TEST_CASE("SbsDataFormat.variants", "[u][engine][core][serialization]") {
-	using Var = std::variant<int64_t, CustomFriend>;
+	using Var = std::variant<int64_t, FriendCustomizedStruct>;
 	using Index = fr::SbsDataFormat::VariantIndexType<Var>;
 	test_common_serde_scenarios(
 		"non-valueless variants",
 		[] static { return Var{67}; },
-		[] static { return Var{std::in_place_type<CustomFriend>, 15, "abc"}; },
+		[] static { return Var{std::in_place_type<FriendCustomizedStruct>, 15, "abc"}; },
 		fr::size_c<sizeof(Index) + sizeof(int64_t)>,
 		fr::size_c<sizeof(Index) + sizeof(int) + sizeof(size_t) + 3>
 	);
@@ -755,8 +985,8 @@ TEST_CASE("SbsDataFormat.variants", "[u][engine][core][serialization]") {
 
 		FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
 
-		auto out_value1 = std::variant<int64_t, CustomFriend>{0};
-		auto out_value2 = fr::make_valueless_variant<std::variant<int64_t, CustomFriend>>();
+		auto out_value1 = std::variant<int64_t, FriendCustomizedStruct>{0};
+		auto out_value2 = fr::make_valueless_variant<std::variant<int64_t, FriendCustomizedStruct>>();
 
 		auto reader1 = fr::SpanReader{buf};
 		auto reader2 = fr::SpanReader{buf};
@@ -780,7 +1010,7 @@ TEST_CASE("SbsDataFormat.records", "[u][engine][core][serialization]") {
 		};
 	});
 	constexpr auto make_tuple = [] static {
-		return std::tuple<CustomFriend, SimpleAggregate, std::array<int16_t, 3>>{
+		return std::tuple<FriendCustomizedStruct, SimpleAggregate, std::array<int16_t, 3>>{
 			{-23, "abcdef"}, {3.f, 99}, {5, 6, 7}
 		};
 	};

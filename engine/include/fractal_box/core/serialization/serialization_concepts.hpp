@@ -182,33 +182,31 @@ auto get_serializability_impl() noexcept -> Serializability {
 	else if constexpr (c_has_describe<PT>) {
 		static_assert(!refl_has_attribute<PT, SerializableCategory>,
 			"SerializableCategory is not an attribute");
-		if constexpr (refl_has_attribute<PT, SerializableMode>) {
-			static_assert(!refl_has_attribute<PT, Serializable>,
-				"Conflicting SerializableMode and Serializable attributes");
-			static constexpr auto mode = refl_attribute<PT, SerializableMode>;
-			if constexpr (mode == OptOut) {
-				static_assert(mp_all_of<ReflBases<PT>, IsSerializable>,
-					"Serializable class must have serializable bases");
+		static constexpr auto mode = [] {
+			if constexpr (refl_has_attribute<PT, SerializableMode>) {
+				static_assert(!refl_has_attribute<PT, Serializable>,
+					"Attributes SerializableMode and Serializable are incompatible");
+				return refl_attribute<PT, SerializableMode>;
 			}
+			else if constexpr (refl_has_attribute<PT, Serializable>) {
+				return refl_attribute<PT, Serializable>.value ? OptOut : None;
+			}
+			else {
+				return None;
+			}
+		}();
+		if constexpr (mode == OptOut) {
+			static_assert(mp_all_of<ReflBases<PT>, IsSerializable>,
+				"Serializable OptOut class must have all serializable bases");
+		}
+		if constexpr (mode != None) {
+			static_assert(std::is_default_constructible_v<PT>, "Serializable type must be"
+				"default-constructible");
 			[]<class... FPs>(MpList<FPs...>) {
 				(..., detail::verify_serializable_child<mode, FPs>());
 			}(ReflFieldsAndProperties<PT>{});
-			return {Described, mode};
 		}
-		else if constexpr (refl_has_attribute<PT, Serializable>) {
-			static constexpr auto mode = refl_attribute<PT, Serializable>.value ? OptOut : None;
-			if constexpr (mode == OptOut) {
-				static_assert(mp_all_of<ReflBases<PT>, IsSerializable>,
-					"Serializable class must have serializable bases");
-			}
-			[]<class... FPs>(MpList<FPs...>) {
-				(..., detail::verify_serializable_child<mode, FPs>());
-			}(ReflFieldsAndProperties<PT>{});
-			return {Described, mode};
-		}
-		else {
-			return {Described, None};
-		}
+		return {Described, mode};
 	}
 	else if constexpr (std::is_enum_v<PT>) {
 		return {Enum, get_serializability<std::underlying_type_t<PT>>().mode()};
@@ -270,7 +268,8 @@ auto get_serializability() noexcept -> Serializability {
 	// TODO: Should we treat const types as serializable?
 	using PT = std::remove_cvref_t<T>;
 	const auto sa = detail::get_serializability_impl<PT>();
-	if (!std::is_default_constructible_v<PT>)
+	// Types must be default-constructible to be decoded
+	if constexpr (!std::is_default_constructible_v<PT>)
 		return {sa.category(), SerializableMode::None};
 	return sa;
 }
