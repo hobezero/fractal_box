@@ -256,7 +256,7 @@ struct DescribedOptInClass {
 			fr::Attributes<fr::HashableMode::OptIn>,
 			fr::Field<&Self::_x, fr::Attributes<fr::Hashable{}>>,
 			fr::Field<&Self::_y>,
-			fr::Field<&Self::_z, fr::Attributes<fr::Hashable{}>>
+			fr::Field<&Self::_z, fr::Attributes<fr::Hashable{true}>>
 		>;
 	}
 
@@ -473,7 +473,11 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 	using enum fr::HashableMode;
 	using HA = fr::Hashability;
 
-	SECTION("Primitive") {
+	SECTION("Unhashable") {
+		STATIC_CHECK(fr::get_hashability<AbstractClass>() == HA{Unhashable, None});
+		STATIC_CHECK(fr::get_hashability<PrivateClass>() == HA{Unhashable, None});
+	}
+	SECTION("Fundamental") {
 		STATIC_CHECK(fr::get_hashability<bool>() == HA{Fundamental, AsBytes});
 		STATIC_CHECK(fr::get_hashability<signed char>() == HA{Fundamental, AsBytes});
 		STATIC_CHECK(fr::get_hashability<unsigned char>() == HA{Fundamental, AsBytes});
@@ -530,27 +534,6 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 	SECTION("Custom") {
 		STATIC_CHECK(fr::get_hashability<CustomStruct>() == HA{Custom, OptOut});
 	}
-	SECTION("Compound") {
-		STATIC_CHECK(fr::get_hashability<SimpleEnum>() == HA{Enum, AsBytes});
-
-		STATIC_CHECK(fr::get_hashability<std::string>() == HA{String, OptOut});
-		STATIC_CHECK(fr::get_hashability<std::u16string>() == HA{String, OptOut});
-		STATIC_CHECK(fr::get_hashability<std::string_view>() == HA{String, OptOut});
-
-		STATIC_CHECK(fr::get_hashability<std::optional<int>>() == HA{Optional, OptOut});
-		STATIC_CHECK(fr::get_hashability<std::optional<PrivateClass>>() == HA{Optional, None});
-
-		STATIC_CHECK(fr::get_hashability<int[5]>() == HA{Array, AsBytes});
-		STATIC_CHECK(fr::get_hashability<PrivateClass[5]>() == HA{Array, None});
-
-		STATIC_CHECK(fr::get_hashability<std::array<int, 5>>() == HA{Array, AsBytes});
-		STATIC_CHECK(fr::get_hashability<std::array<PrivateClass, 5>>() == HA{Array, None});
-
-		STATIC_CHECK(fr::get_hashability<std::vector<unsigned>>() == HA{Range, OptOut});
-		STATIC_CHECK(fr::get_hashability<std::vector<AbstractClass>>() == HA{Range, None});
-		STATIC_CHECK(fr::get_hashability<decltype(simple_view())>() == HA{Range, OptOut});
-		STATIC_CHECK(fr::get_hashability<decltype(unhashable_view())>() == HA{Range, None});
-	}
 	SECTION("Described") {
 		STATIC_CHECK(fr::get_hashability<DescribedOptOutClass>() == HA{Described, OptOut});
 		STATIC_CHECK(fr::get_hashability<DescribedOptInClass>() == HA{Described, OptIn});
@@ -560,16 +543,37 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 		STATIC_CHECK(fr::get_hashability<DescribedNonHashableClass>() == HA{Described, None});
 		STATIC_CHECK(fr::get_hashability<DescribedNoneClass>() == HA{Described, None});
 	}
+	SECTION("Enum") {
+		STATIC_CHECK(fr::get_hashability<SimpleEnum>() == HA{Enum, AsBytes});
+	}
+	SECTION("Optional") {
+		STATIC_CHECK(fr::get_hashability<std::optional<int>>() == HA{Optional, OptOut});
+		STATIC_CHECK(fr::get_hashability<std::optional<PrivateClass>>() == HA{Optional, None});
+	}
+	SECTION("String") {
+		STATIC_CHECK(fr::get_hashability<std::string>() == HA{String, OptOut});
+		STATIC_CHECK(fr::get_hashability<std::u16string>() == HA{String, OptOut});
+		STATIC_CHECK(fr::get_hashability<std::string_view>() == HA{String, OptOut});
+	}
+	SECTION("Array") {
+		STATIC_CHECK(fr::get_hashability<int[5]>() == HA{Array, AsBytes});
+		STATIC_CHECK(fr::get_hashability<PrivateClass[5]>() == HA{Array, None});
+
+		STATIC_CHECK(fr::get_hashability<std::array<int, 5>>() == HA{Array, AsBytes});
+		STATIC_CHECK(fr::get_hashability<std::array<PrivateClass, 5>>() == HA{Array, None});
+	}
+	SECTION("Range") {
+		STATIC_CHECK(fr::get_hashability<std::vector<unsigned>>() == HA{Range, OptOut});
+		STATIC_CHECK(fr::get_hashability<std::vector<AbstractClass>>() == HA{Range, None});
+		STATIC_CHECK(fr::get_hashability<decltype(simple_view())>() == HA{Range, OptOut});
+		STATIC_CHECK(fr::get_hashability<decltype(unhashable_view())>() == HA{Range, None});
+	}
 	SECTION("Record") {
 		STATIC_CHECK(fr::get_hashability<HashableAggregate>() == HA{Record, OptOut});
 		STATIC_CHECK(fr::get_hashability<ByteHashableAggregate>() == HA{Record, AsBytes});
 		STATIC_CHECK(fr::get_hashability<PaddedHashableAggregate>() == HA{Record, OptOut});
 
 		STATIC_CHECK(fr::get_hashability<UnhashableAggregate>() == HA{Record, None});
-	}
-	SECTION("Unhashable") {
-		STATIC_CHECK(fr::get_hashability<AbstractClass>() == HA{Unhashable, None});
-		STATIC_CHECK(fr::get_hashability<PrivateClass>() == HA{Unhashable, None});
 	}
 }
 

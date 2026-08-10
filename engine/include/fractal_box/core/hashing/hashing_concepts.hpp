@@ -84,7 +84,6 @@ namespace detail {
 template<HashableMode Mode, class Child>
 inline consteval
 void verify_hashable_child() noexcept {
-
 	static_assert(!refl_has_attribute<Child, HashableCategory>,
 		"HashableCategory is not an attribute");
 	static_assert(!refl_has_attribute<Child, HashableMode>,
@@ -201,47 +200,43 @@ auto get_hashability() noexcept -> Hashability {
 	else if constexpr (c_has_describe<PT>) {
 		static_assert(!refl_has_attribute<PT, HashableCategory>,
 			"HashableCategory is not an attribute");
-		if constexpr (refl_has_attribute<PT, HashableMode>) {
-			static_assert(!refl_has_attribute<PT, Hashable>,
-				"Conflicting HashableMode and Hashable attributes");
-			static constexpr auto mode = refl_attribute<PT, HashableMode>;
-			if constexpr (mode == OptOut) {
-				static_assert(mp_all_of<ReflBases<PT>, IsHashable>,
-					"Hashable class must have hashable bases");
+		static constexpr auto mode = [] {
+			if constexpr (refl_has_attribute<PT, HashableMode>) {
+				static_assert(!refl_has_attribute<PT, Hashable>,
+					"Attributes HashableMode and Hashable are incompatible");
+				return refl_attribute<PT, HashableMode>;
 			}
-			else if constexpr (mode == AsBytes) {
-				static_assert(mp_all_of<ReflBases<PT>, IsByteHashable>,
-					"Byte-hashable class must have byte-hashable bases");
-				static_assert(has_unique_repr, "Byte-hashable class must have unique object"
-					"representations");
-				static_assert(mp_all_of<ReflDecomposition<PT>, IsByteHashable>,
-					"Byte-hashable class must have byte-hashable fields");
-				[]<class... Bases, class... FieldTypes>(MpList<Bases...>, MpList<FieldTypes...>) {
-					static constexpr auto base_sum = (0zu + ... + sizeof(Bases));
-					static constexpr auto field_sum = (0zu + ... + sizeof(FieldTypes));
-					static_assert(base_sum + field_sum == sizeof(PT),
-						"Extra class padding or a missing base/field description");
-				}(ReflBases<PT>{}, ReflDecomposition<PT>{});
+			if constexpr (refl_has_attribute<PT, Hashable>) {
+				return refl_attribute<PT, Hashable>.value ? OptOut : None;
 			}
+			else {
+				return None;
+			}
+		}();
+		if constexpr (mode == OptOut) {
+			static_assert(mp_all_of<ReflBases<PT>, IsHashable>,
+				"Hashable class must have hashable bases");
+		}
+		else if constexpr (mode == AsBytes) {
+			static_assert(mp_all_of<ReflBases<PT>, IsByteHashable>,
+				"Byte-hashable class must have byte-hashable bases");
+			static_assert(has_unique_repr, "Byte-hashable class must have unique object"
+				"representations");
+			static_assert(mp_all_of<ReflDecomposition<PT>, IsByteHashable>,
+				"Byte-hashable class must have byte-hashable fields");
+			[]<class... Bases, class... FieldTypes>(MpList<Bases...>, MpList<FieldTypes...>) {
+				static constexpr auto base_sum = (0zu + ... + sizeof(Bases));
+				static constexpr auto field_sum = (0zu + ... + sizeof(FieldTypes));
+				static_assert(base_sum + field_sum == sizeof(PT),
+					"Extra class padding or a missing base/field description");
+			}(ReflBases<PT>{}, ReflDecomposition<PT>{});
+		}
+		if constexpr (mode != None) {
 			[]<class... FPs>(MpList<FPs...>) {
 				(..., detail::verify_hashable_child<mode, FPs>());
 			}(ReflFieldsAndProperties<PT>{});
-			return {Described, mode};
 		}
-		else if constexpr (refl_has_attribute<PT, Hashable>) {
-			static constexpr auto mode = refl_attribute<PT, Hashable>.value ? OptOut : None;
-			if constexpr (mode == OptOut) {
-				static_assert(mp_all_of<ReflBases<PT>, IsHashable>,
-					"Hashable class must have hashable bases");
-			}
-			[]<class... FPs>(MpList<FPs...>) {
-				(..., detail::verify_hashable_child<mode, FPs>());
-			}(ReflFieldsAndProperties<PT>{});
-			return {Described, mode};
-		}
-		else {
-			return {Described, None};
-		}
+		return {Described, mode};
 	}
 	else if constexpr (std::is_enum_v<PT>) {
 		return {Enum, get_hashability<std::underlying_type_t<PT>>().mode()};
