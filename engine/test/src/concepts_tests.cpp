@@ -191,6 +191,17 @@ TEST_CASE("c_constexpr_sized_range", "[u][engine][core][concepts]") {
 	STATIC_CHECK_FALSE(fr::c_constexpr_sized_range<std::vector<int>>);
 }
 
+TEST_CASE("c_dynamically_sized_range", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_dynamically_sized_range<std::span<NoDefaultCtor>>);
+	STATIC_CHECK(fr::c_dynamically_sized_range<std::vector<int>>);
+
+	STATIC_CHECK_FALSE(fr::c_dynamically_sized_range<std::array<int, 5>>);
+	STATIC_CHECK_FALSE(fr::c_dynamically_sized_range<std::array<std::unique_ptr<int>, 5>>);
+	STATIC_CHECK_FALSE(fr::c_dynamically_sized_range<std::array<NoDefaultCtor, 5>>);
+	STATIC_CHECK_FALSE(fr::c_dynamically_sized_range<std::span<int, 15>>);
+	STATIC_CHECK_FALSE(fr::c_dynamically_sized_range<std::span<NoDefaultCtor, 5>>);
+}
+
 TEST_CASE("constexpr_size", "[u][engine][core][concepts]") {
 	STATIC_CHECK(fr::constexpr_size<std::array<int, 23>> == 23);
 	STATIC_CHECK(fr::constexpr_size<float[8]> == 8);
@@ -202,6 +213,17 @@ TEST_CASE("c_constexpr_sized_container", "[u][engine][core][concepts]") {
 	STATIC_CHECK(fr::c_constexpr_sized_container<std::array<std::string, 0>>);
 
 	STATIC_CHECK_FALSE(fr::c_constexpr_sized_container<std::vector<float>>);
+	STATIC_CHECK_FALSE(fr::c_constexpr_sized_container<std::map<int, float>>);
+	STATIC_CHECK_FALSE(fr::c_constexpr_sized_container<std::string>);
+}
+
+TEST_CASE("c_dynamically_sized_container", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_dynamically_sized_container<std::vector<float>>);
+	STATIC_CHECK(fr::c_dynamically_sized_container<std::map<int, float>>);
+	STATIC_CHECK(fr::c_dynamically_sized_container<std::string>);
+
+	STATIC_CHECK_FALSE(fr::c_dynamically_sized_container<std::array<int, 23>>);
+	STATIC_CHECK_FALSE(fr::c_dynamically_sized_container<std::array<std::string, 0>>);
 }
 
 TEST_CASE("c_std_array_like", "[u][engine][core][concepts]") {
@@ -209,6 +231,9 @@ TEST_CASE("c_std_array_like", "[u][engine][core][concepts]") {
 	STATIC_CHECK(fr::c_std_array_like<std::array<int, 0>>);
 	STATIC_CHECK(fr::c_std_array_like<std::array<std::string, 5>>);
 	STATIC_CHECK(fr::c_std_array_like<std::array<NoDefaultCtor, 5>>);
+	STATIC_CHECK(fr::c_std_array_like<std::array<const int, 5>>);
+	STATIC_CHECK(fr::c_std_array_like<std::array<const int, 0>>);
+	STATIC_CHECK(fr::c_std_array_like<std::array<std::pair<const int, int>, 0>>);
 
 	STATIC_CHECK_FALSE(fr::c_std_array_like<int[20]>);
 	STATIC_CHECK_FALSE(fr::c_std_array_like<int[]>);
@@ -223,6 +248,7 @@ TEST_CASE("c_array_like", "[u][engine][core][concepts]") {
 	STATIC_CHECK(fr::c_array_like<std::array<int, 0>>);
 	STATIC_CHECK(fr::c_array_like<std::array<std::string, 5>>);
 	STATIC_CHECK(fr::c_array_like<std::array<NoDefaultCtor, 5>>);
+	STATIC_CHECK(fr::c_array_like<std::array<const int, 5>>);
 	STATIC_CHECK(fr::c_array_like<int[20]>);
 	STATIC_CHECK(fr::c_array_like<NoDefaultCtor[20]>);
 	STATIC_CHECK(fr::c_array_like<std::string[20]>);

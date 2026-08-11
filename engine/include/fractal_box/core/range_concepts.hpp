@@ -17,12 +17,17 @@ namespace fr {
 template<class T>
 using RangeValue = std::iter_value_t<decltype(std::ranges::begin(std::declval<T&>()))>;
 
+namespace detail {
+
 template<class R>
-concept c_constexpr_sized_range
-	= std::ranges::sized_range<R>
-	&& requires(const R& r) {
-		typename ValueC<std::ranges::size(r)>;
-	};
+concept c_has_constexpr_size = requires(const R& r) { typename ValueC<std::ranges::size(r)>; };
+
+} // namespace detail
+template<class R>
+concept c_constexpr_sized_range = std::ranges::sized_range<R> && detail::c_has_constexpr_size<R>;
+
+template<class R>
+concept c_dynamically_sized_range = std::ranges::sized_range<R> && !detail::c_has_constexpr_size<R>;
 
 /// @see [Missing (and Future?) C++ Range Concepts - Jonathan Müller - C++Now 2025](
 ///   https://www.youtube.com/watch?v=RemzByMHWjI)
@@ -104,12 +109,11 @@ concept c_pair_of
 // Detection of container types
 // ----------------------------
 
-/// @brief `Container` named requirements
-/// @see https://en.cppreference.com/w/cpp/named_req/Container
+/// @brief Amost `Container` named requirements, except no `std::swappable` requirement since
+/// some containers of const objects can't be copied or moved
 template<class C>
-concept c_container
+concept c_maybe_container
 	= std::destructible<C>
-	&& std::swappable<C>
 	// Don't detect view-like types (e.g. `std::span`)
 	&& !std::ranges::borrowed_range<C>
 	&& requires(C& mut_container, const C& const_container) {
@@ -150,8 +154,16 @@ concept c_container
 		{ const_container.empty() } -> std::same_as<bool>;
 	};
 
+/// @brief `Container` named requirements
+/// @see https://en.cppreference.com/w/cpp/named_req/Container
+template<class C>
+concept c_container = c_maybe_container<C> && std::swappable<C>;
+
 template<class C>
 concept c_constexpr_sized_container = c_container<C> && c_constexpr_sized_range<C>;
+
+template<class C>
+concept c_dynamically_sized_container = c_container<C> && c_dynamically_sized_range<C>;
 
 template<class C>
 concept c_bidirectional_container = c_container<C> && std::ranges::bidirectional_range<C>;
@@ -165,7 +177,7 @@ concept c_contiguous_container = c_random_access_container<C> && std::ranges::co
 
 template<class C>
 concept c_std_array_like
-	= c_constexpr_sized_container<C>
+	= c_maybe_container<C> && c_constexpr_sized_range<C>
 	&& requires(C& container) {
 		{ container.data() } -> std::same_as<typename C::pointer>;
 		// Check that all elements are stored in-place, or size is zero
@@ -361,6 +373,8 @@ concept c_map_like
 		{ mut_container.insert_or_assign(std::move(k), std::move(m)) }
 			-> c_pair_of<typename M::iterator, bool>;
 		{ mut_container.emplace(std::move(v)) } -> c_pair_of<typename M::iterator, bool>;
+		{ mut_container.emplace(std::move(k), std::move(m)) }
+			-> c_pair_of<typename M::iterator, bool>;
 		{ mut_container.try_emplace(std::move(k), std::move(m)) }
 			-> c_pair_of<typename M::iterator, bool>;
 		{ mut_container.erase(cit) } -> std::same_as<typename M::iterator>;
@@ -405,6 +419,7 @@ concept c_multimap_like
 		{ mut_container.insert(std::move(v)) } -> std::same_as<typename M::iterator>;
 		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename M::iterator>;
 		{ mut_container.emplace(std::move(v)) } -> std::same_as<typename M::iterator>;
+		{ mut_container.emplace(std::move(k), std::move(m)) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(cit) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(cit, cit) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(ck) } -> std::same_as<typename M::size_type>;
@@ -529,6 +544,8 @@ concept c_unordered_map_like
 		{ mut_container.insert_or_assign(std::move(k), std::move(m)) }
 			-> c_pair_of<typename M::iterator, bool>;
 		{ mut_container.emplace(std::move(v)) } -> c_pair_of<typename M::iterator, bool>;
+		{ mut_container.emplace(std::move(k), std::move(m)) }
+			-> c_pair_of<typename M::iterator, bool>;
 		{ mut_container.try_emplace(std::move(k), std::move(m)) }
 			-> c_pair_of<typename M::iterator, bool>;
 		{ mut_container.erase(cit) } -> std::same_as<typename M::iterator>;
@@ -577,6 +594,7 @@ concept c_unordered_multimap_like
 		{ mut_container.insert(std::move(v)) } -> std::same_as<typename M::iterator>;
 		{ mut_container.insert(cit, std::move(v)) } -> std::same_as<typename M::iterator>;
 		{ mut_container.emplace(std::move(v)) } -> std::same_as<typename M::iterator>;
+		{ mut_container.emplace(std::move(k), std::move(m)) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(cit) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(cit, cit) } -> std::same_as<typename M::iterator>;
 		{ mut_container.erase(ck) } -> std::same_as<typename M::size_type>;
@@ -591,6 +609,20 @@ concept c_unordered_multimap_like
 		{ const_container.hash_function() } -> std::same_as<typename M::hasher>;
 		{ const_container.key_eq() } -> std::same_as<typename M::key_equal>;
 	};
+
+template<class M>
+concept c_ordered_associative_container
+	= c_set_like<M>
+	|| c_map_like<M>
+	|| c_multiset_like<M>
+	|| c_multimap_like<M>;
+
+template<class M>
+concept c_unordered_associative_container
+	= c_unordered_set_like<M>
+	|| c_unordered_map_like<M>
+	|| c_unordered_multiset_like<M>
+	|| c_unordered_multimap_like<M>;
 
 // TODO: c_flat_set_like, c_flat_map_like
 
