@@ -16,15 +16,6 @@
 
 namespace fr {
 
-/// @warning Beware of dangling pointers! Make sure that the array outlives the span
-/// @todo
-///   TODO: Rename to `as_span` to emphasize the temporary lifetime
-template<class T, std::size_t N>
-FR_FORCE_INLINE constexpr
-auto to_span(T (&&arr)[N]) {
-	return std::span<T>{arr};
-}
-
 template<class T>
 requires std::is_object_v<T>
 class NonDefault {

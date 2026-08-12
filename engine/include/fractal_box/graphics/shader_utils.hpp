@@ -1,6 +1,7 @@
 #ifndef FRACTAL_BOX_GRAPHICS_SHADER_UTILS_HPP
 #define FRACTAL_BOX_GRAPHICS_SHADER_UTILS_HPP
 
+#include "fractal_box/core/array_utils.hpp"
 #include "fractal_box/graphics/gl_shader_program.hpp"
 #include "fractal_box/resources/resource_utils.hpp"
 

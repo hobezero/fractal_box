@@ -17,6 +17,7 @@
 #include <glm/vec3.hpp>
 #include <glm/vec4.hpp>
 
+#include "fractal_box/core/array_utils.hpp"
 #include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/default_utils.hpp"
 #include "fractal_box/core/error_handling/diagnostic.hpp"

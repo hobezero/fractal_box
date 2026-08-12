@@ -11,6 +11,7 @@
 
 #include <catch2/catch_test_macros.hpp>
 
+#include "fractal_box/core/array_utils.hpp"
 #include "fractal_box/core/io/span_io.hpp"
 #include "fractal_box/core/io/vector_io.hpp"
 #include "fractal_box/core/string_utils.hpp"
@@ -18,6 +19,61 @@
 #include "test_common/test_helpers.hpp"
 
 namespace {
+
+constexpr
+auto serialized_size(fr::c_arithmetic auto value) noexcept -> size_t {
+	return sizeof(value);
+}
+
+constexpr
+auto serialized_size(fr::c_enum auto value) noexcept -> size_t {
+	return sizeof(value);
+}
+
+constexpr
+auto serialized_size(const std::string& value) noexcept -> size_t {
+	return sizeof(size_t) + value.size();
+}
+
+constexpr
+auto serialized_size(const fr::c_array_like auto& arr) noexcept -> size_t;
+
+template<class T, class U>
+constexpr
+auto serialized_size(const std::pair<T, U>& pair) noexcept -> size_t {
+	return serialized_size(pair.first) + serialized_size(pair.second);
+}
+
+template<class... Ts>
+constexpr
+auto serialized_size(const std::tuple<Ts...>& tuple) noexcept -> size_t {
+	return std::apply([](const auto&... elems) {
+		return (0zu + ... + serialized_size(elems));
+	}, tuple);
+}
+
+constexpr
+auto serialized_size(const fr::c_array_like auto& arr) noexcept -> size_t {
+	auto sum = 0zu;
+	for (const auto& v : arr)
+		sum += serialized_size(v);
+	return sum;
+}
+
+constexpr
+auto serialized_size(const fr::c_dynamically_sized_range auto& arr) noexcept -> size_t {
+	auto sum = sizeof(size_t);
+	for (const auto& v : arr)
+		sum += serialized_size(v);
+	return sum;
+}
+
+template<class... Ts>
+requires (sizeof...(Ts) > 1zu)
+constexpr
+auto serialized_size(const Ts&... values) noexcept -> size_t {
+	return (0zu + ... + serialized_size(values));
+}
 
 struct FriendCustomizedStruct {
 	auto operator==(const FriendCustomizedStruct&) const -> bool = default;
@@ -31,9 +87,9 @@ struct FriendCustomizedStruct {
 		return archive(self.x, self.y);
 	}
 
-	constexpr
-	auto serialized_size() const noexcept -> size_t {
-		return sizeof(x) + sizeof(size_t) + y.size();
+	friend constexpr
+	auto serialized_size(const FriendCustomizedStruct& self) noexcept -> size_t {
+		return serialized_size(self.x, self.y);
 	}
 
 public:
@@ -49,9 +105,9 @@ struct StaticCustomizedStruct {
 		return archive(self.x, self.y);
 	}
 
-	constexpr
-	auto serialized_size() const noexcept -> size_t {
-		return sizeof(x) + sizeof(size_t) + y.size();
+	friend constexpr
+	auto serialized_size(const StaticCustomizedStruct& self) noexcept -> size_t {
+		return serialized_size(self.x, self.y);
 	}
 
 public:
@@ -83,8 +139,10 @@ enum class SimpleEnum {
 struct SimpleAggregate {
 	auto operator==(const SimpleAggregate&) const -> bool = default;
 
-	constexpr
-	auto serialized_size() const noexcept -> size_t { return sizeof(x) + sizeof(y); }
+	friend constexpr
+	auto serialized_size(const SimpleAggregate& self) noexcept -> size_t {
+		return serialized_size(self.x, self.y);
+	}
 
 public:
 	float x;
@@ -94,9 +152,9 @@ public:
 struct ComplexAggregate {
 	auto operator==(const ComplexAggregate&) const -> bool = default;
 
-	constexpr
-	auto serialized_size() const noexcept -> size_t {
-		return x.serialized_size() + y.serialized_size() + sizeof(z);
+	friend constexpr
+	auto serialized_size(const ComplexAggregate& self) noexcept -> size_t {
+		return serialized_size(self.x, self.y, self.z);
 	}
 
 public:
@@ -148,8 +206,10 @@ struct DescribedOptOutClass {
 		>;
 	}
 
-	constexpr
-	auto serialized_size() const noexcept { return sizeof(_x) + sizeof(_y); }
+	friend constexpr
+	auto serialized_size(const Self& self) noexcept {
+		return serialized_size(self._x, self._y);
+	}
 
 private:
 	int _x {};
@@ -177,9 +237,9 @@ struct DescribedOptInClass {
 		>;
 	}
 
-	constexpr
-	auto serialized_size() const noexcept {
-		return sizeof(_x) + sizeof(size_t) + _z.size();
+	friend constexpr
+	auto serialized_size(const Self& self) noexcept {
+		return serialized_size(self._x, self._z);
 	}
 
 private:
@@ -227,8 +287,10 @@ struct DescribedSerializableClass {
 		>;
 	}
 
-	constexpr
-	auto serialized_size() const noexcept { return sizeof(_x) + sizeof(_y); }
+	friend constexpr
+	auto serialized_size(const Self& self) noexcept {
+		return serialized_size(self._x, self._y);
+	}
 
 private:
 	int _x {};
@@ -281,9 +343,9 @@ struct BaseB {
 		>;
 	}
 
-	constexpr
-	auto serialized_size() const noexcept {
-		return sizeof(this->b) + sizeof(size_t) + this->c.size();
+	friend constexpr
+	auto serialized_size(const BaseB& self) noexcept {
+		return serialized_size(self.b, self.c);
 	}
 
 public:
@@ -334,10 +396,9 @@ struct DescribedWithBasesAndProps: public BaseA, public BaseB, public BaseC {
 		>;
 	}
 
-	constexpr
-	auto serialized_size() const noexcept {
-		return sizeof(BaseA::a) + BaseB::serialized_size() + sizeof(size_t) + _y.size()
-			+ sizeof(_z);
+	friend constexpr
+	auto serialized_size(const Self& self) noexcept {
+		return serialized_size(self.a, static_cast<const BaseB&>(self), self._y, self._z);
 	}
 
 	/// @note Returns by value to simulate properties calculated on the fly
@@ -366,29 +427,26 @@ auto test_common_serde_scenarios(
 	const std::string& name,
 	Factory1,
 	Factory2,
-	FallbackSize1 fallback_size1 = {},
+	FallbackSize1 forced_size1 = {},
 	FallbackSize2 fallback_size2 = {}
 ) {
 	using ValueType = decltype(Factory1::operator()());
 	static_assert(std::is_same_v<decltype(Factory2::operator()()), ValueType>);
 	static constexpr auto value1_size = [&] -> size_t {
-		if constexpr (requires { Factory1::operator()().serialized_size(); }) {
-			static_assert(fallback_size1() == 0zu);
-			return Factory1::operator()().serialized_size();
+		if constexpr (forced_size1 != 0zu) {
+			static_assert(fallback_size2 != 0zu);
+			return forced_size1;
 		}
 		else {
-			static_assert(fallback_size2 != 0zu);
-			return fallback_size1();
+			return serialized_size(Factory1::operator()());
 		}
 	}();
 	static constexpr auto value2_size = [&] -> size_t {
-		if constexpr (requires { Factory2::operator()().serialized_size(); }) {
-			static_assert(fallback_size2() == 0zu);
-			return Factory2::operator()().serialized_size();
+		if constexpr (fallback_size2 != 0zu) {
+			return fallback_size2;
 		}
 		else {
-			static_assert(fallback_size2 != 0zu);
-			return fallback_size2();
+			return serialized_size(Factory2::operator()());
 		}
 	}();
 
@@ -812,7 +870,7 @@ TEST_CASE("SbsDataFormat.described", "[u][engine][core][serialization]") {
 		// _y: no attribute, defaults to included in OptOut mode -> included
 		// _z: explicit Serializable{false} -> excluded
 		const auto in_value = DescribedOptOutClass{11, 22, "abcdef"};
-		const auto value_size = in_value.serialized_size();
+		const auto value_size = serialized_size(in_value);
 
 		auto buf = std::vector<unsigned char>{};
 		auto writer = fr::VectorWriter{buf};
@@ -833,7 +891,7 @@ TEST_CASE("SbsDataFormat.described", "[u][engine][core][serialization]") {
 		// _y: no attribute, defaults to excluded in OptIn mode -> excluded
 		// _z: explicit Serializable{true} -> included
 		const auto in_value = DescribedOptInClass{11, 22, "abcdef"};
-		const auto value_size = in_value.serialized_size();
+		const auto value_size = serialized_size(in_value);
 
 		auto buf = std::vector<unsigned char>{};
 		auto writer = fr::VectorWriter{buf};
@@ -851,7 +909,7 @@ TEST_CASE("SbsDataFormat.described", "[u][engine][core][serialization]") {
 	});
 	frt::double_test<false>("class-level Serializable{true} attribute behaves like OptOut", [] {
 		const auto in_value = DescribedSerializableClass{11, 22, "abcdef"};
-		const auto value_size = in_value.serialized_size();
+		const auto value_size = serialized_size(in_value);
 
 		auto buf = std::vector<unsigned char>{};
 		auto writer = fr::VectorWriter{buf};
@@ -876,7 +934,7 @@ TEST_CASE("SbsDataFormat.described", "[u][engine][core][serialization]") {
 		const auto in_value = DescribedWithBasesAndProps{
 			SimpleEnum::B, 5, "hello", 77, "world", 3.5
 		};
-		const auto value_size = in_value.serialized_size();
+		const auto value_size = serialized_size(in_value);
 
 		auto buf = std::vector<unsigned char>{};
 		auto writer = fr::VectorWriter{buf};
@@ -899,7 +957,7 @@ TEST_CASE("SbsDataFormat.described", "[u][engine][core][serialization]") {
 	frt::double_test("serialializing into an array which is too small", [] {
 		const auto get_value = [] { return DescribedOptOutClass{11, 22, "abcdef"}; };
 		const auto in_value = get_value();
-		static constexpr auto value_size = get_value().serialized_size();
+		static constexpr auto value_size = serialized_size(get_value());
 
 		auto buf = std::array<std::byte, value_size - 2zu>{};
 		auto writer = fr::SpanWriter{buf};
@@ -1086,29 +1144,88 @@ TEST_CASE("SbsDataFormat.arrays", "[u][engine][core][serialization]") {
 	}
 }
 
+TEST_CASE("SbsDataFormat.maps", "[u][engine][core][serialization]") {
+	static constexpr auto empty_size = sizeof(size_t);
+	{
+		static constexpr auto make_values = [] static {
+			return std::to_array<std::pair<const std::string, int>>(
+				{{"abcdef", 22}, {frt::lorem_text, 44}, {{}, 66}, {"123", 88}}
+			);
+		};
+		constexpr auto values_size = serialized_size(fr::to_span(make_values()));
+		test_common_serde_scenarios<false>(
+			"std::map",
+			[] static { return std::map<std::string, int>(std::from_range, make_values()); },
+			[] static { return std::map<std::string, int>{}; },
+			fr::size_c<values_size>,
+			fr::size_c<empty_size>
+		);
+		test_common_serde_scenarios<false>(
+			"std::unordered_map",
+			[] static {
+				return std::unordered_map<std::string, int>(std::from_range, make_values());
+			},
+			[] static { return std::unordered_map<std::string, int>{}; },
+			fr::size_c<values_size>,
+			fr::size_c<empty_size>
+		);
+	}
+	{
+		static constexpr auto make_values = [] static {
+			return std::to_array<std::pair<const std::string, int>>({
+				{"abcdef", 22}, {frt::lorem_text, 44}, {{}, 66}, {"123", 88}, {frt::lorem_text, 45},
+				{"123", 89}, {{}, 67}, {{}, 68}
+			});
+		};
+		constexpr auto values_size = serialized_size(fr::to_span(make_values()));
+		test_common_serde_scenarios<false>(
+			"std::multimap",
+			[] static { return std::multimap<std::string, int>(std::from_range, make_values()); },
+			[] static { return std::multimap<std::string, int>{}; },
+			fr::size_c<values_size>,
+			fr::size_c<empty_size>
+		);
+		test_common_serde_scenarios<false>(
+			"std::unordered_multimap",
+			[] static {
+				return std::unordered_multimap<std::string, int>(std::from_range, make_values());
+			},
+			[] static { return std::unordered_multimap<std::string, int>{}; },
+			fr::size_c<values_size>,
+			fr::size_c<empty_size>
+		);
+	}
+}
+
 TEST_CASE("SbsDataFormat.sets", "[u][engine][core][serialization]") {
-	static constexpr int values[] = {22, 44, 66, 88};
-	static constexpr auto value_size = sizeof(size_t) + sizeof(int) * std::size(values);
-	test_common_serde_scenarios<false>(
-		"std::set",
-		[] static { return std::set<int>(std::from_range, values); },
-		fr::size_c<value_size>
-	);
-	test_common_serde_scenarios<false>(
-		"std::multiset",
-		[] static { return std::multiset<int>(std::from_range, values); },
-		fr::size_c<value_size>
-	);
-	test_common_serde_scenarios<false>(
-		"std::unordered_set",
-		[] static { return std::unordered_set<int>(std::from_range, values); },
-		fr::size_c<value_size>
-	);
-	test_common_serde_scenarios<false>(
-		"std::unordered_multiset",
-		[] static { return std::unordered_multiset<int>(std::from_range, values); },
-		fr::size_c<value_size>
-	);
+	{
+		static constexpr int values[] = {44, 22, 88, 66};
+		static constexpr auto value_size = serialized_size(std::span<const int>(values));
+		test_common_serde_scenarios<false>(
+			"std::set",
+			[] static { return std::set<int>(std::from_range, values); },
+			fr::size_c<value_size>
+		);
+		test_common_serde_scenarios<false>(
+			"std::unordered_set",
+			[] static { return std::unordered_set<int>(std::from_range, values); },
+			fr::size_c<value_size>
+		);
+	}
+	{
+		static constexpr int values[] = {22, 44, 22, 22, 66, 88, 44};
+		static constexpr auto value_size = serialized_size(std::span<const int>(values));
+		test_common_serde_scenarios<false>(
+			"std::multiset",
+			[] static { return std::multiset<int>(std::from_range, values); },
+			fr::size_c<value_size>
+		);
+		test_common_serde_scenarios<false>(
+			"std::unordered_multiset",
+			[] static { return std::unordered_multiset<int>(std::from_range, values); },
+			fr::size_c<value_size>
+		);
+	}
 }
 
 TEST_CASE("SbsDataFormat.vectors", "[u][engine][core][serialization]") {
@@ -1171,9 +1288,5 @@ TEST_CASE("SbsDataFormat.records", "[u][engine][core][serialization]") {
 			{-23, "abcdef"}, {3.f, 99}, {5, 6, 7}
 		};
 	};
-	test_common_serde_scenarios("tuple", make_tuple, fr::size_c<
-		std::get<0>(make_tuple()).serialized_size()
-		+ std::get<1>(make_tuple()).serialized_size()
-		+ sizeof(std::get<2>(make_tuple()))
-	>);
+	test_common_serde_scenarios("tuple", make_tuple);
 }

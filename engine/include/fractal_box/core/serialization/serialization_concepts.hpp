@@ -38,7 +38,6 @@ struct DummyWriter {
 
 	constexpr
 	void flush() noexcept { }
-
 };
 
 struct DummyReader {

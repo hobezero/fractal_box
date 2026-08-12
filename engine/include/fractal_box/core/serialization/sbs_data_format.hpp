@@ -17,7 +17,7 @@ template<class V>
 inline constexpr
 void set_variant_valueless(V& variant) {
 	try {
-		variant.template emplace<0zu>(detail::ThrowingConvertible<MpFirst<V>>{});
+		variant.template emplace<0zu>(detail::ThrowingConvertible{});
 	}
 	catch (int) { }
 }
@@ -29,6 +29,20 @@ auto make_valueless_variant() -> V {
 	set_variant_valueless(v);
 	return v;
 }
+
+namespace detail {
+
+template<class M>
+concept c_with_emplace_hint = requires(
+	M& container,
+	typename M::key_type& key,
+	typename M::mapped_type& mapped
+) {
+		{ container.emplace_hint(std::move(key), std::move(mapped)) }
+			-> std::same_as<typename M::iterator>;
+};
+
+} // namespace detail
 
 /// @brief Simple binary serialization format
 struct SbsDataFormat {
@@ -126,7 +140,7 @@ public:
 			return encode_vector(writer, obj);
 		}
 		else if constexpr (serializability.category() == Map) {
-			static_assert(false);
+			return encode_map(writer, obj);
 		}
 		else if constexpr (serializability.category() == Set) {
 			return encode_set(writer, obj);
@@ -179,7 +193,7 @@ public:
 			return decode_vector(reader, obj);
 		}
 		else if constexpr (serializability.category() == Map) {
-			static_assert(false);
+			return decode_map(reader, obj);
 		}
 		else if constexpr (serializability.category() == Set) {
 			return decode_set(reader, obj);
@@ -634,6 +648,9 @@ private:
 		}
 	}
 
+	// Arrays
+	// ^^^^^^
+
 	template<class Writer, class T>
 	static constexpr
 	auto encode_array(Writer& writer, const T& obj) -> EncodeResult<Writer> {
@@ -701,6 +718,9 @@ private:
 		}
 	}
 
+	// Vectors
+	// ^^^^^^^
+
 	template<class Writer, class T>
 	static constexpr
 	auto encode_vector(Writer& writer, const T& obj) -> EncodeResult<Writer> {
@@ -762,6 +782,102 @@ private:
 		return ret;
 	}
 
+	// Maps
+	// ^^^^
+
+	template<class Writer, class T>
+	static constexpr
+	auto encode_map(Writer& writer, const T& obj) -> EncodeResult<Writer> {
+		auto ret = encode_primitive(writer, static_cast<size_t>(obj.size()));
+		if constexpr (c_result<EncodeResult<Writer>>) {
+			if (!ret)
+				return ret;
+			for (const auto& [key, mapped] : obj) {
+				auto key_res = SbsDataFormat::encode(writer, key);
+				if (!key_res) {
+					ret = std::move(key_res);
+					break;
+				}
+				*ret += *key_res;
+
+				auto mapped_res = SbsDataFormat::encode(writer, mapped);
+				if (!mapped_res) {
+					ret = std::move(mapped_res);
+					break;
+				}
+				*ret += *mapped_res;
+			}
+		}
+		else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
+			for (const auto& [key, mapped] : obj) {
+				ret += SbsDataFormat::encode(writer, key);
+				ret += SbsDataFormat::encode(writer, mapped);
+			}
+		}
+		else {
+			static_assert(false);
+		}
+		return ret;
+	}
+
+	template<class Reader, class T>
+	static constexpr
+	auto decode_map(Reader& reader, T& obj) -> DecodeResult<Reader> {
+		size_t size_value;
+		auto ret = decode_primitive(reader, size_value);
+
+		// For the ordered containers, `emplace_hint` makes insertion time amortized O(1).
+		// For the unordered containers, `emplace_hint` ignores the hint
+		auto hint = obj.end();
+
+		if constexpr (c_result<DecodeResult<Reader>>) {
+			if (!ret)
+				return ret;
+			for (auto i = 0zu; i < size_value; ++i) {
+				auto key = typename T::key_type{};
+				auto key_res = SbsDataFormat::decode(reader, key);
+				if (!key_res)
+					return key_res;
+
+				auto mapped = typename T::mapped_type{};
+				auto mapped_res = SbsDataFormat::decode(reader, mapped);
+				if (!mapped_res)
+					return mapped_res;
+
+				if constexpr (detail::c_with_emplace_hint<T>) {
+					hint = obj.emplace_hint(hint, std::move(key), std::move(mapped));
+				}
+				else {
+					obj.emplace(std::move(key), std::move(mapped));
+				}
+				*ret += *key_res + *mapped_res;
+			}
+		}
+		else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
+			for (auto i = 0zu; i < size_value; ++i) {
+				auto key = typename T::key_type{};
+				ret += SbsDataFormat::decode(reader, key);
+
+				auto mapped = typename T::mapped_type{};
+				ret += SbsDataFormat::decode(reader, mapped);
+
+				if constexpr (detail::c_with_emplace_hint<T>) {
+					hint = obj.emplace_hint(hint, std::move(key), std::move(mapped));
+				}
+				else {
+					obj.emplace(std::move(key), std::move(mapped));
+				}
+			}
+		}
+		else {
+			static_assert(false);
+		}
+		return ret;
+	}
+
+	// Sets
+	// ^^^^
+
 	template<class Writer, class T>
 	static constexpr
 	auto encode_set(Writer& writer, const T& obj) -> EncodeResult<Writer> {
@@ -771,13 +887,11 @@ private:
 				return ret;
 			for (const auto& v : obj) {
 				auto res = SbsDataFormat::encode(writer, v);
-				if (res ) {
-					*ret += *res;
-				}
-				else {
+				if (!res) {
 					ret = std::move(res);
 					break;
 				}
+				*ret += *res;
 			}
 		}
 		else if constexpr (std::is_same_v<EncodeResult<Writer>, size_t>) {
@@ -821,6 +935,9 @@ private:
 		}
 		return ret;
 	}
+
+	// Variants
+	// ^^^^^^^^
 
 	template<class Writer, class T>
 	static constexpr

@@ -4,11 +4,27 @@
 #include <algorithm>
 #include <array>
 #include <iterator>
+#include <span>
 
 #include "fractal_box/core/int_types.hpp"
 #include "fractal_box/core/assert.hpp"
 
 namespace fr {
+
+/// @warning Beware of dangling pointers! Make sure that the array outlives the span
+/// @todo
+///   TODO: Rename to `as_span` to emphasize the temporary lifetime
+template<class T, std::size_t N>
+FR_FORCE_INLINE constexpr
+auto to_span(T (&&arr)[N]) {
+	return std::span<T>{arr};
+}
+
+template<class T, std::size_t N>
+FR_FORCE_INLINE constexpr
+auto to_span(std::array<T, N> &&arr) {
+	return std::span<T>{arr};
+}
 
 template<size_t N, class R>
 inline constexpr
