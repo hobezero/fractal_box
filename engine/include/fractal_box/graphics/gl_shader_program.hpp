@@ -156,7 +156,7 @@ public:
 
 	[[nodiscard]]
 	auto compile(DiagnosticSink& diag_sink) -> Status<> {
-		return compile(to_span<Ref<GlShader>>({*this}), diag_sink);
+		return compile(as_span<Ref<GlShader>>({*this}), diag_sink);
 	}
 
 	/// @brief Compile a set of shaders. The compilation is potentionally parallel and is more
@@ -325,7 +325,7 @@ public:
 
 	[[nodiscard]]
 	auto link(DiagnosticSink& diag_sink) -> Status<> {
-		return link(to_span<Ref<GlShaderProgram>>({*this}), diag_sink);
+		return link(as_span<Ref<GlShaderProgram>>({*this}), diag_sink);
 	}
 
 	/// @brief Link a set of programs. The linking is potentionally parallel and is more

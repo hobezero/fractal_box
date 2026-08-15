@@ -11,18 +11,17 @@
 
 namespace fr {
 
-/// @warning Beware of dangling pointers! Make sure that the array outlives the span
-/// @todo
-///   TODO: Rename to `as_span` to emphasize the temporary lifetime
+/// @warning Beware of dangling pointers! Make sure that the array outlives the span.
+/// Passing an rvalue constructed in place is fine
 template<class T, std::size_t N>
 FR_FORCE_INLINE constexpr
-auto to_span(T (&&arr)[N]) {
+auto as_span(T (&&arr)[N]) {
 	return std::span<T>{arr};
 }
 
 template<class T, std::size_t N>
 FR_FORCE_INLINE constexpr
-auto to_span(std::array<T, N> &&arr) {
+auto as_span(std::array<T, N> &&arr) {
 	return std::span<T>{arr};
 }
 

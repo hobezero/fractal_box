@@ -41,7 +41,7 @@ auto make_linked_shader_program_from_resources(
 
 	return GlShaderProgram::make_linked(
 		std::move(*params.name),
-		to_span<GlShader::Params>({
+		as_span<GlShader::Params>({
 			{
 				.type = GlShaderType::Vertex,
 				.version = *params.version,
