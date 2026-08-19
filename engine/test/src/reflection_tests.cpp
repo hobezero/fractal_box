@@ -205,10 +205,8 @@ struct MyParentB { };
 struct MyParentC { };
 
 struct MyGadget {
-	[[maybe_unused]] friend consteval
-	auto fr_describe(MyGadget) {
-		return fr::class_desc<>;
-	}
+	friend consteval
+	auto fr_describe(MyGadget) -> fr::ClassDesc<>;
 };
 
 struct MyWidget: public MyParentA, protected MyParentB, private MyParentC {
