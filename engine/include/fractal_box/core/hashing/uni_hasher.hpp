@@ -468,7 +468,10 @@ struct UniHasherBase<true> {
 
 /// @brief "Universal" hasher
 template<UniHasherOpts Opts = {}>
-class UniHasher: private detail::UniHasherBase<Opts.seeding == UniHasherSeeding::Provided> {
+class UniHasher:
+	public IsAvalanchingBase<Opts.is_avalanching>,
+	private detail::UniHasherBase<Opts.seeding == UniHasherSeeding::Provided>
+{
 	using Base = detail::UniHasherBase<Opts.seeding == UniHasherSeeding::Provided>;
 	using RapidAlgo = RapidhashAlgoType<Opts.algorithm, Opts.is_avalanching, Opts.is_dos_resistant>;
 	using Word = typename RapidAlgo::Word;
@@ -1118,6 +1121,13 @@ using UniHasherQuality64 = UniHasher<{
 	.is_dos_resistant = false,
 }>;
 
+using UniHasherQualityStd = UniHasher<{
+	.bits = CHAR_BIT * sizeof(size_t),
+	.is_avalanching = true,
+	.seeding = UniHasherSeeding::Stable,
+	.is_dos_resistant = false,
+}>;
+
 using UniHasherProtected32 = UniHasher<{
 	.bits = 32,
 	.is_avalanching = true,
@@ -1127,6 +1137,13 @@ using UniHasherProtected32 = UniHasher<{
 
 using UniHasherProtected64 = UniHasher<{
 	.bits = 64,
+	.is_avalanching = true,
+	.seeding = UniHasherSeeding::Provided,
+	.is_dos_resistant = true,
+}>;
+
+using UniHasherProtectedStd = UniHasher<{
+	.bits = CHAR_BIT * sizeof(size_t),
 	.is_avalanching = true,
 	.seeding = UniHasherSeeding::Provided,
 	.is_dos_resistant = true,

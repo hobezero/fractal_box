@@ -11,7 +11,7 @@ namespace fr {
 template<
 	class K,
 	class T,
-	class H = UniHasherFastStd,
+	class H = UniHasherQualityStd,
 	class E = EqualTo<>,
 	class A = std::allocator<std::pair<const K, T>>
 >

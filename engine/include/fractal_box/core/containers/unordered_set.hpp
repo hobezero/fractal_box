@@ -8,7 +8,7 @@
 
 namespace fr {
 
-template<class T, class H = UniHasherFastStd, class E = EqualTo<>, class A = std::allocator<T>>
+template<class T, class H = UniHasherQualityStd, class E = EqualTo<>, class A = std::allocator<T>>
 using UnorderedSet = std::unordered_set<T, H, E, A>;
 
 } // namespace fr

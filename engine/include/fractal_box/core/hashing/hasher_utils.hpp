@@ -232,5 +232,20 @@ private:
 	int16_t _exp;
 };
 
+/// @brief A helper class to conditionally provide typedefs indicating that a hashing algorithm
+/// exhibits the avalanche effect. Useful as a base class of hashers that are avalanching or not
+/// depending on some configuration
+/// @details Libraries that utilize this metadata include Boost, Ankerl, and Folly. Abseil
+/// always assumes that custom hashers are avalanching and require no post-mixing. Standard
+/// libraries seem to not care about the hashing quality at all
+template<bool IsAvalanching>
+struct IsAvalanchingBase { };
+
+template<>
+struct IsAvalanchingBase<true> {
+	using is_avalanching = std::true_type;
+	using folly_is_avalanching = std::true_type;
+};
+
 } // namespace fr
 #endif // include guard

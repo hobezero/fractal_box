@@ -16,6 +16,8 @@
 #include "test_common/test_helpers.hpp"
 #include "test_common/hashing_fmt.hpp"
 
+// TODO: Look into absl::VerifyTypeImplementsAbslHashCorrectly
+
 using namespace fr::hash_literals;
 using namespace std::string_view_literals;
 using namespace std::string_literals;
@@ -921,9 +923,11 @@ TEST_CASE("UniHasher.markers", "[u][engine][core][hashing]") {
 	fr::for_each_type<Hashers>([]<class Hasher> {
 		if constexpr (Hasher::opts.is_avalanching) {
 			STATIC_CHECK(std::same_as<typename Hasher::is_avalanching, std::true_type>);
+			STATIC_CHECK(std::same_as<typename Hasher::folly_is_avalanching, std::true_type>);
 		}
 		else {
 			STATIC_CHECK_FALSE(requires { typename Hasher::is_avalanching; });
+			STATIC_CHECK_FALSE(requires { typename Hasher::folly_is_avalanching; });
 		}
 	});
 }
