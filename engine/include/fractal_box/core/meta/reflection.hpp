@@ -1,8 +1,6 @@
 #ifndef FRACTAL_BOX_CORE_REFLECTION_REFLECTION_HPP
 #define FRACTAL_BOX_CORE_REFLECTION_REFLECTION_HPP
 
-/// @see https://github.com/sporacid/spore-meta
-
 #include <algorithm>
 #include <type_traits>
 

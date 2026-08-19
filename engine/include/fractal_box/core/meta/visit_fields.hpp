@@ -1392,7 +1392,7 @@ auto visit_record_fields(T&& obj, F&& f) -> decltype(auto) {
 			value_c<std::tuple_size_v<PT>>);
 	}
 	else {
-		static_assert(num_record_fields<PT> <= 64, "Can't visit move than 64 fields");
+		static_assert(num_record_fields<PT> <= 64, "Can't visit more than 64 fields");
 		return detail::visit_record_impl(std::forward<F>(f), std::forward<T>(obj),
 			value_c<num_record_fields<PT>>);
 	}
