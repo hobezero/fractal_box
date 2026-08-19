@@ -9,15 +9,15 @@ static constexpr auto largeKey = static_cast<fr::ScanCode>(fr::num_scancodes - 1
 TEST_CASE("KeyboardState", "[u][engine][core][input]") {
 	auto keyboard = fr::KeyboardState{};
 
-	SECTION("rule-of-six") {
-		CHECK(std::is_default_constructible_v<fr::KeyboardState>);
-		CHECK(std::is_copy_constructible_v<fr::KeyboardState>);
-		CHECK(std::is_copy_assignable_v<fr::KeyboardState>);
-		CHECK(std::is_move_constructible_v<fr::KeyboardState>);
-		CHECK(std::is_nothrow_move_constructible_v<fr::KeyboardState>);
-		CHECK(std::is_move_assignable_v<fr::KeyboardState>);
-		CHECK(std::is_nothrow_move_assignable_v<fr::KeyboardState>);
-		CHECK(std::is_destructible_v<fr::KeyboardState>);
+	SECTION("type properties") {
+		STATIC_CHECK(std::is_default_constructible_v<fr::KeyboardState>);
+		STATIC_CHECK(std::is_copy_constructible_v<fr::KeyboardState>);
+		STATIC_CHECK(std::is_copy_assignable_v<fr::KeyboardState>);
+		STATIC_CHECK(std::is_move_constructible_v<fr::KeyboardState>);
+		STATIC_CHECK(std::is_nothrow_move_constructible_v<fr::KeyboardState>);
+		STATIC_CHECK(std::is_move_assignable_v<fr::KeyboardState>);
+		STATIC_CHECK(std::is_nothrow_move_assignable_v<fr::KeyboardState>);
+		STATIC_CHECK(std::is_destructible_v<fr::KeyboardState>);
 	}
 	SECTION("initialized state is empty") {
 		CHECK(keyboard.is_up(fr::ScanCode::A));
@@ -57,15 +57,15 @@ TEST_CASE("Input", "[u][engine][core][input]") {
 	constexpr fr::Input::ActionId action_a{fr::adopt, 10};
 	constexpr fr::Input::ActionId action_b{fr::adopt, 123'456'789};
 
-	SECTION("rule-of-six") {
-		CHECK(std::is_default_constructible_v<fr::Input>);
-		CHECK(std::is_copy_constructible_v<fr::Input>);
-		CHECK(std::is_copy_assignable_v<fr::Input>);
-		CHECK(std::is_move_constructible_v<fr::Input>);
-		CHECK(std::is_nothrow_move_constructible_v<fr::Input>);
-		CHECK(std::is_move_assignable_v<fr::Input>);
-		CHECK(std::is_nothrow_move_assignable_v<fr::Input>);
-		CHECK(std::is_destructible_v<fr::Input>);
+	SECTION("type properties") {
+		STATIC_CHECK(std::is_default_constructible_v<fr::Input>);
+		STATIC_CHECK(std::is_copy_constructible_v<fr::Input>);
+		STATIC_CHECK(std::is_copy_assignable_v<fr::Input>);
+		STATIC_CHECK(std::is_move_constructible_v<fr::Input>);
+		STATIC_CHECK(std::is_nothrow_move_constructible_v<fr::Input>);
+		STATIC_CHECK(std::is_move_assignable_v<fr::Input>);
+		STATIC_CHECK(std::is_nothrow_move_assignable_v<fr::Input>);
+		STATIC_CHECK(std::is_destructible_v<fr::Input>);
 	}
 	SECTION("initialized state is empty") {
 		CHECK(!input.get_action(action_a));

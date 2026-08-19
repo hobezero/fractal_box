@@ -127,14 +127,14 @@ TEST_CASE("SparseIndexSet", "[u][engine][core][containers]") {
 	auto set = Set{};
 
 	SECTION("type properties") {
-		CHECK(std::is_default_constructible_v<Set>);
-		CHECK(std::is_nothrow_default_constructible_v<Set>);
-		CHECK(std::is_copy_constructible_v<Set>);
-		CHECK(std::is_copy_assignable_v<Set>);
-		CHECK(std::is_move_constructible_v<Set>);
-		CHECK(std::is_move_assignable_v<Set>);
-		CHECK(std::is_nothrow_move_constructible_v<Set>);
-		CHECK(std::is_nothrow_move_assignable_v<Set>);
+		STATIC_CHECK(std::is_default_constructible_v<Set>);
+		STATIC_CHECK(std::is_nothrow_default_constructible_v<Set>);
+		STATIC_CHECK(std::is_copy_constructible_v<Set>);
+		STATIC_CHECK(std::is_copy_assignable_v<Set>);
+		STATIC_CHECK(std::is_move_constructible_v<Set>);
+		STATIC_CHECK(std::is_move_assignable_v<Set>);
+		STATIC_CHECK(std::is_nothrow_move_constructible_v<Set>);
+		STATIC_CHECK(std::is_nothrow_move_assignable_v<Set>);
 	}
 	SECTION("initialized set is empty") {
 		CHECK(set.empty());
@@ -259,14 +259,14 @@ TEST_CASE("SparseMap", "[u][engine][core][containers]") {
 	const auto make_value_tagged = [&](auto&& tag) { return fmt::format("{}-{}", counter++, tag); };
 
 	SECTION("type properties") {
-		CHECK(std::is_default_constructible_v<Map>);
-		CHECK(std::is_nothrow_default_constructible_v<Map>);
-		CHECK(std::is_copy_constructible_v<Map>);
-		CHECK(std::is_copy_assignable_v<Map>);
-		CHECK(std::is_move_constructible_v<Map>);
-		CHECK(std::is_move_assignable_v<Map>);
-		CHECK(std::is_nothrow_move_constructible_v<Map>);
-		CHECK(std::is_nothrow_move_assignable_v<Map>);
+		STATIC_CHECK(std::is_default_constructible_v<Map>);
+		STATIC_CHECK(std::is_nothrow_default_constructible_v<Map>);
+		STATIC_CHECK(std::is_copy_constructible_v<Map>);
+		STATIC_CHECK(std::is_copy_assignable_v<Map>);
+		STATIC_CHECK(std::is_move_constructible_v<Map>);
+		STATIC_CHECK(std::is_move_assignable_v<Map>);
+		STATIC_CHECK(std::is_nothrow_move_constructible_v<Map>);
+		STATIC_CHECK(std::is_nothrow_move_assignable_v<Map>);
 	}
 	SECTION("initialized set is empty") {
 		CHECK(set.empty());

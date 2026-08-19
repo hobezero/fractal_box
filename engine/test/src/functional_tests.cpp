@@ -86,17 +86,17 @@ static constexpr auto is_valid_free_func<Ret (Args...) noexcept> = fr::true_c;
 } // namespace
 
 TEST_CASE("PassAbi", "[u][engine][core][functional]") {
-	CHECK(std::same_as<fr::PassAbi<int>, int>);
-	CHECK(std::same_as<fr::PassAbi<double>, double>);
-	CHECK(std::same_as<fr::PassAbi<double*>, double*>);
-	CHECK(std::same_as<fr::PassAbi<MyTrivial>, MyTrivial>);
-	CHECK(std::same_as<fr::PassAbi<MyTrivialLarge>, const MyTrivialLarge&>);
-	CHECK(std::same_as<fr::PassAbi<MyNonTrivial>, const MyNonTrivial&>);
+	STATIC_CHECK(std::same_as<fr::PassAbi<int>, int>);
+	STATIC_CHECK(std::same_as<fr::PassAbi<double>, double>);
+	STATIC_CHECK(std::same_as<fr::PassAbi<double*>, double*>);
+	STATIC_CHECK(std::same_as<fr::PassAbi<MyTrivial>, MyTrivial>);
+	STATIC_CHECK(std::same_as<fr::PassAbi<MyTrivialLarge>, const MyTrivialLarge&>);
+	STATIC_CHECK(std::same_as<fr::PassAbi<MyNonTrivial>, const MyNonTrivial&>);
 }
 
 TEST_CASE("MemberType", "[u][engine][core][functional]") {
-	CHECK(std::same_as<fr::MemberType<decltype(&MyTrivial::data)>, char>);
-	CHECK(std::same_as<fr::MemberType<decltype(&MyTrivial::foo)>,
+	STATIC_CHECK(std::same_as<fr::MemberType<decltype(&MyTrivial::data)>, char>);
+	STATIC_CHECK(std::same_as<fr::MemberType<decltype(&MyTrivial::foo)>,
 		unsigned (char, int) const volatile & noexcept>);
 }
 
@@ -122,15 +122,18 @@ TEST_CASE("FuncTraits", "[u][engine][core][functional]") {
 	static const auto do_test = []<class P> {
 		const auto check = []<class F> {
 			using Traits = fr::FuncTraits<F>;
-			CHECK(std::same_as<typename Traits::Stripped, bool (int, char, long)>);
-			CHECK(std::same_as<typename Traits::Result, bool>);
-			CHECK(std::same_as<typename Traits::Arguments, fr::MpList<int, char, long>>);
-			if (std::is_class_v<F>)
-				CHECK(Traits::kind == fr::CallableKind::Class);
-			else if (std::is_function_v<std::remove_cvref_t<std::remove_pointer_t<F>>>)
-				CHECK(Traits::kind == fr::CallableKind::FreeFunction);
-			else
-				CHECK(Traits::kind == fr::CallableKind::MemberFunction);
+			STATIC_CHECK(std::same_as<typename Traits::Stripped, bool (int, char, long)>);
+			STATIC_CHECK(std::same_as<typename Traits::Result, bool>);
+			STATIC_CHECK(std::same_as<typename Traits::Arguments, fr::MpList<int, char, long>>);
+			if constexpr (std::is_class_v<F>) {
+				STATIC_CHECK(Traits::kind == fr::CallableKind::Class);
+			}
+			else if constexpr (std::is_function_v<std::remove_cvref_t<std::remove_pointer_t<F>>>) {
+				STATIC_CHECK(Traits::kind == fr::CallableKind::FreeFunction);
+			}
+			else {
+				STATIC_CHECK(Traits::kind == fr::CallableKind::MemberFunction);
+			}
 			// TODO: Check `Traits::qualifiers`
 		};
 
@@ -159,14 +162,14 @@ TEST_CASE("FuncTraits", "[u][engine][core][functional]") {
 }
 
 TEST_CASE("c_callable", "[u][engine][core][functional]") {
-	CHECK(fr::c_callable<MyPred>);
-	CHECK(fr::c_callable<decltype(&MyTrivial::foo)>);
-	CHECK(fr::c_callable<int (float)>);
-	CHECK(fr::c_callable<int (*)(float)>);
+	STATIC_CHECK(fr::c_callable<MyPred>);
+	STATIC_CHECK(fr::c_callable<decltype(&MyTrivial::foo)>);
+	STATIC_CHECK(fr::c_callable<int (float)>);
+	STATIC_CHECK(fr::c_callable<int (*)(float)>);
 
-	CHECK_FALSE(fr::c_callable<int>);
-	CHECK_FALSE(fr::c_callable<Incomplete>);
-	CHECK_FALSE(fr::c_callable<MyTrivialLarge>);
+	STATIC_CHECK_FALSE(fr::c_callable<int>);
+	STATIC_CHECK_FALSE(fr::c_callable<Incomplete>);
+	STATIC_CHECK_FALSE(fr::c_callable<MyTrivialLarge>);
 }
 
 namespace {
@@ -197,14 +200,14 @@ public:
 } // namespace
 
 TEST_CASE("c_getter_setter_pair", "[u][engine][core][functional]") {
-	CHECK(fr::c_getter_setter_pair<&IntProperty::get, &IntProperty::set>);
-	CHECK(fr::c_getter_setter_pair<&StringProperty::get, &StringProperty::set>);
+	STATIC_CHECK(fr::c_getter_setter_pair<&IntProperty::get, &IntProperty::set>);
+	STATIC_CHECK(fr::c_getter_setter_pair<&StringProperty::get, &StringProperty::set>);
 
-	CHECK_FALSE(fr::c_getter_setter_pair<&IntProperty::get, &IntProperty::free_get>);
-	CHECK_FALSE(fr::c_getter_setter_pair<&IntProperty::get, &IntProperty2::get>);
-	CHECK_FALSE(fr::c_getter_setter_pair<&StringProperty::get, &StringProperty::get>);
-	CHECK_FALSE(fr::c_getter_setter_pair<&IntProperty::get, &StringProperty::set>);
-	CHECK_FALSE(fr::c_getter_setter_pair<&StringProperty::get_int_prop, &StringProperty::set>);
+	STATIC_CHECK_FALSE(fr::c_getter_setter_pair<&IntProperty::get, &IntProperty::free_get>);
+	STATIC_CHECK_FALSE(fr::c_getter_setter_pair<&IntProperty::get, &IntProperty2::get>);
+	STATIC_CHECK_FALSE(fr::c_getter_setter_pair<&StringProperty::get, &StringProperty::get>);
+	STATIC_CHECK_FALSE(fr::c_getter_setter_pair<&IntProperty::get, &StringProperty::set>);
+	STATIC_CHECK_FALSE(fr::c_getter_setter_pair<&StringProperty::get_int_prop, &StringProperty::set>);
 }
 
 namespace {

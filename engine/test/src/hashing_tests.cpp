@@ -917,6 +917,17 @@ TEST_CASE("UniHasher.type-properties", "[u][engine][core][hashing]") {
 	});
 }
 
+TEST_CASE("UniHasher.markers", "[u][engine][core][hashing]") {
+	fr::for_each_type<Hashers>([]<class Hasher> {
+		if constexpr (Hasher::opts.is_avalanching) {
+			STATIC_CHECK(std::same_as<typename Hasher::is_avalanching, std::true_type>);
+		}
+		else {
+			STATIC_CHECK_FALSE(requires { typename Hasher::is_avalanching; });
+		}
+	});
+}
+
 TEST_CASE("UniHasher.primitives", "[u][engine][core][hashing]") {
 	test_constexpr_hashers([]<class Hasher> {
 		FRT_INFO(fr::unqualified_type_name<Hasher>);

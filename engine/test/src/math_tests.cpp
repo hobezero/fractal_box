@@ -9,13 +9,13 @@
 TEST_CASE("TDeg", "[u][engine][core][math]") {
 	const auto do_test = []<class T> {
 		SECTION("type properties") {
-			CHECK(std::is_default_constructible_v<fr::Deg<T>>);
-			CHECK(std::is_nothrow_default_constructible_v<fr::Deg<T>>);
-			CHECK(std::is_trivially_copy_constructible_v<fr::Deg<T>>);
-			CHECK(std::is_trivially_move_constructible_v<fr::Deg<T>>);
-			CHECK(std::is_trivially_copy_assignable_v<fr::Deg<T>>);
-			CHECK(std::is_trivially_move_assignable_v<fr::Deg<T>>);
-			CHECK(std::is_trivially_destructible_v<fr::Deg<T>>);
+			STATIC_CHECK(std::is_default_constructible_v<fr::Deg<T>>);
+			STATIC_CHECK(std::is_nothrow_default_constructible_v<fr::Deg<T>>);
+			STATIC_CHECK(std::is_trivially_copy_constructible_v<fr::Deg<T>>);
+			STATIC_CHECK(std::is_trivially_move_constructible_v<fr::Deg<T>>);
+			STATIC_CHECK(std::is_trivially_copy_assignable_v<fr::Deg<T>>);
+			STATIC_CHECK(std::is_trivially_move_assignable_v<fr::Deg<T>>);
+			STATIC_CHECK(std::is_trivially_destructible_v<fr::Deg<T>>);
 		}
 		SECTION("arithmetic operators") {
 			CHECK(fr::Deg<T>{T{2.}} + fr::Deg<T>{T{3.}} == fr::Deg<T>{T{5.}});
@@ -67,13 +67,13 @@ TEST_CASE("TDeg", "[u][engine][core][math]") {
 TEST_CASE("TRad", "[u][engine][core][math]") {
 	const auto do_test = []<class T> {
 		SECTION("type properties") {
-			CHECK(std::is_default_constructible_v<fr::Rad<T>>);
-			CHECK(std::is_nothrow_default_constructible_v<fr::Rad<T>>);
-			CHECK(std::is_trivially_copy_constructible_v<fr::Rad<T>>);
-			CHECK(std::is_trivially_move_constructible_v<fr::Rad<T>>);
-			CHECK(std::is_trivially_copy_assignable_v<fr::Rad<T>>);
-			CHECK(std::is_trivially_move_assignable_v<fr::Rad<T>>);
-			CHECK(std::is_trivially_destructible_v<fr::Rad<T>>);
+			STATIC_CHECK(std::is_default_constructible_v<fr::Rad<T>>);
+			STATIC_CHECK(std::is_nothrow_default_constructible_v<fr::Rad<T>>);
+			STATIC_CHECK(std::is_trivially_copy_constructible_v<fr::Rad<T>>);
+			STATIC_CHECK(std::is_trivially_move_constructible_v<fr::Rad<T>>);
+			STATIC_CHECK(std::is_trivially_copy_assignable_v<fr::Rad<T>>);
+			STATIC_CHECK(std::is_trivially_move_assignable_v<fr::Rad<T>>);
+			STATIC_CHECK(std::is_trivially_destructible_v<fr::Rad<T>>);
 		}
 		SECTION("arithmetic operators") {
 			CHECK(fr::Rad<T>{T{2.}} + fr::Rad<T>{T{3.}} == fr::Rad<T>{T{5.}});

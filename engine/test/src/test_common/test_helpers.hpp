@@ -64,10 +64,7 @@ inline constexpr
 void double_test(std::invocable<> auto do_test) {
 	do_test();
 	if constexpr (IsCompTestEnabled) {
-		STATIC_CHECK([&] {
-			do_test();
-			return true;
-		}());
+		STATIC_CHECK((do_test(), true));
 	};
 }
 

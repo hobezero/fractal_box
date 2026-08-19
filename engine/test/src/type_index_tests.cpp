@@ -25,10 +25,10 @@ TEST_CASE("TypeIndex", "[u][engine][core][type_index]") {
 	using DefaultValue = fr::DefaultTypeIndexDomain::ValueType;
 
 	SECTION("type counter is just a constant") {
-		CHECK(std::is_const_v<std::remove_reference_t<decltype(fr::type_index<int>)>>);
+		STATIC_CHECK(std::is_const_v<std::remove_reference_t<decltype(fr::type_index<int>)>>);
 	}
 	SECTION("type counter is of the type it claims to be") {
-		CHECK(std::is_same_v<
+		STATIC_CHECK(std::same_as<
 			std::remove_cvref_t<decltype(fr::type_index<int>)>,
 			fr::TypeIndex<>
 		>);

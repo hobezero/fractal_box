@@ -12,15 +12,15 @@
 
 TEST_CASE("Collider", "[u][engine][collision]") {
 	SECTION("type properties") {
-		CHECK(std::is_copy_constructible_v<fr::Collider>);
-		CHECK(std::is_copy_assignable_v<fr::Collider>);
+		STATIC_CHECK(std::is_copy_constructible_v<fr::Collider>);
+		STATIC_CHECK(std::is_copy_assignable_v<fr::Collider>);
 
-		CHECK(std::is_trivially_copy_constructible_v<fr::Collider>);
-		CHECK(std::is_trivially_copyable_v<fr::Collider>);
-		CHECK(std::is_trivially_copy_assignable_v<fr::Collider>);
-		CHECK(std::is_trivially_move_constructible_v<fr::Collider>);
-		CHECK(std::is_trivially_move_assignable_v<fr::Collider>);
-		CHECK(std::is_trivially_destructible_v<fr::Collider>);
+		STATIC_CHECK(std::is_trivially_copy_constructible_v<fr::Collider>);
+		STATIC_CHECK(std::is_trivially_copyable_v<fr::Collider>);
+		STATIC_CHECK(std::is_trivially_copy_assignable_v<fr::Collider>);
+		STATIC_CHECK(std::is_trivially_move_constructible_v<fr::Collider>);
+		STATIC_CHECK(std::is_trivially_move_assignable_v<fr::Collider>);
+		STATIC_CHECK(std::is_trivially_destructible_v<fr::Collider>);
 	}
 
 	SECTION("holds alternative") {
