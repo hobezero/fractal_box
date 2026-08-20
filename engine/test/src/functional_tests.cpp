@@ -124,7 +124,7 @@ TEST_CASE("FuncTraits", "[u][engine][core][functional]") {
 			using Traits = fr::FuncTraits<F>;
 			STATIC_CHECK(std::same_as<typename Traits::Stripped, bool (int, char, long)>);
 			STATIC_CHECK(std::same_as<typename Traits::Result, bool>);
-			STATIC_CHECK(std::same_as<typename Traits::Arguments, fr::MpList<int, char, long>>);
+			STATIC_CHECK(std::same_as<typename Traits::Arguments, fr::MpTypes<int, char, long>>);
 			if constexpr (std::is_class_v<F>) {
 				STATIC_CHECK(Traits::kind == fr::CallableKind::Class);
 			}

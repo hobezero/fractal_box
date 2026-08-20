@@ -705,7 +705,7 @@ TEST_CASE("UniHasher.lenses2", "[u][engine][core][hashing]") {
 // UniHasher tests
 // ---------------
 
-using ConstexprHashers = fr::MpList<
+using ConstexprHashers = fr::MpTypes<
 	fr::UniHasher<{64, false, Stable, 0, false}>,
 	fr::UniHasher<{64, false, Stable, 321, false}>,
 	fr::UniHasher<{64, false, Provided, 0, false}>,
@@ -732,7 +732,7 @@ using ConstexprHashers = fr::MpList<
 >;
 
 // NOTE: No 16 bit hashers since the collision chance is way too high
-using UnstableHashers = fr::MpList<
+using UnstableHashers = fr::MpTypes<
 	fr::UniHasher<{64, false, Unstable, 0, false}>,
 	fr::UniHasher<{64, true, Unstable, 0, false}>,
 	fr::UniHasher<{64, true, Unstable, 0, true}>,
@@ -791,7 +791,7 @@ TEST_CASE("HashDigestOfSize", "[u][engine][core][hashing]") {
 }
 
 TEST_CASE("UniHasher.SFINAE", "[u][engine][core][hashing]") {
-	using HashableTypes = fr::MpList<
+	using HashableTypes = fr::MpTypes<
 		bool,
 		signed char,
 		unsigned char,
@@ -848,7 +848,7 @@ TEST_CASE("UniHasher.SFINAE", "[u][engine][core][hashing]") {
 		HashableAggregate
 	>;
 
-	using UnhashableTypes = fr::MpList<
+	using UnhashableTypes = fr::MpTypes<
 		void,
 		int*,
 

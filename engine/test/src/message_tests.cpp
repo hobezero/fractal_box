@@ -194,11 +194,11 @@ struct Catch::StringMaker<MsgC> {
 TEST_CASE("MessageListReader", "[u][engine][message]") {
 	CHECK(std::same_as<fr::MessageListReader<MsgA, MsgC>, fr::MessageReader<MsgA, MsgC>>);
 	CHECK(std::same_as<
-		fr::MessageListReader<fr::MpList<MsgA, MsgC>>,
+		fr::MessageListReader<fr::MpTypes<MsgA, MsgC>>,
 		fr::MessageReader<MsgA, MsgC>
 	>);
 	CHECK(std::same_as<
-		fr::MessageListReader<fr::MpList<MsgA, fr::MpList<MsgB>>, fr::MpList<MsgC>>,
+		fr::MessageListReader<fr::MpTypes<MsgA, fr::MpTypes<MsgB>>, fr::MpTypes<MsgC>>,
 		fr::MessageReader<MsgA, MsgB, MsgC>
 	>);
 }
@@ -206,11 +206,11 @@ TEST_CASE("MessageListReader", "[u][engine][message]") {
 TEST_CASE("MessageListWriter", "[u][engine][message]") {
 	CHECK(std::same_as<fr::MessageListWriter<MsgA, MsgC>, fr::MessageWriter<MsgA, MsgC>>);
 	CHECK(std::same_as<
-		fr::MessageListWriter<fr::MpList<MsgA, MsgC>>,
+		fr::MessageListWriter<fr::MpTypes<MsgA, MsgC>>,
 		fr::MessageWriter<MsgA, MsgC>
 	>);
 	CHECK(std::same_as<
-		fr::MessageListWriter<fr::MpList<MsgA, fr::MpList<MsgB>>, fr::MpList<MsgC>>,
+		fr::MessageListWriter<fr::MpTypes<MsgA, fr::MpTypes<MsgB>>, fr::MpTypes<MsgC>>,
 		fr::MessageWriter<MsgA, MsgB, MsgC>
 	>);
 }

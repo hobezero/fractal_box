@@ -13,7 +13,7 @@ namespace fr {
 template<class T, class... TArgs>
 struct InPlaceArgs {
 	using Type = T;
-	using Args = MpList<TArgs...>;
+	using Args = MpTypes<TArgs...>;
 
 	explicit FR_FORCE_INLINE constexpr FR_FLATTEN
 	InPlaceArgs(TArgs... values) noexcept:

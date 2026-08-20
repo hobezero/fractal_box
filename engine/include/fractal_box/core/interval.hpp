@@ -24,8 +24,11 @@ public:
 		FR_ASSERT(from <= to);
 	}
 
-	constexpr auto from() const noexcept -> T { return _from; }
-	constexpr auto to() const noexcept -> T { return _to; }
+	constexpr
+	auto from() const noexcept -> T { return _from; }
+
+	constexpr
+	auto to() const noexcept -> T { return _to; }
 
 	constexpr
 	auto contains(T x) const noexcept -> bool {
@@ -56,8 +59,11 @@ public:
 		FR_ASSERT(from <= to);
 	}
 
-	constexpr auto from() const noexcept -> T { return _from; }
-	constexpr auto to() const noexcept -> T { return _to; }
+	constexpr
+	auto from() const noexcept -> T { return _from; }
+
+	constexpr
+	auto to() const noexcept -> T { return _to; }
 
 	constexpr
 	auto contains(T x) const noexcept -> bool {
@@ -103,7 +109,8 @@ using IntervalOpen = IntervalOpenOpen<T>;
 
 class IndexInterval {
 public:
-	constexpr IndexInterval() = default;
+	constexpr
+	IndexInterval() = default;
 
 	static constexpr
 	auto from_sized(size_t from, size_t count) noexcept -> IndexInterval {
@@ -130,11 +137,17 @@ public:
 		return {from, to - from};
 	}
 
-	constexpr auto size() const noexcept -> size_t { return _size; }
-	constexpr auto empty() const noexcept -> bool { return _size == 0; }
+	constexpr
+	auto size() const noexcept -> size_t { return _size; }
 
-	constexpr auto from() const noexcept -> size_t { return _from; }
-	constexpr auto to() const noexcept -> size_t { return _from + _size; }
+	constexpr
+	auto empty() const noexcept -> bool { return _size == 0; }
+
+	constexpr
+	auto from() const noexcept -> size_t { return _from; }
+
+	constexpr
+	auto to() const noexcept -> size_t { return _from + _size; }
 
 	template<std::ranges::random_access_range R>
 	constexpr

@@ -33,7 +33,7 @@ template<c_message T>
 inline constexpr auto is_message_or_list<T> = true;
 
 template<class... Ts>
-inline constexpr auto is_message_or_list<MpList<Ts...>>
+inline constexpr auto is_message_or_list<MpTypes<Ts...>>
 	= (is_message_or_list<Ts> && ... && true);
 
 template<class T>
@@ -447,7 +447,7 @@ class MessageReader {
 
 public:
 	using WriterType = MessageWriter<Ts...>;
-	using Types = MpList<Ts...>;
+	using Types = MpTypes<Ts...>;
 	static constexpr auto types = mp_list<Ts...>;
 	using HasRefSemantics = TrueC;
 
@@ -626,7 +626,7 @@ template<class T>
 concept c_message_reader = c_specialization<T, MessageReader>;
 
 template<c_message_or_list... Ts>
-using MessageListReader = MpRename<MpPackFlatten<MpList, Ts...>, MessageReader>;
+using MessageListReader = MpRename<MpPackFlatten<MpTypes, Ts...>, MessageReader>;
 
 template<c_message... Ts>
 class MessageWriter {
@@ -634,7 +634,7 @@ class MessageWriter {
 
 public:
 	using ReaderType = MessageReader<Ts...>;
-	using Types = MpList<Ts...>;
+	using Types = MpTypes<Ts...>;
 	static constexpr auto types = mp_list<Ts...>;
 	using HasRefSemantics = TrueC;
 
@@ -688,7 +688,7 @@ template<class T>
 concept c_message_writer = c_specialization<T, MessageWriter>;
 
 template<c_message_or_list... Ts>
-using MessageListWriter = MpRename<MpPackFlatten<MpList, Ts...>, MessageWriter>;
+using MessageListWriter = MpRename<MpPackFlatten<MpTypes, Ts...>, MessageWriter>;
 
 /// @todo
 ///   TODO: Implement id normalization (reduce counters when we are about to overflow)
@@ -703,14 +703,14 @@ public:
 		_tick_phases.insert(TickPhaseTypeIdx::of<PhaseTag>);
 	}
 
-	template<c_not_mp_list... PhaseTags>
+	template<c_not_mp_types... PhaseTags>
 	void register_tick_phases() {
 		(_tick_phases.insert(TickPhaseTypeIdx::of<PhaseTags>), ...);
 	}
 
-	template<c_mp_list PhaseList>
+	template<c_mp_types PhaseList>
 	void register_tick_phases() {
-		[this]<class... PhaseTags>(MpList<PhaseTags...>) {
+		[this]<class... PhaseTags>(MpTypes<PhaseTags...>) {
 			(_tick_phases.insert(TickPhaseTypeIdx::of<PhaseTags>), ...);
 		}(PhaseList{});
 	}
@@ -743,7 +743,7 @@ public:
 
 	template<c_message... Ts>
 	FR_FORCE_INLINE
-	auto make_reader(MpList<Ts...>) -> MessageReader<Ts...> {
+	auto make_reader(MpTypes<Ts...>) -> MessageReader<Ts...> {
 		return make_reader<Ts...>();
 	}
 
@@ -762,7 +762,7 @@ public:
 
 	template<c_message... Ts>
 	FR_FORCE_INLINE
-	auto make_writer(MpList<Ts...>) -> MessageWriter<Ts...> {
+	auto make_writer(MpTypes<Ts...>) -> MessageWriter<Ts...> {
 		return make_writer<Ts...>();
 	}
 

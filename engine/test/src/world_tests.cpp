@@ -918,7 +918,7 @@ class EntityMask {
 public:
 	using ValueType = uint64_t;
 
-	using AllComponents = fr::MpList<
+	using AllComponents = fr::MpTypes<
 		Pos,
 		Velocity,
 		MyStr,
@@ -939,7 +939,7 @@ public:
 
 	template<class... Components>
 	explicit constexpr
-	EntityMask(fr::MpList<Components...>) noexcept {
+	EntityMask(fr::MpTypes<Components...>) noexcept {
 		(..., set<Components>());
 	}
 
@@ -1095,8 +1095,8 @@ public:
 
 	template<fr::c_component... RequiredParams, fr::c_component... FilteredOutParams>
 	auto filtered_count(
-		fr::MpList<RequiredParams...>,
-		fr::MpList<FilteredOutParams...>
+		fr::MpTypes<RequiredParams...>,
+		fr::MpTypes<FilteredOutParams...>
 	) const noexcept -> size_t {
 		return static_cast<size_t>(std::ranges::count_if(_entities, [&](const auto& e) {
 			const auto req_mask = EntityMask{fr::mp_list<RequiredParams...>};

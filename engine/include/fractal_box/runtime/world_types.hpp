@@ -886,7 +886,7 @@ private:
 template<c_component... Components>
 requires (sizeof...(Components) > 0zu)
 class WorldInsertResult {
-	using ComponentList = MpList<Components...>;
+	using ComponentList = MpTypes<Components...>;
 
 public:
 	WorldInsertResult() = default;

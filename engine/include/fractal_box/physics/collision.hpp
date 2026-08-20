@@ -113,7 +113,7 @@ auto colliders_intersect(const Collider& a, const Collider& b) noexcept -> bool 
 	return func(a, b);
 }
 
-using ColliderTypeList = ToMpList<Collider::Types>;
+using ColliderTypeList = ToMpTypes<Collider::Types>;
 inline constexpr ColliderTypeList collider_type_list {};
 
 template<class T>

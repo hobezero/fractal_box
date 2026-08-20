@@ -683,7 +683,7 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		STATIC_CHECK(fr::c_has_custom_serialize<StaticCustomizedStruct>);
 	}
 
-	using SerializableTypes = fr::MpList<
+	using SerializableTypes = fr::MpTypes<
 		bool,
 		short,
 		int,
@@ -731,7 +731,7 @@ TEST_CASE("Serialization-concepts", "[u][engine][core][serialization]") {
 		std::pair<int, StaticCustomizedStruct>
 	>;
 
-	using UnserializableTypes = fr::MpList<
+	using UnserializableTypes = fr::MpTypes<
 		void,
 		std::nullptr_t,
 		int*,

@@ -173,7 +173,7 @@ auto BasicRunner::run(
 	if (res = runtime.run_phase<BuildPhase>(); !res) return res;
 	if (res = runtime.run_phase<SetupPhase>(); !res) return res;
 
-	const bool is_loop_empty = [&]<class... Ps>(MpList<Ps...>) {
+	const bool is_loop_empty = [&]<class... Ps>(MpTypes<Ps...>) {
 		return (runtime.get_phase<Ps>().empty() && ...);
 	}(LoopPhases{});
 

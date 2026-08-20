@@ -45,7 +45,7 @@ class Result {
 
 public:
 	using ValueType = T;
-	using ErrorTypes = MpList<Errs...>;
+	using ErrorTypes = MpTypes<Errs...>;
 
 	template<class U>
 	using Rebind = Result<U, Errs...>;
@@ -74,7 +74,7 @@ public:
 	{ }
 
 	template<class U, class... Gs>
-	requires c_mp_subset_of<MpList<Gs...>, ErrorTypes>
+	requires c_mp_subset_of<MpTypes<Gs...>, ErrorTypes>
 	constexpr FR_FLATTEN
 	Result(FromErrorInit, const Result<U, Gs...>& other):
 		_state{std::visit([&other]<class G>(const G& err) -> State {
@@ -94,7 +94,7 @@ public:
 	{ }
 
 	template<class U, class... Gs>
-	requires c_mp_subset_of<MpList<Gs...>, ErrorTypes>
+	requires c_mp_subset_of<MpTypes<Gs...>, ErrorTypes>
 	constexpr FR_FLATTEN
 	Result(FromErrorInit, Result<U, Gs...>&& other):
 		_state{std::visit([&other]<class G>(G&& err) -> State {

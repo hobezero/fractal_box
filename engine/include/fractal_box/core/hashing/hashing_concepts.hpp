@@ -224,7 +224,7 @@ auto get_hashability() noexcept -> Hashability {
 				"representations");
 			static_assert(mp_all_of<ReflDecomposition<PT>, IsByteHashable>,
 				"Byte-hashable class must have byte-hashable fields");
-			[]<class... Bases, class... FieldTypes>(MpList<Bases...>, MpList<FieldTypes...>) {
+			[]<class... Bases, class... FieldTypes>(MpTypes<Bases...>, MpTypes<FieldTypes...>) {
 				static constexpr auto base_sum = (0zu + ... + sizeof(Bases));
 				static constexpr auto field_sum = (0zu + ... + sizeof(FieldTypes));
 				static_assert(base_sum + field_sum == sizeof(PT),
@@ -232,7 +232,7 @@ auto get_hashability() noexcept -> Hashability {
 			}(ReflBases<PT>{}, ReflDecomposition<PT>{});
 		}
 		if constexpr (mode != None) {
-			[]<class... FPs>(MpList<FPs...>) {
+			[]<class... FPs>(MpTypes<FPs...>) {
 				(..., detail::verify_hashable_child<mode, FPs>());
 			}(ReflFieldsAndProperties<PT>{});
 		}

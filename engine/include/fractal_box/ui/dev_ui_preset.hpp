@@ -22,7 +22,7 @@ inline constexpr auto action_debug_draw_toggle = Input::make_action("debug_draw_
 struct ReqDevUiToggle: TickAtFrameEnd { };
 struct ReqDebugDrawToggle: TickAtFrameEnd { };
 
-using DevUiRequests = MpList<
+using DevUiRequests = MpTypes<
 	ReqDevUiToggle,
 	ReqDebugDrawToggle
 >;

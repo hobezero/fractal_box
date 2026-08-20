@@ -47,13 +47,13 @@ static constexpr void fill_cell(...) noexcept { }
 
 template<class T, class... Ts>
 static constexpr
-void fill_row(MpList<Ts...>, Table& table) noexcept {
+void fill_row(MpTypes<Ts...>, Table& table) noexcept {
 	((fill_cell<T, Ts>(table)), ...);
 }
 
 template<class... Ts>
 static constexpr
-void fill_table(MpList<Ts...> list, Table& table) noexcept {
+void fill_table(MpTypes<Ts...> list, Table& table) noexcept {
 	((fill_row<Ts>(list, table)), ...);
 }
 

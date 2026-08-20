@@ -64,13 +64,13 @@ template<class T>
 inline constexpr auto is_system_param_list = false;
 
 template<c_system_param_mut... Args>
-inline constexpr auto is_system_param_list<MpList<Args...>> = true;
+inline constexpr auto is_system_param_list<MpTypes<Args...>> = true;
 
 template<class T>
 inline constexpr auto is_system_param_list_const = false;
 
 template<c_system_param_const... Args>
-inline constexpr auto is_system_param_list_const<MpList<Args...>> = true;
+inline constexpr auto is_system_param_list_const<MpTypes<Args...>> = true;
 
 } // namespace detail
 
@@ -253,7 +253,7 @@ using PhaseTypeIdx = TypeIndex<PhaseTypeIdxDomain>;
 
 template<class T>
 concept c_phase
-	= c_class<T> && std::is_empty_v<T> && !c_mp_list<T>
+	= c_class<T> && std::is_empty_v<T> && !c_mp_types<T>
 	&& c_maybe_with_inline_name<T>;
 
 class PhaseToken {
@@ -497,9 +497,9 @@ public:
 		return add_phase(AnyPhase{in_place_as<Phase>});
 	}
 
-	template<c_mp_list PhaseList>
+	template<c_mp_types PhaseList>
 	auto add_phases() -> Runtime& {
-		[this]<class... Phases>(MpList<Phases...>) {
+		[this]<class... Phases>(MpTypes<Phases...>) {
 			(this->add_phase<Phases>(), ...);
 		}(PhaseList{});
 		return *this;

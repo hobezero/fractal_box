@@ -255,7 +255,7 @@ public:
 			SimpleArray<std::string_view, sizeof...(Args)>{type_name<UnwrapInPlaceArgs<Args>>...},
 			eid);
 
-		using Components = MpTransform<MpList<Args...>, UnwrapInPlaceArgs>;
+		using Components = MpTransform<MpTypes<Args...>, UnwrapInPlaceArgs>;
 		register_component_types(Components{});
 
 		const auto can_insert_comp = SimpleArray<bool, mp_size<Components>>{
@@ -266,7 +266,7 @@ public:
 
 		auto comps = [&]<size_t... Is, class... Cs>(
 			std::index_sequence<Is...>,
-			MpList<Cs...>
+			MpTypes<Cs...>
 		) FR_FORCE_INLINE_L -> std::tuple<Cs*...>{
 			return {(can_insert_comp[Is]
 				? nullptr
@@ -446,7 +446,7 @@ public:
 	/// @return Number of removed components
 	template<c_component... Components>
 	requires (sizeof...(Components) > 0zu
-		&& (... && mp_contains_once<MpList<Components...>, Components>))
+		&& (... && mp_contains_once<MpTypes<Components...>, Components>))
 	auto remove_components(Entity eid) noexcept -> size_t {
 		auto* const record = find_alive_record(eid);
 		if (!record || record->is_empty())
@@ -669,7 +669,7 @@ public:
 
 	template<c_component... Components>
 	FR_FORCE_INLINE
-	void register_component_types(MpList<Components...>) {
+	void register_component_types(MpTypes<Components...>) {
 		register_component_types<Components...>();
 	}
 
@@ -683,7 +683,7 @@ private:
 	template<class... Components>
 	static FR_FORCE_INLINE
 	auto make_component_ids_array(
-		MpList<Components...>,
+		MpTypes<Components...>,
 		const SimpleArray<bool, sizeof...(Components)>& mask
 	) noexcept -> SimpleArray<ComponentTypeIdx, sizeof...(Components)> {
 		return [&]<size_t... Is>(std::index_sequence<Is...>) FR_FORCE_INLINE_L {

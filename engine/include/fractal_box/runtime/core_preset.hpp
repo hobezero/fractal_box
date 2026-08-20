@@ -18,7 +18,7 @@ struct BuildPhase: OneShotPhaseBase { };
 struct SetupPhase: OneShotPhaseBase { };
 struct ShutdownPhase: OneShotPhaseBase { };
 
-using OneShotPhases = MpList<
+using OneShotPhases = MpTypes<
 	BuildPhase,
 	SetupPhase,
 	ShutdownPhase
@@ -51,7 +51,7 @@ struct FrameRenderLatePhase { };
 struct FrameEndPhase { };
 struct FrameLastPhase { };
 
-using LoopPhases = MpList<
+using LoopPhases = MpTypes<
 	FrameFirstPhase,
 	FrameStartPhase,
 
@@ -91,7 +91,7 @@ struct ReqLoopToggle: TickAtFrameEnd { };
 struct ReqLoopStep: TickAtFrameEnd { bool with_const_delta = false; };
 struct ReqLoopQuit: TickAtFrameEnd { static constexpr auto ttl = MessageTtl::Persistent; };
 
-using LoopRequests = MpList<
+using LoopRequests = MpTypes<
 	ReqLoopInterrupt,
 	ReqLoopContinue,
 	ReqLoopToggle,
@@ -104,7 +104,7 @@ struct WindowResized: TickAtLoopUpdate {
 	glm::ivec2 framebuffer_size;
 };
 
-using WindowMessages = MpList<WindowResized>;
+using WindowMessages = MpTypes<WindowResized>;
 
 enum class LoopStatus: uint8_t {
 	/// @brief Run frames one after another
@@ -154,7 +154,7 @@ struct FixedClock: Stopwatch<FixedClock, AppEpochTag> { };
 static_assert(c_clock<FixedClock>);
 
 struct BasicRunner {
-	using MessageTickPhases = MpList<
+	using MessageTickPhases = MpTypes<
 		FrameStartPhase,
 		FrameEndPhase,
 		FixedUpdateMainPhase,

@@ -164,7 +164,7 @@ struct HasherVisitorBase {
 
 	template<c_object... Ts>
 	struct Tuple {
-		using Args = MpList<Ts...>;
+		using Args = MpTypes<Ts...>;
 		static constexpr auto size = sizeof...(Ts);
 
 		explicit FR_FORCE_INLINE constexpr
@@ -186,7 +186,7 @@ struct HasherVisitorBase {
 
 	template<c_object... Ts>
 	struct CommutativeTuple {
-		using Args = MpList<Ts...>;
+		using Args = MpTypes<Ts...>;
 		static constexpr auto size = sizeof...(Ts);
 
 		explicit FR_FORCE_INLINE constexpr

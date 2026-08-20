@@ -122,7 +122,7 @@ public:
 		}
 		else {
 			constexpr auto num_fields = mp_size<Fields>;
-			constexpr auto pairs = []<class... Fs>(MpList<Fs...>) {
+			constexpr auto pairs = []<class... Fs>(MpTypes<Fs...>) {
 				auto i = 0zu;
 				auto arr = SimpleArray<HashIdxPair, num_fields>{{ // 1
 					{type_hash64<typename Fs::PtrType>, i++}...
@@ -169,7 +169,7 @@ public:
 			return true;
 		}
 		else {
-			return []<class... Fs, class... Ps>(MpList<Fs...>, MpList<Ps...>) {
+			return []<class... Fs, class... Ps>(MpTypes<Fs...>, MpTypes<Ps...>) {
 				constexpr std::string_view names[sizeof...(Fs) + sizeof...(Ps)] = {
 					Reflection<Fs>::name()...,
 					Reflection<Ps>::name()...
@@ -182,7 +182,7 @@ public:
 	static_assert(check_field_ptrs(), "All field pointers must be unique");
 	static_assert(check_field_names(), "All field and property names must be unique");
 
-	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValueList<>,
+	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValues<>,
 		AttributeList>;
 	using AttributeTypes = MpValuesToTypes<Attributes>;
 	using AttributeValues = MpWrapValues<Attributes>;
@@ -196,8 +196,7 @@ public:
 		static_assert(mp_contains_once<AttributeTypes, A>, "Attribute must appear exactly once in"
 			" attributes");
 		static constexpr auto idx = mp_find<AttributeTypes, A>;
-		using V = MpAt<AttributeValues, idx>;
-		return V::value;
+		return MpAt<AttributeValues, idx>::value;
 	}
 };
 
@@ -242,7 +241,7 @@ public:
 			return name();
 	}
 
-	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValueList<>,
+	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValues<>,
 		AttributeList>;
 	using AttributeTypes = MpValuesToTypes<Attributes>;
 	using AttributeValues = MpWrapValues<Attributes>;
@@ -295,7 +294,7 @@ public:
 	static constexpr auto getter = Property::getter;
 	static constexpr auto setter = Property::setter;
 
-	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValueList<>,
+	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValues<>,
 		AttributeList>;
 	using AttributeTypes = MpValuesToTypes<Attributes>;
 	using AttributeValues = MpWrapValues<Attributes>;
@@ -378,7 +377,7 @@ struct Reflection<T> {
 	static constexpr
 	auto display_name() noexcept { return clean_type_name<T>; }
 
-	using Bases = MpList<>;
+	using Bases = MpTypes<>;
 
 	/// @note NOTE: Is broken in case of reference data members
 	template<size_t Idx>
@@ -394,8 +393,8 @@ struct Reflection<T> {
 	>;
 
 	using Fields = MpTransformVtoT<MpMakeIndexSequence<num_record_fields<T>>, NthField>;
-	using Properties = MpList<>;
-	using Attributes = MpList<>;
+	using Properties = MpTypes<>;
+	using Attributes = MpTypes<>;
 
 	template<class A>
 	static constexpr auto has_attribute = false;
@@ -416,7 +415,7 @@ struct Reflection<Field> {
 		return Field::name;
 	}
 
-	using Attributes = MpValueList<>;
+	using Attributes = MpValues<>;
 
 	template<class A>
 	static constexpr auto has_attribute = false;

@@ -201,7 +201,7 @@ auto get_serializability_impl() noexcept -> Serializability {
 		if constexpr (mode != None) {
 			static_assert(std::is_default_constructible_v<PT>, "Serializable type must be"
 				"default-constructible");
-			[]<class... FPs>(MpList<FPs...>) {
+			[]<class... FPs>(MpTypes<FPs...>) {
 				(..., detail::verify_serializable_child<mode, FPs>());
 			}(ReflFieldsAndProperties<PT>{});
 		}

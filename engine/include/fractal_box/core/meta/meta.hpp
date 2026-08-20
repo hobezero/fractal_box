@@ -72,7 +72,7 @@ struct MpIntegerSequenceImpl;
 
 template<class T, T...Idxs>
 struct MpIntegerSequenceImpl<std::integer_sequence<T, Idxs...>> {
-	using Type = MpValueList<Idxs...>;
+	using Type = MpValues<Idxs...>;
 };
 
 } // namespace detail
@@ -101,24 +101,24 @@ struct MpRenameImpl<SrcList<Ts...>> {
 template<class SrcList, template<class...> class TargetList>
 using MpRename = typename detail::MpRenameImpl<SrcList>::template Type<TargetList>;
 
-// TpMpList
-// ^^^^^^^^
+// TpMpTypes
+// ^^^^^^^^^
 
 namespace detail {
 
-/// @brief Converts `TList<Ts...>` to `MpList<Ts..>`
+/// @brief Converts `TList<Ts...>` to `MpTypes<Ts..>`
 template<class From>
-struct ToMpListImpl;
+struct ToMpTypesImpl;
 
 template<template<class...> class TList, class... Ts>
-struct ToMpListImpl<TList<Ts...>> {
-	using Type = MpList<Ts...>;
+struct ToMpTypesImpl<TList<Ts...>> {
+	using Type = MpTypes<Ts...>;
 };
 
 } // namespace detail
 
 template<class Container>
-using ToMpList = detail::ToMpListImpl<Container>::Type;
+using ToMpTypes = detail::ToMpTypesImpl<Container>::Type;
 
 // c_mp_list_of
 // ^^^^^^^^^^^^
@@ -127,7 +127,7 @@ template<class T, template<class> class F>
 inline constexpr auto is_mp_list_of = false;
 
 template<class... Ts, template<class> class F>
-inline constexpr auto is_mp_list_of<MpList<Ts...>, F> = (true && ... && F<Ts>{}());
+inline constexpr auto is_mp_list_of<MpTypes<Ts...>, F> = (true && ... && F<Ts>{}());
 
 template<class T, template<class> class F>
 using IsMpListOf = BoolC<is_mp_list_of<T, F>>;
@@ -249,7 +249,7 @@ struct MpPackAtImpl {
 
 } // namespace detail
 
-/// @brief Gets the type of the `MpList` element at the given index
+/// @brief Gets the type of the `MpTypes` element at the given index
 /// @todo Non-recursive implementation
 template<class TList, auto Idx>
 requires (Idx < static_cast<decltype(Idx)>(mp_size<TList>))
@@ -496,26 +496,28 @@ struct MpRepackImpl;
 
 template<template<class...> class TList, class... Ts>
 struct MpRepackImpl<TList<Ts...>> {
-	template<template<class...> class F>
-	using Type = F<Ts...>;
+	template<template<class...> class Target>
+	using Type = Target<Ts...>;
 };
 
 template<class TList>
 struct MpVRepackImpl;
 
-template<template<auto...> class TList, auto... Vs>
-struct MpVRepackImpl<TList<Vs...>> {
-	template<template<auto...> class F>
-	using Type = F<Vs...>;
+template<template<auto...> class VList, auto... Vs>
+struct MpVRepackImpl<VList<Vs...>> {
+	template<template<auto...> class Target>
+	using Type = Target<Vs...>;
 };
 
 } // namespace detail
 
-template<class TList, template<class...> class F>
-using MpRepack = typename detail::MpRepackImpl<TList>::template Type<F>;
+/// @brief Given `Tlist<T_1, T_2, ..., T_N>`, returns `Target<T_1, T_2, ..., T_N>`
+template<class TList, template<class...> class Target>
+using MpRepack = typename detail::MpRepackImpl<TList>::template Type<Target>;
 
-template<class TList, template<auto...> class F>
-using MpVRepack = typename detail::MpVRepackImpl<TList>::template Type<F>;
+/// @brief Given `Vlist<V_1, V_2, ..., V_N>`, returns `Target<V_1, V_2, ..., V_N>`
+template<class VList, template<auto...> class Target>
+using MpVRepack = typename detail::MpVRepackImpl<VList>::template Type<Target>;
 
 // MpConcat
 // ^^^^^^^^
@@ -527,7 +529,7 @@ struct MpConcatImpl;
 
 template<>
 struct MpConcatImpl<> {
-	using Type = MpList<>;
+	using Type = MpTypes<>;
 };
 
 template<template<class...> class TList, class... Ts>
@@ -589,7 +591,7 @@ struct MpTransformVtoTImpl<VList<Vs...>> {
 template<class TList, template<class...> class F>
 using MpTransform = typename detail::MpTransformImpl<TList>::template Type<F>;
 
-template<class VList, template<auto...> class F, template<class...> class TList = MpList>
+template<class VList, template<auto...> class F, template<class...> class TList = MpTypes>
 using MpTransformVtoT = typename detail::MpTransformVtoTImpl<VList>::template Type<TList, F>;
 
 // MpValuesToTypes
@@ -602,7 +604,7 @@ struct MpValuesToTypesImpl;
 
 template<template<auto...> class VList, auto... Vs>
 struct MpValuesToTypesImpl<VList<Vs...>> {
-	using Type = MpList<MpTypeOfValue<Vs>...>;
+	using Type = MpTypes<decltype(Vs)...>;
 };
 
 template<class VList>
@@ -610,14 +612,18 @@ struct MpWrapValuesImpl;
 
 template<template<auto...> class VList, auto... Vs>
 struct MpWrapValuesImpl<VList<Vs...>> {
-	using Type = MpList<MpValue<Vs>...>;
+	using Type = MpTypes<MpValue<Vs>...>;
 };
 
 } // namespace detail
 
+/// @brief Given `VList<V_1, V_2, ..., V_N>`, return `MpTypes<decltype(V_1), decltype(V_2), ...,
+/// decltype(V_N)>`
 template<class VList>
 using MpValuesToTypes = typename detail::MpValuesToTypesImpl<VList>::Type;
 
+/// @brief Given `VList<V_1, V_2, ..., V_N>`, return `MpTypes<MpValue<V_1>, MpValue<V_2>, ...,
+/// MpValue<V_N>>>`
 template<class VList>
 using MpWrapValues = typename detail::MpWrapValuesImpl<VList>::Type;
 
@@ -646,7 +652,7 @@ struct MpFlattenImpl<TList<Ts...>> {
 
 } // namespace detail
 
-template<c_type_list TList>
+template<c_mp_type_list TList>
 using MpFlatten = typename detail::MpFlattenImpl<TList>::Type;
 
 template<template<class...> class TList, class... Ts>

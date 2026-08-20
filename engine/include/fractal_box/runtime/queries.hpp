@@ -203,7 +203,7 @@ template<class T>
 using QueryForEachArrayParam = typename QueryParamTraits<T>::ForEachArrayParam;
 
 template<class... Params>
-using SinkedQueryParams = MpFilter<MpList<Params...>, IsSinkedQueryParam>;
+using SinkedQueryParams = MpFilter<MpTypes<Params...>, IsSinkedQueryParam>;
 
 template<class... Params>
 using QueryForEachParams = MpTransform<SinkedQueryParams<Params...>, QueryForEachParam>;
@@ -215,7 +215,7 @@ using QueryForEachArrayParams = MpTransform<SinkedQueryParams<Params...>, QueryF
 template<class... Params>
 inline consteval
 auto validate_query_params() {
-	using ParamList = MpList<Params...>;
+	using ParamList = MpTypes<Params...>;
 	using RequiredParams = MpFilter<ParamList, IsRequiredQueryParam>;
 	using Stripped = MpTransform<ParamList, StripQueryParam>;
 
@@ -239,13 +239,13 @@ concept c_query_param = detail::QueryParamTraits<T>::kind != detail::QueryParamK
 
 template<class Sink, class TWorld, class... Params>
 concept c_query_for_each_array_sink
-	= []<class... SinkParams>(MpList<SinkParams...>) {
+	= []<class... SinkParams>(MpTypes<SinkParams...>) {
 		using Entity = typename TWorld::Entity;
 		return requires(Sink& sink, size_t n, const Entity* eids, SinkParams... params) {
 			{ sink(n, eids, params...) } -> c_void_or_control_flow;
 		};
 	}(detail::QueryForEachArrayParams<Params...>{})
-	|| []<class... SinkParams>(MpList<SinkParams...>) {
+	|| []<class... SinkParams>(MpTypes<SinkParams...>) {
 		return requires(Sink& sink, size_t n, SinkParams... params) {
 			{ sink(n, params...) } -> c_void_or_control_flow;
 		};
@@ -254,13 +254,13 @@ concept c_query_for_each_array_sink
 
 template<class Sink, class TWorld, class... Params>
 concept c_query_for_each_sink
-	= []<class... SinkParams>(MpList<SinkParams...>) {
+	= []<class... SinkParams>(MpTypes<SinkParams...>) {
 		using Entity = typename TWorld::Entity;
 		return requires(Sink& sink, Entity eid, SinkParams... params) {
 			 { sink(eid, params...) } -> c_void_or_control_flow;
 		};
 	}(detail::QueryForEachParams<Params...>{})
-	|| []<class... SinkParams>(MpList<SinkParams...>) {
+	|| []<class... SinkParams>(MpTypes<SinkParams...>) {
 		return requires(Sink& sink, SinkParams... params) {
 			{ sink(params...) } -> c_void_or_control_flow;
 		};
@@ -321,9 +321,9 @@ class UncachedQuery {
 	using Archetype = typename TWorld::Arch;
 	static_assert(detail::validate_query_params<Params...>());
 
-	using ParamList = MpEnumerate<MpList<Params...>>;
+	using ParamList = MpEnumerate<MpTypes<Params...>>;
 	using RequiredParams = MpFilterProj<ParamList, detail::IsRequiredQueryParam, MpSecond>;
-	using OptionalComponents = MpTransform<MpFilter<MpList<Params...>,
+	using OptionalComponents = MpTransform<MpFilter<MpTypes<Params...>,
 		detail::IsOptionalQueryParam>, detail::StripQueryParam>;
 	using FilteredOutParams = MpFilterProj<ParamList, detail::IsFilteredOutQueryParam, MpSecond>;
 	using SinkedParams = MpFilterProj<ParamList, detail::IsSinkedQueryParam, MpSecond>;
@@ -454,7 +454,7 @@ public:
 		return for_each_array([&sink](
 			size_t n, const Entity* eids, auto&&... params
 		) FR_FORCE_INLINE_L {
-			[&]<class... SinkedParams>(MpList<SinkedParams...>) FR_FORCE_INLINE_L {
+			[&]<class... SinkedParams>(MpTypes<SinkedParams...>) FR_FORCE_INLINE_L {
 				for (auto i = 0zu; i < n; ++i) {
 					// TODO: Hoist optional component check out of the loop
 					if constexpr (requires {
@@ -565,12 +565,12 @@ private:
 	) const -> ControlFlow {
 		const auto& arch = _world->_archetypes[arch_idx];
 		const auto optional_local_idxs = [&]<class... Os>(
-			MpList<Os...>
+			MpTypes<Os...>
 		) FR_FORCE_INLINE_L -> OptionalLocalIdxsArr{
 			return {arch.find_component_local_idx(ComponentTypeIdx::of<Os>)...};
 		}(OptionalComponents{});
 
-		return [&]<class... Ps>(MpList<Ps...>) FR_FORCE_INLINE_L -> ControlFlow {
+		return [&]<class... Ps>(MpTypes<Ps...>) FR_FORCE_INLINE_L -> ControlFlow {
 			for (auto table_idx : arch.table_idxs()) {
 				auto& table = _world->_tables[table_idx];
 				if (table.is_empty())

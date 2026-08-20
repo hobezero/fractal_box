@@ -284,23 +284,23 @@ TEST_CASE("Class-description.empty", "[u][engine][core][reflection]") {
 
 	STATIC_CHECK(std::same_as<
 		fr::ReflAttributes<frt::MyGadget>,
-		fr::MpValueList<>
+		fr::MpValues<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflBases<frt::MyGadget>,
-		fr::MpList<>
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflFields<frt::MyGadget>,
-		fr::MpList<>
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflProperties<frt::MyGadget>,
-		fr::MpList<>
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<frt::MyGadget>,
-		fr::MpList<>
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<frt::MyGadget, frt::MyHashable>);
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<frt::MyGadget, frt::MyValueProp>);
@@ -312,11 +312,11 @@ TEST_CASE("Class-description.non-empty", "[u][engine][core][reflection]") {
 
 	STATIC_CHECK(std::same_as<
 		fr::ReflBases<frt::MyWidget>,
-		fr::MpList<frt::MyParentA, frt::MyParentB, frt::MyParentC>
+		fr::MpTypes<frt::MyParentA, frt::MyParentB, frt::MyParentC>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflFields<frt::MyWidget>,
-		fr::MpList<
+		fr::MpTypes<
 			fr::Field<
 				&frt::MyWidget::x,
 				fr::Name<"superX">,
@@ -336,12 +336,12 @@ TEST_CASE("Class-description.non-empty", "[u][engine][core][reflection]") {
 
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<frt::MyWidget>,
-		fr::MpList<int, std::string, const char*>
+		fr::MpTypes<int, std::string, const char*>
 	>);
 
 	STATIC_CHECK(std::same_as<
 		fr::ReflAttributes<frt::MyWidget>,
-		fr::MpValueList<frt::MyValueProp{42}, frt::MyTypeProp<char>{}, frt::MyHashable{false}>
+		fr::MpValues<frt::MyValueProp{42}, frt::MyTypeProp<char>{}, frt::MyHashable{false}>
 	>);
 
 	STATIC_CHECK(fr::refl_has_attribute<frt::MyWidget, frt::MyValueProp>);
@@ -383,15 +383,15 @@ TEST_CASE("Class-description.fields", "[u][engine][core][reflection]") {
 
 	STATIC_CHECK(std::same_as<
 		fr::ReflAttributes<X>,
-		fr::MpValueList<frt::MySerializable{}, frt::MyHashable{false}>
+		fr::MpValues<frt::MySerializable{}, frt::MyHashable{false}>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflAttributes<Y>,
-		fr::MpValueList<frt::MySerializable{}>
+		fr::MpValues<frt::MySerializable{}>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflAttributes<Z>,
-		fr::MpValueList<>
+		fr::MpValues<>
 	>);
 }
 
@@ -417,11 +417,11 @@ TEST_CASE("Class-description.properties", "[u][engine][core][reflection]") {
 
 	STATIC_CHECK(std::same_as<
 		fr::ReflAttributes<U>,
-		fr::MpValueList<frt::MyHashable{true}, frt::MySerializable{true}>
+		fr::MpValues<frt::MyHashable{true}, frt::MySerializable{true}>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflAttributes<W>,
-		fr::MpValueList<>
+		fr::MpValues<>
 	>);
 
 	auto widget = frt::MyWidget{};
@@ -650,33 +650,33 @@ TEST_CASE("Aggregate-reflection.class-API", "[u][engine][core][reflection]") {
 
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<frt::B0>,
-		fr::MpList<>
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<frt::Fidget>,
-		fr::MpList<const char*, std::string, std::optional<int>, std::tuple<float, float>>
+		fr::MpTypes<const char*, std::string, std::optional<int>, std::tuple<float, float>>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<frt::WithConstMembers>,
-		fr::MpList<const int, const void* const>
+		fr::MpTypes<const int, const void* const>
 	>);
 #if 0 // NOTE: Causes hard compilation error. Seems unfixable in C++23
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<frt::WithArrayMembers>,
-		fr::MpList<int[4]>
+		fr::MpTypes<int[4]>
 	>);
 #endif
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<std::tuple<const int, const void* const, float>>,
-		fr::MpList<const int, const void* const, float>
+		fr::MpTypes<const int, const void* const, float>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<std::pair<int, const char>>,
-		fr::MpList<int, const char>
+		fr::MpTypes<int, const char>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::ReflDecomposition<std::array<int, 3>>,
-		fr::MpList<int, int, int>
+		fr::MpTypes<int, int, int>
 	>);
 
 	STATIC_CHECK(fr::mp_size<fr::ReflAttributes<frt::Fidget>> == 0);
@@ -718,10 +718,10 @@ TEST_CASE("Aggregate-reflection.fields", "[u][engine][core][reflection]") {
 	STATIC_CHECK(std::same_as<fr::ReflFieldType<F2>, std::optional<int>>);
 	STATIC_CHECK(std::same_as<fr::ReflFieldType<F3>, std::tuple<float, float>>);
 
-	STATIC_CHECK(std::same_as<fr::ReflAttributes<F0>, fr::MpValueList<>>);
-	STATIC_CHECK(std::same_as<fr::ReflAttributes<F1>, fr::MpValueList<>>);
-	STATIC_CHECK(std::same_as<fr::ReflAttributes<F2>, fr::MpValueList<>>);
-	STATIC_CHECK(std::same_as<fr::ReflAttributes<F3>, fr::MpValueList<>>);
+	STATIC_CHECK(std::same_as<fr::ReflAttributes<F0>, fr::MpValues<>>);
+	STATIC_CHECK(std::same_as<fr::ReflAttributes<F1>, fr::MpValues<>>);
+	STATIC_CHECK(std::same_as<fr::ReflAttributes<F2>, fr::MpValues<>>);
+	STATIC_CHECK(std::same_as<fr::ReflAttributes<F3>, fr::MpValues<>>);
 
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<F0, frt::MyHashable>);
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<F1, frt::MyHashable>);

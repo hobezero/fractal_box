@@ -226,7 +226,7 @@ class UniHashableLenses1 {
 public:
 	template<class... Ts>
 	explicit constexpr
-	UniHashableLenses1(MpList<Ts...>) {
+	UniHashableLenses1(MpTypes<Ts...>) {
 		build<Ts...>();
 		std::ranges::sort(_transparents, std::ranges::greater{}, [](const auto& lens) {
 			return lens.byte_size;
@@ -291,14 +291,14 @@ private:
 		else if constexpr (category == Described) {
 			static constexpr auto base_count = mp_size<ReflBases<T>>;
 			[&]<class... Bases, size_t... Is>(
-				MpList<Bases...>,
+				MpTypes<Bases...>,
 				std::index_sequence<Is...>
 			) FR_FORCE_INLINE_L {
 				(..., build_base<mode, Bases, Is>(path));
 			}(ReflBases<T>{}, std::make_index_sequence<base_count>{});
 
 			using FieldsAndProps = ReflFieldsAndProperties<PT>;
-			[&]<class... FPs, size_t... Is>(MpList<FPs...>, std::index_sequence<Is...>) {
+			[&]<class... FPs, size_t... Is>(MpTypes<FPs...>, std::index_sequence<Is...>) {
 				(..., build_child<mode, FPs, base_count + Is>(path));
 			}(FieldsAndProps{}, std::make_index_sequence<mp_size<FieldsAndProps>>{});
 		}
@@ -326,7 +326,7 @@ private:
 		else if constexpr (category == Record) {
 			// Non-byte-hashable records
 			using Decomposed = ReflDecomposition<T>;
-			[&]<class... Fields, size_t... Is>(MpList<Fields...>, std::index_sequence<Is...>) {
+			[&]<class... Fields, size_t... Is>(MpTypes<Fields...>, std::index_sequence<Is...>) {
 				(..., build<Fields>(appended(path, Is)));
 			}(Decomposed{}, std::make_index_sequence<mp_size<Decomposed>>{});
 		}
@@ -424,7 +424,7 @@ public:
 
 template<class... Ts>
 inline consteval
-auto build_uni_hashable_lenses2_sizes(MpList<Ts...> types) noexcept {
+auto build_uni_hashable_lenses2_sizes(MpTypes<Ts...> types) noexcept {
 	const auto lenses1 = UniHashableLenses1{types};
 
 	const auto max_transparents_path_size
@@ -450,7 +450,7 @@ auto build_uni_hashable_lenses2_sizes(MpList<Ts...> types) noexcept {
 
 template<class... Ts>
 inline consteval
-auto build_uni_hashable_lenses2(MpList<Ts...> types) noexcept {
+auto build_uni_hashable_lenses2(MpTypes<Ts...> types) noexcept {
 	constexpr auto sizes = build_uni_hashable_lenses2_sizes(types);
 	const auto lenses1 = UniHashableLenses1{types};
 	return UniHashableLenses2<sizes>{lenses1};
@@ -949,7 +949,7 @@ public:
 			}
 			else {
 				if constexpr (mode == HashableMode::OptOut) {
-					[&]<class... Bases>(MpList<Bases...>) FR_FORCE_INLINE_L {
+					[&]<class... Bases>(MpTypes<Bases...>) FR_FORCE_INLINE_L {
 						static_assert((true && ... && get_hashability<Bases>()));
 						operator()(static_cast<const Bases&>(obj)...);
 					}(ReflBases<T>{});

@@ -144,16 +144,16 @@ TEST_CASE("MpIf", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<fr::MpLazyIf<false>::Type<int, char>, char>);
 }
 
-TEST_CASE("c_mp_list", "[u][engine][core][meta]") {
-	STATIC_CHECK(fr::c_type_list<fr::MpList<>>);
-	STATIC_CHECK(fr::c_type_list<fr::MpList<int>>);
-	STATIC_CHECK(fr::c_type_list<fr::MpList<int, char>>);
+TEST_CASE("c_mp_types", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::c_mp_type_list<fr::MpTypes<>>);
+	STATIC_CHECK(fr::c_mp_type_list<fr::MpTypes<int>>);
+	STATIC_CHECK(fr::c_mp_type_list<fr::MpTypes<int, char>>);
 
-	STATIC_CHECK(fr::c_type_list<std::tuple<int>>);
-	STATIC_CHECK(fr::c_type_list<std::tuple<int, char>>);
+	STATIC_CHECK(fr::c_mp_type_list<std::tuple<int>>);
+	STATIC_CHECK(fr::c_mp_type_list<std::tuple<int, char>>);
 
-	STATIC_CHECK_FALSE(fr::c_type_list<int>);
-	STATIC_CHECK_FALSE(fr::c_type_list<std::integral_constant<int, 4>>);
+	STATIC_CHECK_FALSE(fr::c_mp_type_list<int>);
+	STATIC_CHECK_FALSE(fr::c_mp_type_list<std::integral_constant<int, 4>>);
 }
 
 TEST_CASE("c_specialization", "[u][engine][core][meta]") {
@@ -162,7 +162,7 @@ TEST_CASE("c_specialization", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::c_specialization<MyTemplate<int, char>, MyTemplate>);
 	STATIC_CHECK(fr::c_specialization<std::string, std::basic_string>);
 
-	STATIC_CHECK_FALSE(fr::c_specialization<MyTemplate<int, char>, fr::MpList>);
+	STATIC_CHECK_FALSE(fr::c_specialization<MyTemplate<int, char>, fr::MpTypes>);
 	STATIC_CHECK_FALSE(fr::c_specialization<std::string, std::basic_string_view>);
 }
 
@@ -191,8 +191,8 @@ TEST_CASE("is_complete.2", "[u][engine][core][meta]") {
 // meta.hpp tests
 // --------------
 
-using List = fr::MpList<int, A, double, B, int, int, B>;
-using LongList = fr::MpList<
+using List = fr::MpTypes<int, A, double, B, int, int, B>;
+using LongList = fr::MpTypes<
 	int, A, double, B, char, char*, int*, const int,
 	std::string, void, long, const int, unsigned, short, unsigned short, std::string_view,
 	void(int), int(void), int (*)(int), const char, volatile bool, const B&
@@ -204,55 +204,55 @@ TEST_CASE("MpRename", "[u][engine][core][meta]") {
 		std::tuple<int, A, B>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpRename<std::variant<int, A, B>, fr::MpList>,
-		fr::MpList<int, A, B>
+		fr::MpRename<std::variant<int, A, B>, fr::MpTypes>,
+		fr::MpTypes<int, A, B>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpRename<std::variant<int, A, B>, std::variant>,
 		std::variant<int, A, B>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpRename<fr::MpList<>, std::tuple>,
+		fr::MpRename<fr::MpTypes<>, std::tuple>,
 		std::tuple<>
 	>);
 }
 
 TEST_CASE("ToMpList", "[u][engine][core][meta]") {
-	STATIC_CHECK(std::same_as<fr::ToMpList<std::variant<int, A, double, B>>,
-		fr::MpList<int, A, double, B>>);
-	STATIC_CHECK(std::same_as<fr::ToMpList<std::tuple<B>>, fr::MpList<B>>);
-	STATIC_CHECK(std::same_as<fr::ToMpList<fr::MpList<char, A>>, fr::MpList<char, A>>);
-	STATIC_CHECK(std::same_as<fr::ToMpList<fr::MpList<>>, fr::MpList<>>);
+	STATIC_CHECK(std::same_as<fr::ToMpTypes<std::variant<int, A, double, B>>,
+		fr::MpTypes<int, A, double, B>>);
+	STATIC_CHECK(std::same_as<fr::ToMpTypes<std::tuple<B>>, fr::MpTypes<B>>);
+	STATIC_CHECK(std::same_as<fr::ToMpTypes<fr::MpTypes<char, A>>, fr::MpTypes<char, A>>);
+	STATIC_CHECK(std::same_as<fr::ToMpTypes<fr::MpTypes<>>, fr::MpTypes<>>);
 }
 
 template<class T>
 using IsClass = typename std::is_class<T>::type;
 
 TEST_CASE("c_mp_list_of", "[u][engine][core][meta]") {
-	STATIC_CHECK(fr::c_mp_list_of<fr::MpList<>, IsClass>);
-	STATIC_CHECK(fr::c_mp_list_of<fr::MpList<std::string>, IsClass>);
-	STATIC_CHECK(fr::c_mp_list_of<fr::MpList<std::string, Complete>, IsClass>);
-	STATIC_CHECK(fr::c_mp_list_of<fr::MpList<A, C, std::string, Incomplete, Complete>, IsClass>);
+	STATIC_CHECK(fr::c_mp_list_of<fr::MpTypes<>, IsClass>);
+	STATIC_CHECK(fr::c_mp_list_of<fr::MpTypes<std::string>, IsClass>);
+	STATIC_CHECK(fr::c_mp_list_of<fr::MpTypes<std::string, Complete>, IsClass>);
+	STATIC_CHECK(fr::c_mp_list_of<fr::MpTypes<A, C, std::string, Incomplete, Complete>, IsClass>);
 
-	STATIC_CHECK_FALSE(fr::c_mp_list_of<fr::MpList<std::string, int, Complete>, IsClass>);
+	STATIC_CHECK_FALSE(fr::c_mp_list_of<fr::MpTypes<std::string, int, Complete>, IsClass>);
 	STATIC_CHECK_FALSE(fr::c_mp_list_of<MyTemplate<>, IsClass>);
 	STATIC_CHECK_FALSE(fr::c_mp_list_of<std::variant<std::string, Complete>, IsClass>);
 }
 
 TEST_CASE("mp_is_empty", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::mp_is_empty<std::tuple<int, char, double>>);
-	STATIC_CHECK(fr::mp_is_empty<fr::MpList<>>);
+	STATIC_CHECK(fr::mp_is_empty<fr::MpTypes<>>);
 }
 
 TEST_CASE("MpSize", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_size<std::tuple<int, char, double>> == 3);
-	STATIC_CHECK(fr::mp_size<fr::MpList<>> == 0);
+	STATIC_CHECK(fr::mp_size<fr::MpTypes<>> == 0);
 }
 
 TEST_CASE("MpAt", "[u][engine][core][meta]") {
 	SECTION("list of a single type") {
-		STATIC_CHECK(std::same_as<fr::MpAt<fr::MpList<short>, 0>, short>);
-		STATIC_CHECK(std::same_as<fr::MpAt<fr::MpList<short>, 0>, short>);
+		STATIC_CHECK(std::same_as<fr::MpAt<fr::MpTypes<short>, 0>, short>);
+		STATIC_CHECK(std::same_as<fr::MpAt<fr::MpTypes<short>, 0>, short>);
 	}
 	SECTION("list of few types") {
 		STATIC_CHECK(std::same_as<fr::MpAt<List, 0>, int>);
@@ -286,7 +286,7 @@ TEST_CASE("mp_at_idx_is", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_at_idx_is<List, 3, B>);
 	STATIC_CHECK_FALSE(fr::mp_at_idx_is<List, 3, A>);
 
-	STATIC_CHECK(fr::mp_at_idx_is<fr::MpList<int>, 0, int>);
+	STATIC_CHECK(fr::mp_at_idx_is<fr::MpTypes<int>, 0, int>);
 }
 
 TEST_CASE("MpPackAt", "[u][engine][core][meta]") {
@@ -314,9 +314,9 @@ TEST_CASE("mp_find", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::MpFind<List, A>::value == 1);
 	STATIC_CHECK(fr::mp_find<List, int> == 0);
 	STATIC_CHECK(fr::mp_find<List, B> == 3);
-	STATIC_CHECK(fr::mp_find<fr::MpList<A>, A> == 0);
+	STATIC_CHECK(fr::mp_find<fr::MpTypes<A>, A> == 0);
 	STATIC_CHECK(fr::mp_find<List, char> == fr::npos);
-	STATIC_CHECK(fr::mp_find<fr::MpList<>, char> == fr::npos);
+	STATIC_CHECK(fr::mp_find<fr::MpTypes<>, char> == fr::npos);
 }
 
 TEST_CASE("mp_contains", "[u][engine][core][meta]") {
@@ -328,8 +328,8 @@ TEST_CASE("mp_contains", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::mp_contains<List, char>);
 	STATIC_CHECK_FALSE(fr::mp_contains<List, C>);
 	STATIC_CHECK_FALSE(fr::mp_contains<List, List>);
-	STATIC_CHECK_FALSE(fr::mp_contains<fr::MpList<>, C>);
-	STATIC_CHECK_FALSE(fr::mp_contains<fr::MpList<>, int>);
+	STATIC_CHECK_FALSE(fr::mp_contains<fr::MpTypes<>, C>);
+	STATIC_CHECK_FALSE(fr::mp_contains<fr::MpTypes<>, int>);
 }
 
 TEST_CASE("mp_pack_contains", "[u][engine][core][meta]") {
@@ -354,8 +354,8 @@ TEST_CASE("mp_contains_once", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::mp_contains_once<List, char>);
 	STATIC_CHECK_FALSE(fr::mp_contains_once<List, C>);
 	STATIC_CHECK_FALSE(fr::mp_contains_once<List, List>);
-	STATIC_CHECK_FALSE(fr::mp_contains_once<fr::MpList<>, C>);
-	STATIC_CHECK_FALSE(fr::mp_contains_once<fr::MpList<>, int>);
+	STATIC_CHECK_FALSE(fr::mp_contains_once<fr::MpTypes<>, C>);
+	STATIC_CHECK_FALSE(fr::mp_contains_once<fr::MpTypes<>, int>);
 }
 
 TEST_CASE("mp_pack_contains_once", "[u][engine][core][meta]") {
@@ -372,7 +372,7 @@ TEST_CASE("mp_pack_contains_once", "[u][engine][core][meta]") {
 }
 
 TEST_CASE("mp_count", "[u][engine][core][meta]") {
-	STATIC_CHECK(fr::mp_count<fr::MpList<int, A, int, A, A, B>, int> == 2);
+	STATIC_CHECK(fr::mp_count<fr::MpTypes<int, A, int, A, A, B>, int> == 2);
 	STATIC_CHECK(fr::mp_count<std::tuple<int, A, int, A, A, B>, A> == 3);
 	STATIC_CHECK(fr::mp_count<std::tuple<int, A, int, A, A, B>, B> == 1);
 	STATIC_CHECK(fr::mp_count<std::tuple<int, A, int, A, A, B>, C> == 0);
@@ -389,12 +389,12 @@ TEST_CASE("mp_pack_count", "[u][engine][core][meta]") {
 
 TEST_CASE("mp_is_unique", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_is_unique<std::tuple<int, double, A>>);
-	STATIC_CHECK(fr::mp_is_unique<fr::MpList<int, int&, int&&, const int&>>);
+	STATIC_CHECK(fr::mp_is_unique<fr::MpTypes<int, int&, int&&, const int&>>);
 	STATIC_CHECK(fr::mp_is_unique<std::variant<int>>);
 	STATIC_CHECK(fr::mp_is_unique<std::tuple<>>);
 
 	STATIC_CHECK_FALSE(fr::mp_is_unique<std::pair<int, int>>);
-	STATIC_CHECK_FALSE(fr::mp_is_unique<fr::MpList<double, A, int, A, B>>);
+	STATIC_CHECK_FALSE(fr::mp_is_unique<fr::MpTypes<double, A, int, A, B>>);
 	STATIC_CHECK_FALSE(fr::mp_is_unique<std::tuple<A, B, A, B>>);
 }
 
@@ -410,17 +410,17 @@ TEST_CASE("mp_pack_is_unique", "[u][engine][core][meta]") {
 }
 
 TEST_CASE("mp_is_subset", "[u][engine][core][meta]") {
-	STATIC_CHECK(fr::mp_is_subset<fr::MpList<>, std::tuple<A, int, char>>);
-	STATIC_CHECK(fr::mp_is_subset<std::tuple<int, double>, fr::MpList<A, int, char, double, B>>);
+	STATIC_CHECK(fr::mp_is_subset<fr::MpTypes<>, std::tuple<A, int, char>>);
+	STATIC_CHECK(fr::mp_is_subset<std::tuple<int, double>, fr::MpTypes<A, int, char, double, B>>);
 	STATIC_CHECK(fr::mp_is_subset<std::tuple<int, double>, std::tuple<int, double>>);
 	STATIC_CHECK(fr::mp_is_subset<std::variant<int, double>, std::tuple<A, int, int, double, A>>);
 
-	STATIC_CHECK_FALSE(fr::mp_is_subset<fr::MpList<int, int, A>, fr::MpList<int, A>>);
+	STATIC_CHECK_FALSE(fr::mp_is_subset<fr::MpTypes<int, int, A>, fr::MpTypes<int, A>>);
 	STATIC_CHECK_FALSE(fr::mp_is_subset<std::tuple<A, C, D>, std::tuple<A, B, D>>);
 }
 
 TEST_CASE("mp_all_of", "[u][engine][core][meta]") {
-	STATIC_CHECK(fr::mp_all_of<fr::MpList<>, std::is_integral>);
+	STATIC_CHECK(fr::mp_all_of<fr::MpTypes<>, std::is_integral>);
 	STATIC_CHECK(fr::mp_all_of<std::tuple<int>, std::is_integral>);
 	STATIC_CHECK(fr::mp_all_of<std::tuple<int, char>, std::is_integral>);
 	STATIC_CHECK(fr::mp_all_of<std::variant<int, char, long>, std::is_integral>);
@@ -497,31 +497,31 @@ TEST_CASE("MpRepack", "[u][engine][core][meta]") {
 	SECTION("empty") {
 		STATIC_CHECK(std::same_as<
 			fr::MpRepack<std::variant<>, fr::MpConcat>,
-			fr::MpList<>
+			fr::MpTypes<>
 		>);
 	}
 	SECTION("non-empty") {
 		STATIC_CHECK(std::same_as<
 			fr::MpRepack<
-				fr::MpList<
-					fr::MpValueList<4, 'a'>,
-					fr::MpValueList<45.f>,
-					fr::MpValueList<>,
-					fr::MpValueList<A{}, B{}, 5>
+				fr::MpTypes<
+					fr::MpValues<4, 'a'>,
+					fr::MpValues<45.f>,
+					fr::MpValues<>,
+					fr::MpValues<A{}, B{}, 5>
 				>,
 				fr::MpConcat
 			>,
-			fr::MpValueList<4, 'a', 45.f, A{}, B{}, 5>
+			fr::MpValues<4, 'a', 45.f, A{}, B{}, 5>
 		>);
 	}
 }
 
 TEST_CASE("MpConcat.types", "[u][engine][core][meta]") {
 	SECTION("nothing") {
-		STATIC_CHECK(std::same_as<fr::MpConcat<>, fr::MpList<>>);
+		STATIC_CHECK(std::same_as<fr::MpConcat<>, fr::MpTypes<>>);
 	}
 	SECTION("single empty list") {
-		STATIC_CHECK(std::same_as<fr::MpConcat<fr::MpList<>>, fr::MpList<>>);
+		STATIC_CHECK(std::same_as<fr::MpConcat<fr::MpTypes<>>, fr::MpTypes<>>);
 	}
 	SECTION("single list") {
 		STATIC_CHECK(std::same_as<
@@ -541,11 +541,11 @@ TEST_CASE("MpConcat.types", "[u][engine][core][meta]") {
 	SECTION("three lists") {
 		STATIC_CHECK(std::same_as<
 			fr::MpConcat<
-				fr::MpList<char, int, std::string>,
-				fr::MpList<double>,
-				fr::MpList<float, char>
+				fr::MpTypes<char, int, std::string>,
+				fr::MpTypes<double>,
+				fr::MpTypes<float, char>
 			>,
-			fr::MpList<char, int, std::string, double, float, char>
+			fr::MpTypes<char, int, std::string, double, float, char>
 		>);
 	}
 	SECTION("four lists") {
@@ -563,57 +563,57 @@ TEST_CASE("MpConcat.types", "[u][engine][core][meta]") {
 
 TEST_CASE("MpConcat.values", "[u][engine][core][meta]") {
 	SECTION("nothing") {
-		STATIC_CHECK(std::same_as<fr::MpConcat<>, fr::MpList<>>);
+		STATIC_CHECK(std::same_as<fr::MpConcat<>, fr::MpTypes<>>);
 	}
 	SECTION("single empty list") {
-		STATIC_CHECK(std::same_as<fr::MpConcat<fr::MpValueList<>>, fr::MpValueList<>>);
+		STATIC_CHECK(std::same_as<fr::MpConcat<fr::MpValues<>>, fr::MpValues<>>);
 	}
 	SECTION("single list") {
 		STATIC_CHECK(std::same_as<
-			fr::MpConcat<fr::MpValueList<int{2}, float{1.f}>>,
-			fr::MpValueList<int{2}, float{1.f}>
+			fr::MpConcat<fr::MpValues<int{2}, float{1.f}>>,
+			fr::MpValues<int{2}, float{1.f}>
 		>);
 	}
 	SECTION("two lists") {
 		STATIC_CHECK(std::same_as<
 			fr::MpConcat<
-				fr::MpValueList<'a', 3, fr::StringLiteral{"abc"}>,
-				fr::MpValueList<-1.f, 'Z'>
+				fr::MpValues<'a', 3, fr::StringLiteral{"abc"}>,
+				fr::MpValues<-1.f, 'Z'>
 			>,
-			fr::MpValueList<'a', 3, fr::StringLiteral{"abc"}, -1.f, 'Z'>
+			fr::MpValues<'a', 3, fr::StringLiteral{"abc"}, -1.f, 'Z'>
 		>);
 	}
 	SECTION("three lists") {
 		STATIC_CHECK(std::same_as<
 			fr::MpConcat<
-				fr::MpValueList<'a', 3, fr::StringLiteral{"abc"}>,
-				fr::MpValueList<4.>,
-				fr::MpValueList<-1.f, 'Z'>
+				fr::MpValues<'a', 3, fr::StringLiteral{"abc"}>,
+				fr::MpValues<4.>,
+				fr::MpValues<-1.f, 'Z'>
 			>,
-			fr::MpValueList<'a', 3, fr::StringLiteral{"abc"}, 4., -1.f, 'Z'>
+			fr::MpValues<'a', 3, fr::StringLiteral{"abc"}, 4., -1.f, 'Z'>
 		>);
 	}
 	SECTION("four lists") {
 		STATIC_CHECK(std::same_as<
 			fr::MpConcat<
-				fr::MpValueList<'a', 3, fr::StringLiteral{"abc"}>,
-				fr::MpValueList<4.>,
-				fr::MpValueList<A{}, B{}>,
-				fr::MpValueList<-1.f, 'Z'>
+				fr::MpValues<'a', 3, fr::StringLiteral{"abc"}>,
+				fr::MpValues<4.>,
+				fr::MpValues<A{}, B{}>,
+				fr::MpValues<-1.f, 'Z'>
 			>,
-			fr::MpValueList<'a', 3, fr::StringLiteral{"abc"}, 4., A{}, B{}, -1.f, 'Z'>
+			fr::MpValues<'a', 3, fr::StringLiteral{"abc"}, 4., A{}, B{}, -1.f, 'Z'>
 		>);
 	}
 }
 
 TEST_CASE("MpTransform", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpTransform<fr::MpList<>, std::add_pointer_t>,
-		fr::MpList<>
+		fr::MpTransform<fr::MpTypes<>, std::add_pointer_t>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpTransform<fr::MpList<int&>, std::add_pointer_t>,
-		fr::MpList<int*>
+		fr::MpTransform<fr::MpTypes<int&>, std::add_pointer_t>,
+		fr::MpTypes<int*>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpTransform<std::tuple<int, const double, void*>, std::add_pointer_t>,
@@ -622,39 +622,39 @@ TEST_CASE("MpTransform", "[u][engine][core][meta]") {
 }
 
 TEST_CASE("MpFlatten", "[u][engine][core][meta]") {
-	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpList<>>, fr::MpList<>>);
-	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpList<int>>, fr::MpList<int>>);
-	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpList<int, fr::MpList<>>>, fr::MpList<int>>);
-	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpList<fr::MpList<>, int>>, fr::MpList<int>>);
-	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpList<fr::MpList<int>>>, fr::MpList<int>>);
+	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpTypes<>>, fr::MpTypes<>>);
+	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpTypes<int>>, fr::MpTypes<int>>);
+	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpTypes<int, fr::MpTypes<>>>, fr::MpTypes<int>>);
+	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpTypes<fr::MpTypes<>, int>>, fr::MpTypes<int>>);
+	STATIC_CHECK(std::same_as<fr::MpFlatten<fr::MpTypes<fr::MpTypes<int>>>, fr::MpTypes<int>>);
 
 	STATIC_CHECK(std::same_as<
-		fr::MpFlatten<fr::MpList<fr::MpList<int>, fr::MpList<char>>>,
-		fr::MpList<int, char>
+		fr::MpFlatten<fr::MpTypes<fr::MpTypes<int>, fr::MpTypes<char>>>,
+		fr::MpTypes<int, char>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFlatten<fr::MpList<fr::MpList<int>, fr::MpList<char>, fr::MpList<double>>>,
-		fr::MpList<int, char, double>
+		fr::MpFlatten<fr::MpTypes<fr::MpTypes<int>, fr::MpTypes<char>, fr::MpTypes<double>>>,
+		fr::MpTypes<int, char, double>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFlatten<fr::MpList<fr::MpList<int, char>, fr::MpList<double>>>,
-		fr::MpList<int, char, double>
+		fr::MpFlatten<fr::MpTypes<fr::MpTypes<int, char>, fr::MpTypes<double>>>,
+		fr::MpTypes<int, char, double>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFlatten<fr::MpList<fr::MpList<int>, fr::MpList<char, double>>>,
-		fr::MpList<int, char, double>
+		fr::MpFlatten<fr::MpTypes<fr::MpTypes<int>, fr::MpTypes<char, double>>>,
+		fr::MpTypes<int, char, double>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpFlatten<std::tuple<std::tuple<int>, std::tuple<char, double>>>,
 		std::tuple<int, char, double>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFlatten<fr::MpList<fr::MpList<int>, std::tuple<char, double>>>,
-		fr::MpList<int, std::tuple<char, double>>
+		fr::MpFlatten<fr::MpTypes<fr::MpTypes<int>, std::tuple<char, double>>>,
+		fr::MpTypes<int, std::tuple<char, double>>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFlatten<fr::MpList<fr::MpList<int, fr::MpList<char>>, fr::MpList<void>>>,
-		fr::MpList<int, char, void>
+		fr::MpFlatten<fr::MpTypes<fr::MpTypes<int, fr::MpTypes<char>>, fr::MpTypes<void>>>,
+		fr::MpTypes<int, char, void>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpFlatten<std::tuple<
@@ -675,114 +675,114 @@ using IsIntegral = fr::BoolC<std::is_integral_v<T>>;
 
 TEST_CASE("MpRemoveIf", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpRemoveIf<fr::MpList<>, IsIntegral>,
-		fr::MpList<>
+		fr::MpRemoveIf<fr::MpTypes<>, IsIntegral>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpRemoveIf<fr::MpList<float>, IsIntegral>,
-		fr::MpList<float>
+		fr::MpRemoveIf<fr::MpTypes<float>, IsIntegral>,
+		fr::MpTypes<float>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpRemoveIf<fr::MpList<int, size_t>, IsIntegral>,
-		fr::MpList<>
+		fr::MpRemoveIf<fr::MpTypes<int, size_t>, IsIntegral>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpRemoveIf<
-			fr::MpList<int, std::string, float, A, B, A, unsigned, double, int, C, char, C>,
+			fr::MpTypes<int, std::string, float, A, B, A, unsigned, double, int, C, char, C>,
 			IsIntegral
 		>,
-		fr::MpList<std::string, float, A, B, A, double, C, C>
+		fr::MpTypes<std::string, float, A, B, A, double, C, C>
 	>);
 }
 
 TEST_CASE("MpFilter", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpFilter<fr::MpList<>, IsIntegral>,
-		fr::MpList<>
+		fr::MpFilter<fr::MpTypes<>, IsIntegral>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFilter<fr::MpList<int>, IsIntegral>,
-		fr::MpList<int>
+		fr::MpFilter<fr::MpTypes<int>, IsIntegral>,
+		fr::MpTypes<int>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFilter<fr::MpList<float, double>, IsIntegral>,
-		fr::MpList<>
+		fr::MpFilter<fr::MpTypes<float, double>, IsIntegral>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpFilter<
-			fr::MpList<int, A, int, std::string, A, float, B, unsigned, int, char>,
+			fr::MpTypes<int, A, int, std::string, A, float, B, unsigned, int, char>,
 			IsIntegral
 		>,
-		fr::MpList<int, int, unsigned, int, char>
+		fr::MpTypes<int, int, unsigned, int, char>
 	>);
 }
 
 TEST_CASE("MpRemoveIfProj", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpRemoveIfProj<fr::MpList<>, IsIntegral, std::remove_pointer_t>,
-		fr::MpList<>
+		fr::MpRemoveIfProj<fr::MpTypes<>, IsIntegral, std::remove_pointer_t>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpRemoveIfProj<fr::MpList<int*>, IsIntegral, std::remove_pointer_t>,
-		fr::MpList<>
+		fr::MpRemoveIfProj<fr::MpTypes<int*>, IsIntegral, std::remove_pointer_t>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpRemoveIfProj<fr::MpList<int*, double&>, IsIntegral, std::remove_pointer_t>,
-		fr::MpList<double&>
+		fr::MpRemoveIfProj<fr::MpTypes<int*, double&>, IsIntegral, std::remove_pointer_t>,
+		fr::MpTypes<double&>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpRemoveIfProj<
-			fr::MpList<int, A, int, std::string, A, float, B, unsigned, int, char>,
+			fr::MpTypes<int, A, int, std::string, A, float, B, unsigned, int, char>,
 			IsIntegral,
 			std::type_identity_t
 		>,
-		fr::MpList<A, std::string, A, float, B>
+		fr::MpTypes<A, std::string, A, float, B>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpRemoveIfProj<
-			fr::MpList<int&, A, int, std::string*, A&, float&, B, unsigned&, int&, char>,
+			fr::MpTypes<int&, A, int, std::string*, A&, float&, B, unsigned&, int&, char>,
 			IsIntegral,
 			std::remove_reference_t
 		>,
-		fr::MpList<A, std::string*, A&, float&, B>
+		fr::MpTypes<A, std::string*, A&, float&, B>
 	>);
 }
 
 TEST_CASE("MpFilterProj", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpFilterProj<fr::MpList<>, IsIntegral, std::remove_pointer_t>,
-		fr::MpList<>
+		fr::MpFilterProj<fr::MpTypes<>, IsIntegral, std::remove_pointer_t>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFilterProj<fr::MpList<int*>, IsIntegral, std::remove_pointer_t>,
-		fr::MpList<int*>
+		fr::MpFilterProj<fr::MpTypes<int*>, IsIntegral, std::remove_pointer_t>,
+		fr::MpTypes<int*>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFilterProj<fr::MpList<float*, double&>, IsIntegral, std::remove_pointer_t>,
-		fr::MpList<>
+		fr::MpFilterProj<fr::MpTypes<float*, double&>, IsIntegral, std::remove_pointer_t>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpFilterProj<
-			fr::MpList<int, A, int, std::string, A, float, B, unsigned, int, char>,
+			fr::MpTypes<int, A, int, std::string, A, float, B, unsigned, int, char>,
 			IsIntegral,
 			std::type_identity_t
 		>,
-		fr::MpList<int, int, unsigned, int, char>
+		fr::MpTypes<int, int, unsigned, int, char>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpFilterProj<
-			fr::MpList<int&, A, int, std::string*, A&, float&, B, unsigned&, int&, char>,
+			fr::MpTypes<int&, A, int, std::string*, A&, float&, B, unsigned&, int&, char>,
 			IsIntegral,
 			std::remove_reference_t
 		>,
-		fr::MpList<int&, int, unsigned&, int&, char>
+		fr::MpTypes<int&, int, unsigned&, int&, char>
 	>);
 }
 
 TEST_CASE("MpEnumerate", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpEnumerate<fr::MpList<>>,
-		fr::MpList<>
+		fr::MpEnumerate<fr::MpTypes<>>,
+		fr::MpTypes<>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpEnumerate<std::tuple<A>>,
@@ -804,11 +804,11 @@ TEST_CASE("MpEnumerate", "[u][engine][core][meta]") {
 
 TEST_CASE("MpFirst", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpFirst<fr::MpList<float*>>,
+		fr::MpFirst<fr::MpTypes<float*>>,
 		float*
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFirst<fr::MpList<float*, double, A, B>>,
+		fr::MpFirst<fr::MpTypes<float*, double, A, B>>,
 		float*
 	>);
 	STATIC_CHECK(std::same_as<
@@ -816,18 +816,18 @@ TEST_CASE("MpFirst", "[u][engine][core][meta]") {
 		fr::ValueC<3zu>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFirst<fr::MpValueList<'a', 'b', 'c', 'd'>>,
+		fr::MpFirst<fr::MpValues<'a', 'b', 'c', 'd'>>,
 		fr::ValueC<'a'>
 	>);
 }
 
 TEST_CASE("MpSecond", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpSecond<fr::MpList<float*, void>>,
+		fr::MpSecond<fr::MpTypes<float*, void>>,
 		void
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpSecond<fr::MpList<float*, double, A, B>>,
+		fr::MpSecond<fr::MpTypes<float*, double, A, B>>,
 		double
 	>);
 	STATIC_CHECK(std::same_as<
@@ -835,7 +835,7 @@ TEST_CASE("MpSecond", "[u][engine][core][meta]") {
 		A
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpSecond<fr::MpValueList<'a', 'b', 'c', 'd'>>,
+		fr::MpSecond<fr::MpValues<'a', 'b', 'c', 'd'>>,
 		fr::ValueC<'b'>
 	>);
 }
@@ -843,14 +843,14 @@ TEST_CASE("MpSecond", "[u][engine][core][meta]") {
 TEST_CASE("for_each_type", "[u][engine][core][meta]") {
 	SECTION("empty list") {
 		bool flag = false;
-		fr::for_each_type<fr::MpList<>>([&]<class> {
+		fr::for_each_type<fr::MpTypes<>>([&]<class> {
 			flag = true;
 		});
 		CHECK_FALSE(flag);
 	}
 	SECTION("two types") {
 		bool flags[2] = {};
-		fr::for_each_type<fr::MpList<char, unsigned>>([&]<class T> {
+		fr::for_each_type<fr::MpTypes<char, unsigned>>([&]<class T> {
 			if constexpr (std::is_same_v<T, char>)
 				flags[0] = true;
 			else if constexpr (std::is_same_v<T, unsigned>)
@@ -863,7 +863,7 @@ TEST_CASE("for_each_type", "[u][engine][core][meta]") {
 	}
 	SECTION("three types") {
 		bool flags[3] = {};
-		fr::for_each_type<fr::MpList<long, double, std::string>>([&]<class T> {
+		fr::for_each_type<fr::MpTypes<long, double, std::string>>([&]<class T> {
 			if constexpr (std::is_same_v<T, long>)
 				flags[0] = true;
 			else if constexpr (std::is_same_v<T, double>)

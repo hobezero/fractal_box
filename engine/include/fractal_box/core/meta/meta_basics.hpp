@@ -115,10 +115,10 @@ template<class T>
 inline constexpr auto mp_type = MpType<T>{};
 
 template<class... Ts>
-struct MpList { };
+struct MpTypes { };
 
 template<class... Ts>
-inline constexpr auto mp_list = MpList<Ts...>{};
+inline constexpr auto mp_list = MpTypes<Ts...>{};
 
 template<auto V>
 struct MpValue {
@@ -130,11 +130,12 @@ template<auto V>
 inline constexpr auto mp_value = MpValue<V>{};
 
 template<auto... Vs>
-struct MpValueList { };
+struct MpValues { };
 
 template<auto... Vs>
-inline constexpr auto mp_value_list = MpValueList<Vs...>{};
+inline constexpr auto mp_values = MpValues<Vs...>{};
 
+/// @brief Useless on its own but useful as a metafunction
 template<auto V>
 using MpTypeOfValue = decltype(V);
 
@@ -167,20 +168,35 @@ inline constexpr auto is_value_c<ValueC<V>> = true;
 template<class T>
 concept c_value_c = is_value_c<T>;
 
-// c_const_value_of_type
-// ^^^^^^^^^^^^^^^^^^^^^
+// c_value_c_of_type
+// ^^^^^^^^^^^^^^^^^
 
 template<class T, class U>
 inline constexpr auto is_value_c_of_type = false;
 
-template<class U, U val>
-inline constexpr auto is_value_c_of_type<ValueC<val>, U> = true;
+template<class U, U Val>
+inline constexpr auto is_value_c_of_type<ValueC<Val>, U> = true;
 
 template<class T, class U>
 using IsValueCOfType = BoolC<is_value_c_of_type<T, U>>;
 
 template<class T, class U>
 concept c_value_c_of_type = is_value_c_of_type<T, U>;
+
+// c_mp_value_like_of_type
+// ^^^^^^^^^^^^^^^^^^^^^^^
+
+template<class T, class U>
+inline constexpr auto is_mp_value_like_of_type = false;
+
+template<template<auto> class T, auto Val, class U>
+inline constexpr auto is_mp_value_like_of_type<T<Val>, U> = std::is_same_v<decltype(Val), U>;
+
+template<class T, class U>
+using IsMpValueLikeOfType = BoolC<is_mp_value_like_of_type<T, U>>;
+
+template<class T, class U>
+concept c_mp_value_like_of_type = is_mp_value_like_of_type<T, U>;
 
 // c_size_c
 // ^^^^^^^^
@@ -194,53 +210,68 @@ inline constexpr auto is_size_c<SizeC<V>> = true;
 template<class T>
 concept c_size_c = is_size_c<T>;
 
-// c_type_list
+// c_mp_types
+// ^^^^^^^^^^
+
+template<class T>
+inline constexpr auto is_mp_types = false;
+
+template<class... Ts>
+inline constexpr auto is_mp_types<MpTypes<Ts...>> = true;
+
+template<class T>
+using IsMpTypes = BoolC<is_mp_types<T>>;
+
+template<class T>
+concept c_mp_types = is_mp_types<T>;
+
+template<class T>
+concept c_not_mp_types = !c_mp_types<T>;
+
+// c_mp_values
 // ^^^^^^^^^^^
 
 template<class T>
-inline constexpr auto is_type_list = false;
+inline constexpr auto is_mp_values = false;
+
+template<auto... Vs>
+inline constexpr auto is_mp_values<MpValues<Vs...>> = true;
+
+template<class T>
+using IsMpValues = BoolC<is_mp_values<T>>;
+
+template<class T>
+concept c_mp_values = is_mp_values<T>;
+
+// c_mp_type_list
+// ^^^^^^^^^^^^^^
+
+template<class T>
+inline constexpr auto is_mp_type_list = false;
 
 template<template<class...> class TList, class... Ts>
-inline constexpr auto is_type_list<TList<Ts...>> = true;
+inline constexpr auto is_mp_type_list<TList<Ts...>> = true;
 
 template<class T>
-using IsTypeList = BoolC<is_type_list<T>>;
+using IsMpTypeList = BoolC<is_mp_type_list<T>>;
 
 template<class T>
-concept c_type_list = is_type_list<T>;
+concept c_mp_type_list = is_mp_type_list<T>;
 
-// c_mp_list
-// ^^^^^^^^^
-
-template<class T>
-inline constexpr auto is_mp_list = false;
-
-template<class... Ts>
-inline constexpr auto is_mp_list<MpList<Ts...>> = true;
+// c_mp_value_list
+// ^^^^^^^^^^^^^^^
 
 template<class T>
-using IsMpList = BoolC<is_mp_list<T>>;
-
-template<class T>
-concept c_mp_list = is_mp_list<T>;
-
-template<class T>
-concept c_not_mp_list = !c_mp_list<T>;
-
-// c_value_list
-// ^^^^^^^^^^^^
-
-template<class T>
-inline constexpr auto is_value_list = false;
+inline constexpr auto is_mp_value_list = false;
 
 template<template<auto...> class VList, auto... Vs>
-inline constexpr auto is_value_list<VList<Vs...>> = true;
+inline constexpr auto is_mp_value_list<VList<Vs...>> = true;
 
 template<class T>
-using IsValueList = BoolC<is_value_list<T>>;
+using IsMpValueList = BoolC<is_mp_value_list<T>>;
 
 template<class T>
-concept c_value_list = is_value_list<T>();
+concept c_mp_value_list = is_mp_value_list<T>;
 
 // is_complete
 // ^^^^^^^^^^^
@@ -299,8 +330,8 @@ using RemoveConstRef = std::remove_const_t<std::remove_reference_t<T>>;
 template<class T, bool Condition>
 using AddConstIf = typename MpLazyIf<Condition>::template Type<std::add_const_t<T>, T>;
 
-// CopyConst implementation
-// ------------------------
+// CopyConst
+// ^^^^^^^^^
 
 namespace detail {
 
@@ -349,7 +380,7 @@ requires (!std::is_reference_v<To>)
 using CopyCv = typename detail::CopyCvImpl<std::remove_reference_t<From>>::template Type<To>;
 
 // CopyConstRef
-// ------------
+// ^^^^^^^^^^^^
 
 namespace detail {
 
@@ -360,7 +391,7 @@ struct CopyConstRefImpl {
 };
 
 // cv-qualifiers
-// ^^^^^^^^^^^^^
+// """""""""""""
 
 template<class From>
 struct CopyConstRefImpl<const From> {
@@ -375,7 +406,7 @@ struct CopyConstRefImpl<const volatile From> {
 };
 
 // lvalue-reference qualifiers
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// """""""""""""""""""""""""""
 
 template<class From>
 struct CopyConstRefImpl<From&> {
@@ -396,7 +427,7 @@ struct CopyConstRefImpl<const volatile From&> {
 };
 
 // rvalue-reference qualifiers
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// """""""""""""""""""""""""""
 
 template<class From>
 struct CopyConstRefImpl<From&&> {
@@ -422,7 +453,7 @@ template<class To, class From>
 using CopyConstRef = typename detail::CopyConstRefImpl<From>::template Type<To>;
 
 // CopyCvRef
-// ---------
+// ^^^^^^^^^
 
 namespace detail {
 
@@ -433,7 +464,7 @@ struct CopyCvRefImpl {
 };
 
 // cv-qualifiers
-// ^^^^^^^^^^^^^
+// """""""""""""
 
 template<class From>
 struct CopyCvRefImpl<const From> {
@@ -448,7 +479,7 @@ struct CopyCvRefImpl<const volatile From> {
 };
 
 // lvalue-reference qualifiers
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// """""""""""""""""""""""""""
 
 template<class From>
 struct CopyCvRefImpl<From&> {
@@ -469,7 +500,7 @@ struct CopyCvRefImpl<const volatile From&> {
 };
 
 // rvalue-reference qualifiers
-// ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+// """""""""""""""""""""""""""
 
 template<class From>
 struct CopyCvRefImpl<From&&> {

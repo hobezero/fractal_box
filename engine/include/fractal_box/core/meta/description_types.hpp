@@ -103,7 +103,7 @@ inline constexpr auto is_property_description_part<DisplayName<S>> = true;
 
 template<c_class... Ts>
 struct Bases {
-	using Parts = MpList<Ts...>;
+	using Parts = MpTypes<Ts...>;
 };
 
 template<class T>
@@ -126,7 +126,7 @@ inline constexpr auto is_class_description_part<Bases<Ts...>> = true;
 
 template<auto... VParts>
 struct Attributes {
-	using Parts = MpValueList<VParts...>;
+	using Parts = MpValues<VParts...>;
 	static constexpr auto parts = Parts{};
 };
 
@@ -158,7 +158,7 @@ template<auto Ptr, c_field_description_part... TParts>
 struct Field {
 	using PtrType = decltype(Ptr);
 	static constexpr auto ptr = Ptr;
-	using Parts = MpList<TParts...>;
+	using Parts = MpTypes<TParts...>;
 };
 
 template<class T>
@@ -191,7 +191,7 @@ struct Property {
 	using Type = T;
 	static constexpr auto getter = Getter;
 	static constexpr auto setter = Setter;
-	using Parts = MpList<TParts...>;
+	using Parts = MpTypes<TParts...>;
 
 	using GetterType = std::remove_cvref_t<decltype(Getter)>;
 	using SetterType = std::remove_cvref_t<decltype(Setter)>;
@@ -228,7 +228,7 @@ inline constexpr auto is_class_description_part<Property<Name, T, Getter, Setter
 
 template<c_class_description_part... TParts>
 struct ClassDesc {
-	using Parts = MpList<TParts...>;
+	using Parts = MpTypes<TParts...>;
 };
 
 template<c_class_description_part... Parts>

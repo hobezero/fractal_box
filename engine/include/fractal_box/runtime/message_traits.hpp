@@ -60,7 +60,7 @@ public:
 template<class T>
 concept c_message
 	= c_user_object<T>
-	&& !c_mp_list<T>
+	&& !c_mp_types<T>
 	&& c_nothrow_movable<T>
 	&& (!requires { T::ttl; } || std::convertible_to<decltype(T::ttl), MessageTtl>);
 

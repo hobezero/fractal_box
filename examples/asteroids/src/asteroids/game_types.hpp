@@ -175,7 +175,7 @@ struct ReqGameTogglePause: fr::TickAtLoopUpdate { };
 struct ReqEndGame: fr::TickAtLoopUpdate { };
 struct ReqAccept: fr::TickAtLoopUpdate { };
 
-using GameStatusRequests = fr::MpList<
+using GameStatusRequests = fr::MpTypes<
 	ReqGameStart,
 	ReqGamePause,
 	ReqGameResume,
