@@ -31,7 +31,7 @@ struct MpValidImpl<std::void_t<Trait<Args...>>, Trait, Args...> {
 
 } // namespace detail
 
-/// @brief Check if `Op<Args...>` is well-formed
+/// @brief Checks if `Op<Args...>` is well-formed
 template<template<class...> class Op, class... Args>
 using MpValid = typename detail::MpValidImpl<void, Op, Args...>::Type;
 
@@ -41,23 +41,17 @@ inline constexpr auto mp_valid = MpValid<Op, Args...>{}();
 template<template<class...> class Op, class... Args>
 concept c_mp_valid = mp_valid<Op, Args...>;
 
-// Parameter pack meta functions
-// -----------------------------
+// Logic
+// -----
 
-// MpPackFirst
-// ^^^^^^^^^^^
+template<class T>
+using MpNot = BoolC<!T::value>;
 
-namespace detail {
-
-template<class T, class... Ts>
-struct MpPackFirstImpl {
-	using Type = T;
+template<template<class...> class Pred>
+struct MpNotFn {
+	template<class... Ts>
+	using Type = BoolC<!Pred<Ts...>::value>;
 };
-
-} // namespace detail
-
-template<class... Ts>
-using MpPackFirst = typename detail::MpPackFirstImpl<Ts...>::Type;
 
 // Type/value list metaprogramming
 // -------------------------------
@@ -164,6 +158,97 @@ inline constexpr auto mp_is_empty<VList<Vs...>> = (sizeof...(Vs) == 0zu);
 
 template<class List>
 using MpIsEmpty = BoolC<mp_is_empty<List>>;
+
+// MpFirst
+// ^^^^^^^
+
+namespace detail {
+
+template<class TList>
+struct MpFirstImpl;
+
+template<template<class...> class TList, class First, class... Rest>
+struct MpFirstImpl<TList<First, Rest...>> {
+	using Type = First;
+};
+
+template<template<auto...> class TList, auto First, auto... Rest>
+struct MpFirstImpl<TList<First, Rest...>> {
+	using Type = ValueC<First>;
+};
+
+template<template<auto, class...> class TList, auto First, class... Rest>
+struct MpFirstImpl<TList<First, Rest...>> {
+	using Type = ValueC<First>;
+};
+
+} // namespace detail
+
+template<class TList>
+using MpFirst = typename detail::MpFirstImpl<TList>::Type;
+
+// MpPackFirst
+// ^^^^^^^^^^^
+
+namespace detail {
+
+/// @note NOTE: Template class helper is necessary because alias templates are not deduced
+template<class First, class... Ts>
+struct MpPackFirstImpl {
+	using Type = First;
+};
+
+} // namespace detail
+
+template<class... Ts>
+using MpPackFirst = typename detail::MpPackFirstImpl<Ts...>::Type;
+
+// TODO: MpVPackFirst
+
+// MpSecond
+// ^^^^^^^^
+
+namespace detail {
+
+template<class TList>
+struct MpSecondImpl;
+
+template<template<class...> class TList, class First, class Second, class... Rest>
+struct MpSecondImpl<TList<First, Second, Rest...>> {
+	using Type = Second;
+};
+
+template<template<auto...> class TList, auto First, auto Second, auto... Rest>
+struct MpSecondImpl<TList<First, Second, Rest...>> {
+	using Type = ValueC<Second>;
+};
+
+template<template<auto, class...> class TList, auto First, class Second, class... Rest>
+struct MpSecondImpl<TList<First, Second, Rest...>> {
+	using Type = Second;
+};
+
+} // namespace detail
+
+template<class TList>
+using MpSecond = typename detail::MpSecondImpl<TList>::Type;
+
+// MpPackSecond
+// ^^^^^^^^^^^^
+
+namespace detail {
+
+/// @note NOTE: Template class helper is necessary because alias templates are not deduced
+template<class First, class Second, class... Ts>
+struct MpPackSecondImpl {
+	using Type = Second;
+};
+
+} // namespace detail
+
+template<class... Ts>
+using MpPackSecond = typename detail::MpPackSecondImpl<Ts...>::Type;
+
 
 // MpAt
 // ^^^^
@@ -673,6 +758,12 @@ struct CondListified<true> {
 
 	template<template<class...> class TList, class T>
 	using IfNotType = TList<>;
+
+	template<template<auto...> class VList, auto V>
+	using IfValue = VList<V>;
+
+	template<template<auto...> class VList, auto V>
+	using IfNotValue = VList<>;
 };
 
 template<>
@@ -682,7 +773,16 @@ struct CondListified<false> {
 
 	template<template<class...> class TList, class T>
 	using IfNotType = TList<T>;
+
+	template<template<auto...> class VList, auto V>
+	using IfValue = VList<>;
+
+	template<template<auto...> class VList, auto V>
+	using IfNotValue = VList<V>;
 };
+
+// Mp*Remove*
+// """"""""""
 
 template<class TList, template<class> class Pred>
 struct MpRemoveIfImpl;
@@ -691,6 +791,15 @@ template<template<class...> class TList, class... Ts, template<class> class Pred
 struct MpRemoveIfImpl<TList<Ts...>, Pred> {
 	using Type = MpConcat<TList<>, typename CondListified<static_cast<bool>(Pred<Ts>{})>
 		::template IfNotType<TList, Ts>...>;
+};
+
+template<class VList, template<auto> class Pred>
+struct MpVRemoveIfImpl;
+
+template<template<auto...> class VList, auto... Vs, template<auto> class Pred>
+struct MpVRemoveIfImpl<VList<Vs...>, Pred> {
+	using Type = MpConcat<VList<>, typename CondListified<static_cast<bool>(Pred<Vs>{})>
+		::template IfNotValue<VList, Vs>...>;
 };
 
 template<class TList, template<class> class Pred, template<class> class Proj>
@@ -707,6 +816,23 @@ struct MpRemoveIfProjImpl<TList<Ts...>, Pred, Proj> {
 		::template IfNotType<TList, Ts>...>;
 };
 
+template<class VList, template<auto> class Pred, template<auto> class Proj>
+struct MpVRemoveIfProjImpl;
+
+template<
+	template<auto...> class VList,
+	auto... Vs,
+	template<auto> class Pred,
+	template<auto> class Proj
+>
+struct MpVRemoveIfProjImpl<VList<Vs...>, Pred, Proj> {
+	using Type = MpConcat<VList<>, typename CondListified<static_cast<bool>(
+		Pred<Proj<Vs>::value>{})>::template IfNotValue<VList, Vs>...>;
+};
+
+// Mp*Filter*
+// """"""""""
+
 template<class TList, template<class> class Pred>
 struct MpFilterImpl;
 
@@ -714,6 +840,15 @@ template<template<class...> class TList, class... Ts, template<class> class Pred
 struct MpFilterImpl<TList<Ts...>, Pred> {
 	using Type = MpConcat<TList<>, typename CondListified<static_cast<bool>(Pred<Ts>{})>
 		::template IfType<TList, Ts>...>;
+};
+
+template<class VList, template<auto> class Pred>
+struct MpVFilterImpl;
+
+template<template<auto...> class VList, auto... Vs, template<auto> class Pred>
+struct MpVFilterImpl<VList<Vs...>, Pred> {
+	using Type = MpConcat<VList<>, typename CondListified<static_cast<bool>(Pred<Vs>{})>
+		::template IfValue<VList, Vs>...>;
 };
 
 template<class TList, template<class> class Pred, template<class> class Proj>
@@ -730,19 +865,46 @@ struct MpFilterProjImpl<TList<Ts...>, Pred, Proj> {
 		::template IfType<TList, Ts>...>;
 };
 
+template<class VList, template<auto> class Pred, template<auto> class Proj>
+struct MpVFilterProjImpl;
+
+template<
+	template<auto...> class VList,
+	auto... Vs,
+	template<auto> class Pred,
+	template<auto> class Proj
+>
+struct MpVFilterProjImpl<VList<Vs...>, Pred, Proj> {
+	using Type = MpConcat<VList<>, typename CondListified<static_cast<bool>(
+		Pred<Proj<Vs>::value>{})>::template IfValue<VList, Vs>...>;
+};
+
 } // namespace detail
 
 template<class TList, template<class> class P>
 using MpRemoveIf = typename detail::MpRemoveIfImpl<TList, P>::Type;
 
-template<class TList, template<class> class P>
-using MpFilter = typename detail::MpFilterImpl<TList, P>::Type;
+template<class VList, template<auto> class P>
+using MpVRemoveIf = typename detail::MpVRemoveIfImpl<VList, P>::Type;
 
 template<class TList, template<class> class Pred, template<class> class Proj>
 using MpRemoveIfProj = typename detail::MpRemoveIfProjImpl<TList, Pred, Proj>::Type;
 
+/// @todo TODO: Replace class template `Proj` with variable template in C++26
+template<class VList, template<auto> class Pred, template<auto> class Proj>
+using MpVRemoveIfProj = typename detail::MpVRemoveIfProjImpl<VList, Pred, Proj>::Type;
+
+template<class TList, template<class> class P>
+using MpFilter = typename detail::MpFilterImpl<TList, P>::Type;
+
+template<class VList, template<auto> class P>
+using MpVFilter = typename detail::MpVFilterImpl<VList, P>::Type;
+
 template<class TList, template<class> class Pred, template<class> class Proj>
 using MpFilterProj = typename detail::MpFilterProjImpl<TList, Pred, Proj>::Type;
+
+template<class VList, template<auto> class Pred, template<auto> class Proj>
+using MpVFilterProj = typename detail::MpVFilterProjImpl<VList, Pred, Proj>::Type;
 
 // MpEnumerate
 // ^^^^^^^^^^^
@@ -764,62 +926,6 @@ using MpEnumerate = typename detail::MpEnumerateImpl<
 	std::make_index_sequence<mp_size<TList>>,
 	TList
 >::Type;
-
-// MpFirst
-// ^^^^^^^
-
-namespace detail {
-
-template<class TList>
-struct MpFirstImpl;
-
-template<template<class...> class TList, class First, class... Rest>
-struct MpFirstImpl<TList<First, Rest...>> {
-	using Type = First;
-};
-
-template<template<auto...> class TList, auto First, auto... Rest>
-struct MpFirstImpl<TList<First, Rest...>> {
-	using Type = ValueC<First>;
-};
-
-template<template<auto, class...> class TList, auto First, class... Rest>
-struct MpFirstImpl<TList<First, Rest...>> {
-	using Type = ValueC<First>;
-};
-
-} // namespace detail
-
-template<class TList>
-using MpFirst = typename detail::MpFirstImpl<TList>::Type;
-
-// MpSecond
-// ^^^^^^^^
-
-namespace detail {
-
-template<class TList>
-struct MpSecondImpl;
-
-template<template<class...> class TList, class First, class Second, class... Rest>
-struct MpSecondImpl<TList<First, Second, Rest...>> {
-	using Type = Second;
-};
-
-template<template<auto...> class TList, auto First, auto Second, auto... Rest>
-struct MpSecondImpl<TList<First, Second, Rest...>> {
-	using Type = ValueC<Second>;
-};
-
-template<template<auto, class...> class TList, auto First, class Second, class... Rest>
-struct MpSecondImpl<TList<First, Second, Rest...>> {
-	using Type = Second;
-};
-
-} // namespace detail
-
-template<class TList>
-using MpSecond = typename detail::MpSecondImpl<TList>::Type;
 
 // Runtime functions
 // -----------------

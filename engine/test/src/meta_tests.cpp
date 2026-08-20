@@ -198,6 +198,18 @@ using LongList = fr::MpTypes<
 	void(int), int(void), int (*)(int), const char, volatile bool, const B&
 >;
 
+template<class T>
+using IsClass = typename std::is_class<T>::type;
+
+template<class T>
+using IsNotClass = typename fr::MpNotFn<std::is_class>::template Type<T>;
+
+TEST_CASE("MpNegation", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<IsNotClass<int>, fr::TrueC>);
+	STATIC_CHECK(std::same_as<IsNotClass<void>, fr::TrueC>);
+	STATIC_CHECK(std::same_as<IsNotClass<C>, fr::FalseC>);
+}
+
 TEST_CASE("MpRename", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
 		fr::MpRename<std::variant<int, A, B>, std::tuple>,
@@ -217,16 +229,13 @@ TEST_CASE("MpRename", "[u][engine][core][meta]") {
 	>);
 }
 
-TEST_CASE("ToMpList", "[u][engine][core][meta]") {
+TEST_CASE("ToMpTypes", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<fr::ToMpTypes<std::variant<int, A, double, B>>,
 		fr::MpTypes<int, A, double, B>>);
 	STATIC_CHECK(std::same_as<fr::ToMpTypes<std::tuple<B>>, fr::MpTypes<B>>);
 	STATIC_CHECK(std::same_as<fr::ToMpTypes<fr::MpTypes<char, A>>, fr::MpTypes<char, A>>);
 	STATIC_CHECK(std::same_as<fr::ToMpTypes<fr::MpTypes<>>, fr::MpTypes<>>);
 }
-
-template<class T>
-using IsClass = typename std::is_class<T>::type;
 
 TEST_CASE("c_mp_list_of", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::c_mp_list_of<fr::MpTypes<>, IsClass>);
@@ -247,6 +256,66 @@ TEST_CASE("mp_is_empty", "[u][engine][core][meta]") {
 TEST_CASE("MpSize", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_size<std::tuple<int, char, double>> == 3);
 	STATIC_CHECK(fr::mp_size<fr::MpTypes<>> == 0);
+}
+
+TEST_CASE("MpFirst", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<
+		fr::MpFirst<fr::MpTypes<float*>>,
+		float*
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpFirst<fr::MpTypes<float*, double, A, B>>,
+		float*
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpFirst<fr::MpIndexedType<3, A>>,
+		fr::ValueC<3zu>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpFirst<fr::MpValues<'a', 'b', 'c', 'd'>>,
+		fr::ValueC<'a'>
+	>);
+}
+
+TEST_CASE("MpPackFirst", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<
+		fr::MpPackFirst<float*>,
+		float*
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpPackFirst<float*, double, A, B>,
+		float*
+	>);
+}
+
+TEST_CASE("MpSecond", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<
+		fr::MpSecond<fr::MpTypes<float*, void>>,
+		void
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpSecond<fr::MpTypes<float*, const double&, A, B>>,
+		const double&
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpSecond<fr::MpIndexedType<3, A>>,
+		A
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpSecond<fr::MpValues<'a', 'b', 'c', 'd'>>,
+		fr::ValueC<'b'>
+	>);
+}
+
+TEST_CASE("MpPackSecond", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<
+		fr::MpPackSecond<float*, void>,
+		void
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpPackSecond<float*, const double&, A&&, B>,
+		const double&
+	>);
 }
 
 TEST_CASE("MpAt", "[u][engine][core][meta]") {
@@ -673,6 +742,37 @@ TEST_CASE("MpFlatten", "[u][engine][core][meta]") {
 template<class T>
 using IsIntegral = fr::BoolC<std::is_integral_v<T>>;
 
+template<auto V>
+using IsVIntegral = fr::BoolC<std::is_integral_v<decltype(V)>>;
+
+template<auto V>
+struct IsPositiveT: fr::BoolC<[] {
+	if constexpr (std::is_arithmetic_v<decltype(V)>) {
+		return V > decltype(V){0};
+	}
+	else {
+		return false;
+	}
+}()> { };
+
+template<auto V>
+using IsPositive = IsPositiveT<V>::Type;
+
+template<auto V>
+using IsNotPositive = fr::MpNot<IsPositive<V>>;
+
+template<auto V>
+using AddTen = fr::MpValue<[] {
+	if constexpr (std::is_arithmetic_v<decltype(V)>) {
+		return V + decltype(V){10};
+	}
+	else {
+		return V;
+	}
+}()>;
+
+static_assert(std::same_as<AddTen<2>, fr::MpValue<12>>);
+
 TEST_CASE("MpRemoveIf", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
 		fr::MpRemoveIf<fr::MpTypes<>, IsIntegral>,
@@ -695,25 +795,25 @@ TEST_CASE("MpRemoveIf", "[u][engine][core][meta]") {
 	>);
 }
 
-TEST_CASE("MpFilter", "[u][engine][core][meta]") {
+TEST_CASE("MpVRemoveIf", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
-		fr::MpFilter<fr::MpTypes<>, IsIntegral>,
-		fr::MpTypes<>
+		fr::MpVRemoveIf<fr::MpValues<>, IsVIntegral>,
+		fr::MpValues<>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFilter<fr::MpTypes<int>, IsIntegral>,
-		fr::MpTypes<int>
+		fr::MpVRemoveIf<fr::MpValues<1.4f>, IsVIntegral>,
+		fr::MpValues<1.4f>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFilter<fr::MpTypes<float, double>, IsIntegral>,
-		fr::MpTypes<>
+		fr::MpVRemoveIf<fr::MpValues<10, 20zu>, IsVIntegral>,
+		fr::MpValues<>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::MpFilter<
-			fr::MpTypes<int, A, int, std::string, A, float, B, unsigned, int, char>,
-			IsIntegral
+		fr::MpVRemoveIf<
+			fr::MpValues<10, 20.f, A{}, B{}, A{}, 30u, 40., 10, C{}, char{50}, C{}>,
+			IsVIntegral
 		>,
-		fr::MpTypes<int, int, unsigned, int, char>
+		fr::MpValues<20.f, A{}, B{}, A{}, 40., C{}, C{}>
 	>);
 }
 
@@ -748,6 +848,73 @@ TEST_CASE("MpRemoveIfProj", "[u][engine][core][meta]") {
 	>);
 }
 
+TEST_CASE("MpVRemoveIfProj", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<
+		fr::MpVRemoveIfProj<fr::MpValues<>, IsPositive, AddTen>,
+		fr::MpValues<>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVRemoveIfProj<fr::MpValues<-5>, IsPositive, AddTen>,
+		fr::MpValues<>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVRemoveIfProj<fr::MpValues<-50>, IsPositive, AddTen>,
+		fr::MpValues<-50>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVRemoveIfProj<
+			fr::MpValues<-20, 5u, A{}, -7l, B{}, 2.f, -2.f, -30., C{}>,
+			IsPositive,
+			AddTen
+		>,
+		fr::MpValues<-20, A{}, B{}, -30., C{}>
+	>);
+}
+
+TEST_CASE("MpFilter", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<
+		fr::MpFilter<fr::MpTypes<>, IsIntegral>,
+		fr::MpTypes<>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpFilter<fr::MpTypes<int>, IsIntegral>,
+		fr::MpTypes<int>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpFilter<fr::MpTypes<float, double>, IsIntegral>,
+		fr::MpTypes<>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpFilter<
+			fr::MpTypes<int, A, int, std::string, A, float, B, unsigned, int, char>,
+			IsIntegral
+		>,
+		fr::MpTypes<int, int, unsigned, int, char>
+	>);
+}
+
+TEST_CASE("MpVFilter", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<
+		fr::MpVFilter<fr::MpValues<>, IsVIntegral>,
+		fr::MpValues<>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVFilter<fr::MpValues<2>, IsVIntegral>,
+		fr::MpValues<2>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVFilter<fr::MpValues<4.5f, 9.>, IsVIntegral>,
+		fr::MpValues<>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVFilter<
+			fr::MpValues<10, A{}, 20, A{}, 30.f, B{}, 40u, 50, 40u, char{60}>,
+			IsVIntegral
+		>,
+		fr::MpValues<10, 20, 40u, 50, 40u, char{60}>
+	>);
+}
+
 TEST_CASE("MpFilterProj", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
 		fr::MpFilterProj<fr::MpTypes<>, IsIntegral, std::remove_pointer_t>,
@@ -779,6 +946,29 @@ TEST_CASE("MpFilterProj", "[u][engine][core][meta]") {
 	>);
 }
 
+TEST_CASE("MpVFilterIfProj", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<
+		fr::MpVFilterProj<fr::MpValues<>, IsNotPositive, AddTen>,
+		fr::MpValues<>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVFilterProj<fr::MpValues<-5>, IsNotPositive, AddTen>,
+		fr::MpValues<>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVFilterProj<fr::MpValues<-50>, IsNotPositive, AddTen>,
+		fr::MpValues<-50>
+	>);
+	STATIC_CHECK(std::same_as<
+		fr::MpVFilterProj<
+			fr::MpValues<-20, 5u, A{}, -7l, B{}, 2.f, -2.f, -30., C{}>,
+			IsNotPositive,
+			AddTen
+		>,
+		fr::MpValues<-20, A{}, B{}, -30., C{}>
+	>);
+}
+
 TEST_CASE("MpEnumerate", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<
 		fr::MpEnumerate<fr::MpTypes<>>,
@@ -799,44 +989,6 @@ TEST_CASE("MpEnumerate", "[u][engine][core][meta]") {
 			fr::MpIndexedType<5zu, void>,
 			fr::MpIndexedType<6zu, A>
 		>
-	>);
-}
-
-TEST_CASE("MpFirst", "[u][engine][core][meta]") {
-	STATIC_CHECK(std::same_as<
-		fr::MpFirst<fr::MpTypes<float*>>,
-		float*
-	>);
-	STATIC_CHECK(std::same_as<
-		fr::MpFirst<fr::MpTypes<float*, double, A, B>>,
-		float*
-	>);
-	STATIC_CHECK(std::same_as<
-		fr::MpFirst<fr::MpIndexedType<3, A>>,
-		fr::ValueC<3zu>
-	>);
-	STATIC_CHECK(std::same_as<
-		fr::MpFirst<fr::MpValues<'a', 'b', 'c', 'd'>>,
-		fr::ValueC<'a'>
-	>);
-}
-
-TEST_CASE("MpSecond", "[u][engine][core][meta]") {
-	STATIC_CHECK(std::same_as<
-		fr::MpSecond<fr::MpTypes<float*, void>>,
-		void
-	>);
-	STATIC_CHECK(std::same_as<
-		fr::MpSecond<fr::MpTypes<float*, double, A, B>>,
-		double
-	>);
-	STATIC_CHECK(std::same_as<
-		fr::MpSecond<fr::MpIndexedType<3, A>>,
-		A
-	>);
-	STATIC_CHECK(std::same_as<
-		fr::MpSecond<fr::MpValues<'a', 'b', 'c', 'd'>>,
-		fr::ValueC<'b'>
 	>);
 }
 

@@ -30,6 +30,9 @@ inline constexpr auto value_identity = Value;
 ///   (see https://isocpp.org/files/papers/P2781R7.html)
 template<auto V>
 struct ValueC {
+	using Type = ValueC;
+	using type = ValueC;
+
 	using ValueType = decltype(V);
 	static constexpr auto value = V;
 
