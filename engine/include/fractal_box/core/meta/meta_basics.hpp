@@ -29,11 +29,17 @@ inline constexpr auto value_identity = Value;
 /// @todo TODO: Consider switching to `std::constant_wrapper` design
 ///   (see https://isocpp.org/files/papers/P2781R7.html)
 template<auto V>
-struct ValueC {
-	using Type = ValueC;
-	using type = ValueC;
+struct MpValue {
+	using Type = MpValue;
+	/// @note This makes it compatible with `std::integral_constant`, `std::constant_wrapper`, and
+	/// the like
+	using type = MpValue;
 
 	using ValueType = decltype(V);
+	/// @note This makes it compatible with `std::integral_constant`, `std::constant_wrapper`, and
+	/// the like
+	using value_type = decltype(V);
+
 	static constexpr auto value = V;
 
 	explicit(false) constexpr
@@ -44,26 +50,26 @@ struct ValueC {
 };
 
 template<auto V>
-inline constexpr auto value_c = ValueC<V>{};
+inline constexpr auto mp_value = MpValue<V>{};
 
-template<bool Value> using BoolC = ValueC<Value>;
-using FalseC = ValueC<false>;
-using TrueC = ValueC<true>;
+template<bool Value> using BoolC = MpValue<Value>;
+using FalseC = MpValue<false>;
+using TrueC = MpValue<true>;
 
-template<uint8_t Value> using Uint8C = ValueC<Value>;
-template<uint16_t Value> using Uint16C = ValueC<Value>;
-template<uint32_t Value> using Uint32C = ValueC<Value>;
-template<uint64_t Value> using Uint64C = ValueC<Value>;
+template<uint8_t Value> using Uint8C = MpValue<Value>;
+template<uint16_t Value> using Uint16C = MpValue<Value>;
+template<uint32_t Value> using Uint32C = MpValue<Value>;
+template<uint64_t Value> using Uint64C = MpValue<Value>;
 
-template<int8_t Value> using Int8C = ValueC<Value>;
-template<int16_t Value> using Int16C = ValueC<Value>;
-template<int32_t Value> using Int32C = ValueC<Value>;
-template<int64_t Value> using Int64C = ValueC<Value>;
+template<int8_t Value> using Int8C = MpValue<Value>;
+template<int16_t Value> using Int16C = MpValue<Value>;
+template<int32_t Value> using Int32C = MpValue<Value>;
+template<int64_t Value> using Int64C = MpValue<Value>;
 
-template<size_t Value> using SizeC = ValueC<Value>;
+template<size_t Value> using SizeC = MpValue<Value>;
 
-template<float Value> using FloatC = ValueC<Value>;
-template<double Value> using DoubleC = ValueC<Value>;
+template<float Value> using FloatC = MpValue<Value>;
+template<double Value> using DoubleC = MpValue<Value>;
 
 template<bool Value> inline constexpr auto bool_c = BoolC<Value>{};
 inline constexpr auto true_c = TrueC{};
@@ -121,16 +127,7 @@ template<class... Ts>
 struct MpTypes { };
 
 template<class... Ts>
-inline constexpr auto mp_list = MpTypes<Ts...>{};
-
-template<auto V>
-struct MpValue {
-	using ValueType = decltype(V);
-	static constexpr auto value = V;
-};
-
-template<auto V>
-inline constexpr auto mp_value = MpValue<V>{};
+inline constexpr auto mp_types = MpTypes<Ts...>{};
 
 template<auto... Vs>
 struct MpValues { };
@@ -138,13 +135,9 @@ struct MpValues { };
 template<auto... Vs>
 inline constexpr auto mp_values = MpValues<Vs...>{};
 
-/// @brief Useless on its own but useful as a metafunction
-template<auto V>
-using MpTypeOfValue = decltype(V);
-
 template<size_t I, class T>
 struct MpIndexedType {
-	using Index = ValueC<I>;
+	using Index = MpValue<I>;
 	static constexpr auto index = I;
 	using Type = T;
 };
@@ -159,47 +152,111 @@ enum class Access: uint8_t {
 // Concepts
 // --------
 
-// c_value_c
-// ^^^^^^^^^
+// c_mp_value
+// ^^^^^^^^^^
 
 template<class T>
-inline constexpr auto is_value_c = false;
+inline constexpr auto is_mp_value = false;
 
 template<auto V>
-inline constexpr auto is_value_c<ValueC<V>> = true;
+inline constexpr auto is_mp_value<MpValue<V>> = true;
 
 template<class T>
-concept c_value_c = is_value_c<T>;
+using IsMpValue = BoolC<is_mp_value<T>>;
 
-// c_value_c_of_type
-// ^^^^^^^^^^^^^^^^^
+/// @brief Checks that type `T` is a specialization of `fr::MpValue`
+template<class T>
+concept c_mp_value = is_mp_value<T>;
+
+// c_mp_value_of_type
+// ^^^^^^^^^^^^^^^^^^
 
 template<class T, class U>
-inline constexpr auto is_value_c_of_type = false;
+inline constexpr auto is_mp_value_of_type = false;
 
 template<class U, U Val>
-inline constexpr auto is_value_c_of_type<ValueC<Val>, U> = true;
+inline constexpr auto is_mp_value_of_type<MpValue<Val>, U> = true;
 
 template<class T, class U>
-using IsValueCOfType = BoolC<is_value_c_of_type<T, U>>;
+using IsMpValueOfType = BoolC<is_mp_value_of_type<T, U>>;
+
+/// @brief Checks that type `T` is a specialization of `fr::MpValue` and represents a value of
+/// type `U`
+template<class T, class U>
+concept c_mp_value_of_type = is_mp_value_of_type<T, U>;
+
+// c_mp_value_of
+// ^^^^^^^^^^^^^
+
+template<class T, auto V>
+inline constexpr auto is_mp_value_of = false;
+
+/// @note We don't just `==` two values because to produce the same template specialization
+/// two NTTPs must have effectively be "the same" (see +0.f vs -0.f as a counterexample)
+template<auto TVal, auto V>
+inline constexpr auto is_mp_value_of<MpValue<TVal>, V> = std::is_same_v<MpValue<TVal>, MpValue<V>>;
+
+template<class T, auto V>
+using IsMpValueOf = BoolC<is_mp_value_of<T, V>>;
+
+/// @brief Checks that type `T` is a specialization of `fr::MpValue` and represents value `V`
+template<class T, auto V>
+concept c_mp_value_of = is_mp_value_of<T, V>;
+
+// c_mp_constant
+// ^^^^^^^^^^^^^
+
+template<class T>
+inline constexpr auto is_mp_constant = false;
+
+template<template<auto> class T, auto V>
+inline constexpr auto is_mp_constant<T<V>> = requires {
+	requires std::is_same_v<typename T<V>::type, T<V>>;
+	requires std::is_same_v<typename T<V>::value_type, decltype(V)>;
+	requires std::is_same_v<T<V>, T<T<V>::value>>;
+};
+
+template<class T>
+using IsMpConstant = BoolC<is_mp_constant<T>>;
+
+/// @brief Checks that type `T` is a compile-time constant wrapper
+template<class T>
+concept c_mp_constant = is_mp_constant<T>;
+
+// c_mp_constant_of_type
+// ^^^^^^^^^^^^^^^^^^^^^
 
 template<class T, class U>
-concept c_value_c_of_type = is_value_c_of_type<T, U>;
-
-// c_mp_value_like_of_type
-// ^^^^^^^^^^^^^^^^^^^^^^^
-
-template<class T, class U>
-inline constexpr auto is_mp_value_like_of_type = false;
+inline constexpr auto is_mp_constant_of_type = false;
 
 template<template<auto> class T, auto Val, class U>
-inline constexpr auto is_mp_value_like_of_type<T<Val>, U> = std::is_same_v<decltype(Val), U>;
+requires c_mp_constant<T<Val>>
+inline constexpr auto is_mp_constant_of_type<T<Val>, U> = std::is_same_v<decltype(Val), U>;
 
 template<class T, class U>
-using IsMpValueLikeOfType = BoolC<is_mp_value_like_of_type<T, U>>;
+using IsMpConstantOfType = BoolC<is_mp_constant_of_type<T, U>>;
 
+/// @brief Checks that type `T` is a compile-time constant wrapper and represents a value of
+/// type `U`
 template<class T, class U>
-concept c_mp_value_like_of_type = is_mp_value_like_of_type<T, U>;
+concept c_mp_constant_of_type = is_mp_constant_of_type<T, U>;
+
+// c_mp_constant_of
+// ^^^^^^^^^^^^^^^^
+
+template<class T, auto V>
+inline constexpr auto is_mp_constant_of = false;
+
+template<template<auto> class T, auto TVal, auto V>
+requires c_mp_constant<T<TVal>>
+inline constexpr auto is_mp_constant_of<T<TVal>, V> = std::is_same_v<T<TVal>, T<V>>;
+
+template<class T, auto V>
+using IsMpConstantOf = BoolC<is_mp_constant_of<T, V>>;
+
+/// @brief Checks that type `T` is a compile-time constant wrapper and represents value `V`
+template<class T, auto V>
+concept c_mp_constant_of = is_mp_constant_of<T, V>;
 
 // c_size_c
 // ^^^^^^^^
@@ -326,6 +383,10 @@ inline constexpr auto always_true = true;
 
 // Basic metafunctions
 // -------------------
+
+/// @brief Useless on its own but useful as a metafunction
+template<auto V>
+using MpTypeOfValue = decltype(V);
 
 template<class T>
 using RemoveConstRef = std::remove_const_t<std::remove_reference_t<T>>;

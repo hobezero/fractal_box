@@ -584,19 +584,19 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 TEST_CASE("UniHasher.lenses1", "[u][engine][core][hashing]") {
 	using L1 = fr::detail::UniHashableLens1;
 	SECTION("one transparent") {
-		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<char>};
+		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<char>};
 		CHECK(lenses.transparents() == std::vector<L1>{{{}, 1}});
 	}
 	SECTION("one transparent float") {
-		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<float>};
+		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<float>};
 		CHECK(lenses.transparents() == std::vector<L1>{{{}, 4}});
 	}
 	SECTION("one opaque") {
-		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<long double>};
+		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<long double>};
 		CHECK(lenses.opaques() == std::vector<L1>{{{}, 0}});
 	}
 	SECTION("many") {
-		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_list<
+		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<
 			int32_t,
 			long double,
 			DescribedOptInClass,
@@ -661,15 +661,15 @@ public:
 
 TEST_CASE("UniHasher.lenses2", "[u][engine][core][hashing]") {
 	SECTION("one transparent") {
-		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_list<char>);
+		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_types<char>);
 		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.transparents[0]>('a') == 'a');
 	}
 	SECTION("one opaque") {
-		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_list<long double>);
+		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_types<long double>);
 		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.opaques[0]>(1.l) == 1.l);
 	}
 	SECTION("many transparents and opaques") {
-		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_list<
+		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_types<
 			int32_t,
 			long double,
 			DescribedOptInClass,

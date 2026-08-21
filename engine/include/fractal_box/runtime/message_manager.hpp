@@ -448,7 +448,7 @@ class MessageReader {
 public:
 	using WriterType = MessageWriter<Ts...>;
 	using Types = MpTypes<Ts...>;
-	static constexpr auto types = mp_list<Ts...>;
+	static constexpr auto types = mp_types<Ts...>;
 	using HasRefSemantics = TrueC;
 
 	explicit
@@ -635,7 +635,7 @@ class MessageWriter {
 public:
 	using ReaderType = MessageReader<Ts...>;
 	using Types = MpTypes<Ts...>;
-	static constexpr auto types = mp_list<Ts...>;
+	static constexpr auto types = mp_types<Ts...>;
 	using HasRefSemantics = TrueC;
 
 	explicit

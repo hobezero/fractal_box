@@ -23,6 +23,57 @@ struct D { };
 template<class...>
 struct MyTemplate { };
 
+template<auto V>
+struct MyValue {
+	using type = MyValue;
+	using value_type = decltype(V);
+	static constexpr auto value = V;
+};
+
+template<auto>
+struct MyValueNoMembers { };
+
+template<auto V>
+struct MyValueNoTypeMember {
+	using value_type = decltype(V);
+	static constexpr auto value = V;
+};
+
+template<auto V>
+struct MyValueNoValueTypeMember {
+	using type = MyValueNoValueTypeMember;
+	static constexpr auto value = V;
+};
+
+template<auto V>
+struct MyValueNoValueMember {
+	using type = MyValueNoValueMember;
+	using value_type = decltype(V);
+};
+
+struct Poison { };
+
+template<auto V>
+struct MyValueWrongType {
+	using type = Poison;
+	using value_type = decltype(V);
+	static constexpr auto value = V;
+};
+
+template<auto V>
+struct MyValueWrongValueType {
+	using type = MyValueWrongValueType;
+	using value_type = Poison;
+	static constexpr auto value = V;
+};
+
+template<auto V>
+struct MyValueWrongValue {
+	using type = MyValueWrongValue;
+	using value_type = decltype(V);
+	static constexpr auto value = decltype(V){};
+};
+
 } // namespace
 
 // concepts.hpp tests
@@ -144,7 +195,88 @@ TEST_CASE("MpIf", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<fr::MpLazyIf<false>::Type<int, char>, char>);
 }
 
-TEST_CASE("c_mp_types", "[u][engine][core][meta]") {
+TEST_CASE("c_mp_value", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::c_mp_value<fr::MpValue<2.f>>);
+	STATIC_CHECK(fr::c_mp_value<fr::MpValue<A{}>>);
+	STATIC_CHECK_FALSE(fr::c_mp_value<MyValue<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_value<fr::MpValues<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_value<fr::MpTypes<int, float>>);
+	STATIC_CHECK_FALSE(fr::c_mp_value<std::integral_constant<int, 2>>);
+}
+
+TEST_CASE("c_mp_value_of_type", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::c_mp_value_of_type<fr::MpValue<2.f>, float>);
+	STATIC_CHECK(fr::c_mp_value_of_type<fr::MpValue<A{}>, A>);
+
+	STATIC_CHECK_FALSE(fr::c_mp_value_of_type<fr::MpValue<2>, float>);
+	STATIC_CHECK_FALSE(fr::c_mp_value_of_type<fr::MpValue<short{2}>, int>);
+	STATIC_CHECK_FALSE(fr::c_mp_value_of_type<fr::MpValue<short{2}>, int>);
+	STATIC_CHECK_FALSE(fr::c_mp_value_of_type<MyValue<2>, int>);
+	STATIC_CHECK_FALSE(fr::c_mp_value_of_type<std::integral_constant<int, 2>, int>);
+}
+
+TEST_CASE("c_mp_value_of", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::c_mp_value_of<fr::MpValue<2>, 2>);
+	STATIC_CHECK(fr::c_mp_value_of<fr::MpValue<2.f>, 2.f>);
+	STATIC_CHECK(fr::c_mp_value_of<fr::MpValue<0.f>, 0.f>);
+	STATIC_CHECK(fr::c_mp_value_of<fr::MpValue<std::numeric_limits<double>::quiet_NaN()>,
+		std::numeric_limits<double>::quiet_NaN()>);
+
+	STATIC_CHECK_FALSE(fr::c_mp_value_of<fr::MpValue<0.f>, 1.f>);
+	STATIC_CHECK_FALSE(fr::c_mp_value_of<fr::MpValue<+0.f>, -0.f>);
+	STATIC_CHECK_FALSE(fr::c_mp_value_of<fr::MpValue<+0.f>, 0>);
+	STATIC_CHECK_FALSE(fr::c_mp_value_of<MyValue<12>, 12>);
+}
+
+TEST_CASE("c_mp_constant", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::c_mp_constant<fr::MpValue<2.f>>);
+	STATIC_CHECK(fr::c_mp_constant<fr::MpValue<A{}>>);
+	STATIC_CHECK(fr::c_mp_constant<MyValue<2>>);
+
+	STATIC_CHECK_FALSE(fr::c_mp_constant<MyValueNoMembers<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant<MyValueNoTypeMember<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant<MyValueNoValueTypeMember<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant<MyValueNoValueMember<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant<MyValueWrongType<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant<MyValueWrongValueType<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant<MyValueWrongValue<2>>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant<fr::MpTypes<int, float>>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant<std::integral_constant<int, 2>>);
+}
+
+TEST_CASE("c_mp_constant_of_type", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::c_mp_constant_of_type<fr::MpValue<2.f>, float>);
+	STATIC_CHECK(fr::c_mp_constant_of_type<fr::MpValue<A{}>, A>);
+
+	STATIC_CHECK(fr::c_mp_constant_of_type<MyValue<2.f>, float>);
+	STATIC_CHECK(fr::c_mp_constant_of_type<MyValue<A{}>, A>);
+
+	STATIC_CHECK_FALSE(fr::c_mp_constant_of_type<fr::MpValue<2>, float>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant_of_type<fr::MpValue<short{2}>, int>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant_of_type<fr::MpValue<short{2}>, int>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant_of_type<std::integral_constant<int, 2>, int>);
+}
+
+TEST_CASE("c_mp_constant_of", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::c_mp_constant_of<fr::MpValue<2>, 2>);
+	STATIC_CHECK(fr::c_mp_constant_of<fr::MpValue<2.f>, 2.f>);
+	STATIC_CHECK(fr::c_mp_constant_of<fr::MpValue<0.f>, 0.f>);
+	STATIC_CHECK(fr::c_mp_constant_of<fr::MpValue<std::numeric_limits<double>::quiet_NaN()>,
+		std::numeric_limits<double>::quiet_NaN()>);
+
+	STATIC_CHECK(fr::c_mp_constant_of<MyValue<2>, 2>);
+	STATIC_CHECK(fr::c_mp_constant_of<MyValue<2.f>, 2.f>);
+	STATIC_CHECK(fr::c_mp_constant_of<MyValue<0.f>, 0.f>);
+	STATIC_CHECK(fr::c_mp_constant_of<MyValue<std::numeric_limits<double>::quiet_NaN()>,
+		std::numeric_limits<double>::quiet_NaN()>);
+
+	STATIC_CHECK_FALSE(fr::c_mp_constant_of<fr::MpValue<0.f>, 1.f>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant_of<fr::MpValue<+0.f>, -0.f>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant_of<fr::MpValue<+0.f>, 0>);
+	STATIC_CHECK_FALSE(fr::c_mp_constant_of<MyValue<12>, -12>);
+}
+
+TEST_CASE("c_mp_typelist", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::c_mp_type_list<fr::MpTypes<>>);
 	STATIC_CHECK(fr::c_mp_type_list<fr::MpTypes<int>>);
 	STATIC_CHECK(fr::c_mp_type_list<fr::MpTypes<int, char>>);
@@ -269,11 +401,11 @@ TEST_CASE("MpFirst", "[u][engine][core][meta]") {
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpFirst<fr::MpIndexedType<3, A>>,
-		fr::ValueC<3zu>
+		fr::MpValue<3zu>
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpFirst<fr::MpValues<'a', 'b', 'c', 'd'>>,
-		fr::ValueC<'a'>
+		fr::MpValue<'a'>
 	>);
 }
 
@@ -303,7 +435,7 @@ TEST_CASE("MpSecond", "[u][engine][core][meta]") {
 	>);
 	STATIC_CHECK(std::same_as<
 		fr::MpSecond<fr::MpValues<'a', 'b', 'c', 'd'>>,
-		fr::ValueC<'b'>
+		fr::MpValue<'b'>
 	>);
 }
 

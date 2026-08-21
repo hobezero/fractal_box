@@ -55,20 +55,20 @@ auto num_record_fields_impl() -> size_t {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&&, ValueC<0zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&&, MpValue<0zu>) -> decltype(auto) {
 	return std::forward<F>(f)();
 }
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<1zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<1zu>) -> decltype(auto) {
 	auto&& [_0] = std::forward<T>(o);
 	return std::forward<F>(f)(std::forward_like<T>(_0));
 }
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<2zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<2zu>) -> decltype(auto) {
 	auto&& [_0, _1] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1)
@@ -77,7 +77,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<2zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<3zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<3zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2)
@@ -86,7 +86,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<3zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<4zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<4zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -96,7 +96,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<4zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<5zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<5zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -106,7 +106,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<5zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<6zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<6zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -116,7 +116,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<6zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<7zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<7zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -127,7 +127,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<7zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<8zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<8zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -138,7 +138,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<8zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<9zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<9zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -149,7 +149,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<9zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<10zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<10zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -161,7 +161,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<10zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<11zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<11zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -173,7 +173,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<11zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<12zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<12zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -185,7 +185,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<12zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<13zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<13zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -198,7 +198,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<13zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<14zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<14zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -211,7 +211,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<14zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<15zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<15zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14] = std::forward<T>(o);
 	return std::forward<F>(f)(
 		std::forward_like<T>(_0), std::forward_like<T>(_1), std::forward_like<T>(_2),
@@ -224,7 +224,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<15zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<16zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<16zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15]
 		= std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -239,7 +239,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<16zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<17zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<17zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16]
 		= std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -254,7 +254,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<17zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<18zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<18zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17]
 		= std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -269,7 +269,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<18zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<19zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<19zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18]
 		= std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -285,7 +285,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<19zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<20zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<20zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -301,7 +301,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<20zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<21zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<21zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -317,7 +317,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<21zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<22zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<22zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -334,7 +334,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<22zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<23zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<23zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -351,7 +351,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<23zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<24zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<24zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -368,7 +368,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<24zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<25zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<25zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -386,7 +386,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<25zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<26zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<26zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -404,7 +404,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<26zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<27zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<27zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -422,7 +422,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<27zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<28zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<28zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -441,7 +441,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<28zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<29zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<29zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -460,7 +460,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<29zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<30zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<30zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -479,7 +479,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<30zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<31zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<31zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -499,7 +499,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<31zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<32zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<32zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -519,7 +519,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<32zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<33zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<33zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32] = std::forward<T>(o);
 	return std::forward<F>(f)(
@@ -539,7 +539,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<33zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<34zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<34zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33]
 		= std::forward<T>(o);
@@ -561,7 +561,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<34zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<35zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<35zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34]
 		= std::forward<T>(o);
@@ -583,7 +583,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<35zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<36zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<36zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35]
 		= std::forward<T>(o);
@@ -605,7 +605,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<36zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<37zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<37zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36]
 		= std::forward<T>(o);
@@ -628,7 +628,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<37zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<38zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<38zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37] = std::forward<T>(o);
@@ -651,7 +651,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<38zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<39zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<39zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38] = std::forward<T>(o);
@@ -674,7 +674,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<39zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<40zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<40zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39] = std::forward<T>(o);
@@ -698,7 +698,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<40zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<41zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<41zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40] = std::forward<T>(o);
@@ -722,7 +722,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<41zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<42zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<42zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41] = std::forward<T>(o);
@@ -746,7 +746,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<42zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<43zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<43zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42] = std::forward<T>(o);
@@ -771,7 +771,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<43zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<44zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<44zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43] = std::forward<T>(o);
@@ -796,7 +796,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<44zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<45zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<45zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44] = std::forward<T>(o);
@@ -821,7 +821,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<45zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<46zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<46zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45] = std::forward<T>(o);
@@ -847,7 +847,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<46zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<47zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<47zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46] = std::forward<T>(o);
@@ -873,7 +873,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<47zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<48zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<48zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47] = std::forward<T>(o);
@@ -899,7 +899,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<48zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<49zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<49zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48] = std::forward<T>(o);
@@ -926,7 +926,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<49zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<50zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<50zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49] = std::forward<T>(o);
@@ -953,7 +953,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<50zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<51zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<51zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50] = std::forward<T>(o);
@@ -980,7 +980,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<51zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<52zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<52zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51]
@@ -1009,7 +1009,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<52zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<53zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<53zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52]
@@ -1038,7 +1038,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<53zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<54zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<54zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53]
@@ -1067,7 +1067,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<54zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<55zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<55zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54]
@@ -1097,7 +1097,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<55zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<56zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<56zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1127,7 +1127,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<56zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<57zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<57zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1157,7 +1157,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<57zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<58zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<58zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1188,7 +1188,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<58zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<59zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<59zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1219,7 +1219,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<59zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<60zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<60zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1250,7 +1250,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<60zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<61zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<61zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1282,7 +1282,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<61zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<62zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<62zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1314,7 +1314,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<62zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<63zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<63zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1346,7 +1346,7 @@ auto visit_record_impl(F&& f, T&& o, ValueC<63zu>) -> decltype(auto) {
 
 template<class F, class T>
 FR_FORCE_INLINE constexpr
-auto visit_record_impl(F&& f, T&& o, ValueC<64zu>) -> decltype(auto) {
+auto visit_record_impl(F&& f, T&& o, MpValue<64zu>) -> decltype(auto) {
 	auto&& [_0, _1, _2, _3, _4, _5, _6, _7, _8, _9, _10, _11, _12, _13, _14, _15, _16, _17, _18,
 		_19, _20, _21, _22, _23, _24, _25, _26, _27, _28, _29, _30, _31, _32, _33, _34, _35, _36,
 		_37, _38, _39, _40, _41, _42, _43, _44, _45, _46, _47, _48, _49, _50, _51, _52, _53, _54,
@@ -1389,12 +1389,12 @@ auto visit_record_fields(T&& obj, F&& f) -> decltype(auto) {
 	using PT = std::remove_cvref_t<T>;
 	if constexpr (c_tuple_like<PT>) {
 		return detail::visit_record_impl(std::forward<F>(f), std::forward<T>(obj),
-			value_c<std::tuple_size_v<PT>>);
+			mp_value<std::tuple_size_v<PT>>);
 	}
 	else {
 		static_assert(num_record_fields<PT> <= 64, "Can't visit more than 64 fields");
 		return detail::visit_record_impl(std::forward<F>(f), std::forward<T>(obj),
-			value_c<num_record_fields<PT>>);
+			mp_value<num_record_fields<PT>>);
 	}
 }
 

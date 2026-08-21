@@ -486,7 +486,7 @@ template<c_tuple_like T>
 requires (!c_described_class<T>)
 struct ReflDecompositionImpl<T> {
 	using Type = decltype([]<size_t... Is>(std::index_sequence<Is...>){
-		return mp_list<std::tuple_element_t<Is, T>...>;
+		return mp_types<std::tuple_element_t<Is, T>...>;
 	}(std::make_index_sequence<std::tuple_size_v<T>>{}));
 };
 
@@ -494,7 +494,7 @@ template<c_aggregate T>
 requires (!c_described_class<T> && !c_tuple_like<T>)
 struct ReflDecompositionImpl<T> {
 	using Type = decltype(visit_record_fields(std::declval<T&&>(), [](auto&&... fields) {
-		return mp_list<std::remove_reference_t<decltype(fields)>...>;
+		return mp_types<std::remove_reference_t<decltype(fields)>...>;
 	}));
 };
 

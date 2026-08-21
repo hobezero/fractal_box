@@ -62,8 +62,8 @@ static constexpr std::string_view type_names[] = {
 	fr::type_name<int*>,
 	fr::type_name<std::string>,
 	fr::type_name<std::wstring>,
-	fr::type_name<fr::ValueC<32>>,
-	fr::type_name<fr::ValueC<33>>,
+	fr::type_name<fr::MpValue<32>>,
+	fr::type_name<fr::MpValue<33>>,
 };
 
 TEST_CASE("type_name", "[u][engine][core][reflection]") {
@@ -156,8 +156,8 @@ static constexpr Digest type_hashes[] = {
 	fr::type_hash<Digest, int*>,
 	fr::type_hash<Digest, std::string>,
 	fr::type_hash<Digest, std::wstring>,
-	fr::type_hash<Digest, fr::ValueC<32>>,
-	fr::type_hash<Digest, fr::ValueC<33>>,
+	fr::type_hash<Digest, fr::MpValue<32>>,
+	fr::type_hash<Digest, fr::MpValue<33>>,
 };
 
 TEST_CASE("type_hash", "[u][engine][core][reflection]") {

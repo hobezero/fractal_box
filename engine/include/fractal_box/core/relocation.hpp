@@ -20,18 +20,18 @@ namespace fr {
 
 template<class T>
 concept c_has_custom_is_trivially_relocatable = requires(T x) {
-	{ fr_custom_is_trivially_relocatable(x) } -> c_value_c_of_type<bool>;
+	{ fr_custom_is_trivially_relocatable(x) } -> c_mp_constant_of_type<bool>;
 };
 
 template<class T>
-inline constexpr auto is_trivially_relocatable = bool_c<std::is_trivially_copyable_v<T>>;
+inline constexpr auto is_trivially_relocatable = std::is_trivially_copyable_v<T>;
 
 template<c_has_custom_is_trivially_relocatable T>
-inline constexpr auto is_trivially_relocatable<T>
-	= decltype(fr_custom_is_trivially_relocatable(std::declval<T>())){};
+inline constexpr bool is_trivially_relocatable<T>
+	= decltype(fr_custom_is_trivially_relocatable(std::declval<T>()))::value;
 
 template<class T>
-concept c_trivially_relocatable = is_trivially_relocatable<T>();
+concept c_trivially_relocatable = is_trivially_relocatable<T>;
 
 /// @note `std::move_constructible` implies `std::destructible`
 template<class T>

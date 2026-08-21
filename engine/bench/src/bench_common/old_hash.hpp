@@ -239,7 +239,7 @@ using AdlTestFrCustomHash = decltype(
 /// @note Can't use `requires` because `fr_old_custom_hash` might be declared after this header.
 /// `is_detected` idiom delays the check until template instantiation
 template<class T, class Digest, HashKind Kind>
-concept c_custom_hashable = is_detected<AdlTestFrCustomHash, T, Digest, ValueC<Kind>>;
+concept c_custom_hashable = is_detected<AdlTestFrCustomHash, T, Digest, MpValue<Kind>>;
 
 } // namespace detail
 

@@ -20,7 +20,7 @@ using RangeValue = std::iter_value_t<decltype(std::ranges::begin(std::declval<T&
 namespace detail {
 
 template<class R>
-concept c_has_constexpr_size = requires(const R& r) { typename ValueC<std::ranges::size(r)>; };
+concept c_has_constexpr_size = requires(const R& r) { typename MpValue<std::ranges::size(r)>; };
 
 } // namespace detail
 template<class R>
@@ -33,7 +33,7 @@ concept c_dynamically_sized_range = std::ranges::sized_range<R> && !detail::c_ha
 ///   https://www.youtube.com/watch?v=RemzByMHWjI)
 template<c_constexpr_sized_range R>
 inline constexpr auto constexpr_size = decltype([](R& r) {
-	return value_c<std::ranges::size(r)>;
+	return mp_value<std::ranges::size(r)>;
 }(std::declval<R&>()))::value;
 
 template<class InIter, class OutIter, class Cmp = std::ranges::less, class Proj = std::identity>

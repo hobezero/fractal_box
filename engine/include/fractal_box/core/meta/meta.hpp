@@ -174,12 +174,12 @@ struct MpFirstImpl<TList<First, Rest...>> {
 
 template<template<auto...> class TList, auto First, auto... Rest>
 struct MpFirstImpl<TList<First, Rest...>> {
-	using Type = ValueC<First>;
+	using Type = MpValue<First>;
 };
 
 template<template<auto, class...> class TList, auto First, class... Rest>
 struct MpFirstImpl<TList<First, Rest...>> {
-	using Type = ValueC<First>;
+	using Type = MpValue<First>;
 };
 
 } // namespace detail
@@ -220,7 +220,7 @@ struct MpSecondImpl<TList<First, Second, Rest...>> {
 
 template<template<auto...> class TList, auto First, auto Second, auto... Rest>
 struct MpSecondImpl<TList<First, Second, Rest...>> {
-	using Type = ValueC<Second>;
+	using Type = MpValue<Second>;
 };
 
 template<template<auto, class...> class TList, auto First, class Second, class... Rest>

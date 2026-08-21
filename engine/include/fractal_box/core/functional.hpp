@@ -217,7 +217,7 @@ struct FuncTraitsBase {
 	static constexpr auto result = mp_type<Ret>;
 
 	using Arguments = MpTypes<Args...>;
-	static constexpr auto arguments = mp_list<Args...>;
+	static constexpr auto arguments = mp_types<Args...>;
 };
 
 template<class F>

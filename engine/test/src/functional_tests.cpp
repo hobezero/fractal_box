@@ -62,13 +62,13 @@ struct MyPredCRN { auto operator()(int, char, long) const && noexcept { return t
 struct MyPredVRN { auto operator()(int, char, long) volatile && noexcept { return true; } };
 struct MyPredCVRN { auto operator()(int, char, long) const volatile && noexcept { return true; } };
 
-static constexpr auto my_preds_throwable = fr::mp_list<
+static constexpr auto my_preds_throwable = fr::mp_types<
 	MyPred, MyPredC, MyPredV ,MyPredCV,
 	MyPredL, MyPredCL, MyPredVL, MyPredCVL,
 	MyPredR, MyPredCR, MyPredVR, MyPredCVR
 >;
 
-static constexpr auto my_preds_noexcept = fr::mp_list<
+static constexpr auto my_preds_noexcept = fr::mp_types<
 	MyPredN, MyPredCN, MyPredVN ,MyPredCVN,
 	MyPredLN, MyPredCLN, MyPredVLN, MyPredCVLN,
 	MyPredRN, MyPredCRN, MyPredVRN, MyPredCVRN

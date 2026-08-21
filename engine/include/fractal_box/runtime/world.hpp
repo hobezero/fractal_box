@@ -464,7 +464,7 @@ public:
 		if (std::ranges::none_of(has_comp, Identity{}))
 			return 0zu;
 
-		const auto the_comp_ids = make_component_ids_array(mp_list<Components...>, has_comp);
+		const auto the_comp_ids = make_component_ids_array(mp_types<Components...>, has_comp);
 		const auto the_comps_hash = combine_component_hashes(the_comp_ids);
 
 		const auto new_arch_idx = [&] -> ArchetypeIdx {
