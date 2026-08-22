@@ -3,6 +3,7 @@
 
 #include <concepts>
 #include <type_traits>
+#include <compare>
 
 #include "fractal_box/core/int_types.hpp"
 #include "fractal_box/core/platform.hpp"
@@ -31,16 +32,23 @@ inline constexpr auto value_identity = Value;
 template<auto V>
 struct MpValue {
 	using Type = MpValue;
-	/// @note This makes it compatible with `std::integral_constant`, `std::constant_wrapper`, and
-	/// the like
+	/// @note Makes it compatible with `std::integral_constant`, `std::constant_wrapper`, and
 	using type = MpValue;
 
 	using ValueType = decltype(V);
-	/// @note This makes it compatible with `std::integral_constant`, `std::constant_wrapper`, and
-	/// the like
+	/// @note Makes it compatible with `std::integral_constant`, `std::constant_wrapper`, and
 	using value_type = decltype(V);
 
 	static constexpr auto value = V;
+
+	consteval
+	auto operator<=>(const MpValue&) const noexcept = default;
+
+	/// @note `mp_value<+0.f> != mp_value<-0.f>`
+	template<auto OtherV>
+	requires (!std::same_as<MpValue, MpValue<OtherV>>)
+	consteval
+	auto operator==(MpValue<OtherV>) const noexcept -> bool { return false; }
 
 	explicit(false) constexpr
 	operator ValueType() const noexcept { return V; }

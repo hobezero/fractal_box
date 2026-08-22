@@ -190,6 +190,31 @@ TEST_CASE("CopyCvRef", "[u][engine][core][meta]") {
 // meta_basics.hpp tests
 // ---------------------
 
+TEST_CASE("MpValue.comparison", "[u][engine][core][meta]") {
+	SECTION("comparison of values of the same type") {
+		STATIC_CHECK(fr::mp_value<12> == fr::mp_value<12>);
+		STATIC_CHECK(fr::mp_value<12> != fr::mp_value<60>);
+		STATIC_CHECK(fr::mp_value<12> > fr::mp_value<10>);
+		STATIC_CHECK(fr::mp_value<12> >= fr::mp_value<10>);
+		STATIC_CHECK(fr::mp_value<12> >= fr::mp_value<12>);
+		STATIC_CHECK(fr::mp_value<12> < fr::mp_value<60>);
+		STATIC_CHECK(fr::mp_value<12> <= fr::mp_value<60>);
+		STATIC_CHECK(fr::mp_value<12> <= fr::mp_value<12>);
+	}
+	SECTION("equality follows template argument equivalence") {
+		STATIC_CHECK(fr::mp_value<1.f> == fr::mp_value<1.f>);
+		STATIC_CHECK(fr::mp_value<0.f> != fr::mp_value<-0.f>);
+		STATIC_CHECK(fr::mp_value<0.> != fr::mp_value<-0.>);
+	}
+	SECTION("different types are always not-equal") {
+		STATIC_CHECK(fr::mp_value<12> != fr::mp_value<13>);
+		STATIC_CHECK(fr::mp_value<12> != fr::mp_value<12.>);
+		STATIC_CHECK(fr::mp_value<12> != fr::mp_value<12l>);
+		STATIC_CHECK(fr::mp_value<short{12}> != fr::mp_value<12>);
+		STATIC_CHECK(fr::mp_value<12> != fr::mp_value<12u>);
+	}
+}
+
 TEST_CASE("MpIf", "[u][engine][core][meta]") {
 	STATIC_CHECK(std::same_as<fr::MpLazyIf<true>::Type<int, char>, int>);
 	STATIC_CHECK(std::same_as<fr::MpLazyIf<false>::Type<int, char>, char>);
