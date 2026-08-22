@@ -40,30 +40,28 @@ concept c_maybe_with_inline_display_name = !requires { T::display_name; }
 
 // TODO: Accept T::describe static function
 template<class T>
-concept c_has_describe = requires(std::remove_cvref_t<T> obj) {
+concept c_has_describe = requires(const T& obj) {
 	fr_describe(obj);
 };
 
 template<class T>
 concept c_described_class
-	= c_class<std::remove_cvref_t<T>>
+	= c_class<T>
 	&& c_has_describe<T>
-	&& requires(std::remove_cvref_t<T> obj) {
+	&& requires(const T& obj) {
 		{ fr_describe(obj) } -> c_class_desc;
 	};
 
 template<class T>
-concept c_decomposable = (c_described_class<T> || c_record_like<std::remove_cvref_t<T>>)
+concept c_decomposable = (c_described_class<T> || c_record_like<T>)
 	&& !c_special_reflection_type<T>;
 
 template<class T>
-concept c_reflectable = (c_described_class<T> || c_aggregate<std::remove_cvref_t<T>>)
+concept c_reflectable = (c_described_class<T> || c_aggregate<T>)
 	&& !c_special_reflection_type<T>;
 
-// TODO: Remove all std::remove_cvref_t
 template<class T>
-concept c_reflectable_aggregate = c_aggregate<std::remove_cvref_t<T>>
-	&& !c_special_reflection_type<T>;
+concept c_reflectable_aggregate = c_aggregate<T> && !c_special_reflection_type<T>;
 
 namespace detail {
 
@@ -531,8 +529,7 @@ struct ReflDecompositionImpl;
 
 template<c_described_class T>
 struct ReflDecompositionImpl<T> {
-	using Type = MpTransform<typename detail::Reflection<std::remove_cvref_t<T>>::Fields,
-		TypeOfField>;
+	using Type = MpTransform<typename detail::Reflection<T>::Fields, TypeOfField>;
 };
 
 template<c_tuple_like T>
@@ -598,7 +595,7 @@ inline constexpr auto refl_all_attributes = ReflAllAttributes<T>{};
 // ^^^^^^^^^^^^^^^^^^
 
 template<c_can_have_attributes T, class Attr>
-inline constexpr auto refl_has_attribute = detail::Reflection<std::remove_cvref_t<T>>
+inline constexpr auto refl_has_attribute = detail::Reflection<T>
 	::template has_attribute<Attr>;
 
 template<c_can_have_attributes T, class Attr>
@@ -612,14 +609,14 @@ concept c_has_attribute = c_can_have_attributes<T> && refl_has_attribute<T, Attr
 
 /// @brief `std::arary<Attr, N>` of attributes
 template<c_can_have_attributes T, class Attr>
-inline constexpr auto refl_attributes = detail::Reflection<std::remove_cvref_t<T>>
+inline constexpr auto refl_attributes = detail::Reflection<T>
 	::template get_attributes_of_type<Attr>();
 
 // refl_attribute
 // ^^^^^^^^^^^^^^
 
 template<c_can_have_attributes T, class Attr>
-inline constexpr auto refl_attribute = detail::Reflection<std::remove_cvref_t<T>>
+inline constexpr auto refl_attribute = detail::Reflection<T>
 	::template get_attribute<Attr>();
 
 template<c_can_have_attributes T, class Attr>
@@ -658,7 +655,7 @@ using ReflAttributeOr = MpValue<refl_attribute_or<T, Fallback>>;
 // ^^^^^^^^^
 
 template<c_reflectable T>
-using ReflBases = typename detail::Reflection<std::remove_cvref_t<T>>::Bases;
+using ReflBases = typename detail::Reflection<T>::Bases;
 
 template<c_reflectable T>
 inline constexpr auto refl_bases = ReflBases<T>{};
@@ -667,7 +664,7 @@ inline constexpr auto refl_bases = ReflBases<T>{};
 // ^^^^^^^^^^
 
 template<c_reflectable T>
-using ReflFields = typename detail::Reflection<std::remove_cvref_t<T>>::Fields;
+using ReflFields = typename detail::Reflection<T>::Fields;
 
 template<c_reflectable T>
 inline constexpr auto refl_fields = ReflFields<T>{};
@@ -685,7 +682,7 @@ inline constexpr auto num_fields = NumFields<T>{};
 // ^^^^^^^^^^^^^^
 
 template<c_reflectable T>
-using ReflProperties = typename detail::Reflection<std::remove_cvref_t<T>>::Properties;
+using ReflProperties = typename detail::Reflection<T>::Properties;
 
 template<c_reflectable T>
 inline constexpr auto refl_properties = ReflProperties<T>{};
@@ -713,7 +710,7 @@ requires (c_described_class<T>)
 inline constexpr auto nth_field_name<T, Idx> = refl_custom_name<MpAt<ReflFields<T>, Idx>>;
 
 template<class T, size_t Idx>
-requires (c_aggregate<std::remove_cvref_t<T>> && !c_described_class<T>)
+requires (c_aggregate<T> && !c_described_class<T>)
 inline constexpr auto nth_field_name<T, Idx> = std::string_view(
 	detail::nth_aggregate_field_name_lit<T, Idx>);
 
@@ -776,11 +773,12 @@ auto apply_field(T&& obj) noexcept -> decltype(auto) {
 	}
 }
 
-template<size_t Idx, c_decomposable T>
+template<size_t Idx, class T>
+requires c_decomposable<std::remove_cvref_t<T>>
 FR_FORCE_INLINE constexpr FR_FLATTEN
 auto get(T&& obj) noexcept -> decltype(auto) {
 	using PT = std::remove_cvref_t<T>;
-	if constexpr (c_described_class<T>) {
+	if constexpr (c_described_class<PT>) {
 		using Field = MpAt<ReflFields<PT>, Idx>;
 		return std::forward<T>(obj).*Field::ptr;
 	}
@@ -795,32 +793,34 @@ auto get(T&& obj) noexcept -> decltype(auto) {
 	}
 }
 
-template<c_decomposable T, class F>
+template<class T, class F>
+requires c_decomposable<std::remove_cvref_t<T>>
 FR_FORCE_INLINE constexpr
 void for_each_field(T&& obj, F&& callback) {
 	using PT = std::remove_cvref_t<T>;
-	if constexpr (c_described_class<T>) {
+	if constexpr (c_described_class<PT>) {
 		[&]<size_t... Is>(std::index_sequence<Is...>) FR_FORCE_INLINE_L {
 			(..., static_cast<void>(std::forward<F>(callback)(
-				std::forward<T>(obj).*MpAt<ReflFields<T>, Is>::ptr)));
-		}(std::make_index_sequence<mp_size<ReflFields<T>>>{});
+				std::forward<T>(obj).*MpAt<ReflFields<PT>, Is>::ptr)));
+		}(std::make_index_sequence<mp_size<ReflFields<PT>>>{});
 	}
 	else if constexpr (c_record_like<PT>) {
 		[&]<size_t... Is>(std::index_sequence<Is...>) FR_FORCE_INLINE_L {
 			(..., static_cast<void>(std::forward<F>(callback)(
 				detail::get_nth_record_field<Is>(std::forward<T>(obj)))));
-		}(std::make_index_sequence<mp_size<ReflFields<T>>>{});
+		}(std::make_index_sequence<mp_size<ReflFields<PT>>>{});
 	}
 	else {
 		static_assert(false);
 	}
 }
 
-template<class F, c_decomposable T>
+template<class F, class T>
+requires c_decomposable<std::remove_cvref_t<T>>
 FR_FORCE_INLINE constexpr
 auto visit(T&& obj, F&& f) -> decltype(auto) {
 	using PT = std::remove_cvref_t<T>;
-	if constexpr (c_described_class<T>) {
+	if constexpr (c_described_class<PT>) {
 		using Fields = ReflFields<PT>;
 		return [&]<size_t... Is>(
 			std::index_sequence<Is...>
