@@ -91,20 +91,20 @@ void verify_hashable_child() noexcept {
 
 	using Type = ReflFieldOrPropertyType<Child>;
 	if constexpr (Mode == HashableMode::OptOut) {
-		constexpr auto attr = refl_attribute_or<Child, Hashable, Hashable{true}>;
+		constexpr auto attr = refl_attribute_or<Child, Hashable{true}>;
 		static_assert(!attr || get_hashability<Type>(),
 			"Unhashable field or property marked as hashable");
 	}
 	else if constexpr (Mode == HashableMode::OptIn) {
-		constexpr auto attr = refl_attribute_or<Child, Hashable, Hashable{false}>;
+		constexpr auto attr = refl_attribute_or<Child, Hashable{false}>;
 		static_assert(!attr || get_hashability<Type>(),
 			"Unhashable field or property marked as hashable");
 	}
 	else if constexpr (Mode == HashableMode::AsBytes) {
-		static_assert(refl_attribute_or<Child, Hashable, Hashable{true}>,
+		static_assert(refl_attribute_or<Child, Hashable{true}>,
 			"Can't opt out from hashing a member of a byte-hashable class");
 		if constexpr (is_description_property<Child>) {
-			static_assert(!refl_attribute_or<Child, Hashable, Hashable{false}>,
+			static_assert(!refl_attribute_or<Child, Hashable{false}>,
 				"Byte-hashable class can't have hashable properties");
 		}
 	}

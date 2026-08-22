@@ -360,8 +360,8 @@ private:
 		unroll<mp_size<ReflFieldsAndProperties<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L -> bool {
 			using Child = MpAt<ReflFieldsAndProperties<T>, Idx>;
 			static constexpr auto should_include = mode == OptOut
-				? refl_attribute_or<Child, Serializable, Serializable{true}>
-				: refl_attribute_or<Child, Serializable, Serializable{false}>;
+				? refl_attribute_or<Child, Serializable{true}>
+				: refl_attribute_or<Child, Serializable{false}>;
 			if constexpr (should_include) {
 				return encode_one(get_field_or_property<Child>(obj));
 			}
@@ -418,8 +418,8 @@ private:
 		unroll<mp_size<ReflFieldsAndProperties<T>>>([&]<size_t Idx> FR_FORCE_INLINE_L -> bool {
 			using Child = MpAt<ReflFieldsAndProperties<T>, Idx>;
 			static constexpr auto should_include = mode == OptOut
-				? refl_attribute_or<Child, Serializable, Serializable{true}>
-				: refl_attribute_or<Child, Serializable, Serializable{false}>;
+				? refl_attribute_or<Child, Serializable{true}>
+				: refl_attribute_or<Child, Serializable{false}>;
 			if constexpr (should_include) {
 				if constexpr (c_description_property<Child>) {
 					using ValueType = ReflPropertyType<Child>;

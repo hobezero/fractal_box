@@ -41,8 +41,8 @@ inline constexpr auto mp_valid = MpValid<Op, Args...>{}();
 template<template<class...> class Op, class... Args>
 concept c_mp_valid = mp_valid<Op, Args...>;
 
-// Logic
-// -----
+// Generic metafunctions
+// ---------------------
 
 template<class T>
 using MpNot = BoolC<!T::value>;
@@ -51,6 +51,18 @@ template<template<class...> class Pred>
 struct MpNotFn {
 	template<class... Ts>
 	using Type = BoolC<!Pred<Ts...>::value>;
+};
+
+template<class T>
+struct MpTypeIsFn {
+	template<class U>
+	using Type = BoolC<std::is_same_v<T, U>>;
+};
+
+template<class T>
+struct MpVTypeOfIsFn {
+	template<auto V>
+	using Type = BoolC<std::is_same_v<T, decltype(V)>>;
 };
 
 // Type/value list metaprogramming
@@ -383,12 +395,15 @@ struct MpFindImpl<TList<Ts...>, T> {
 		const bool found = ((false || ... || (std::is_same_v<Ts, T> ? true : (++i, false))));
 		return found ? i : npos;
 	}
+
+	// Cache the result
+	static constexpr auto value = get_value();
 };
 
 } // namespace detail
 
 template<class TList, class T>
-inline constexpr auto mp_find = detail::MpFindImpl<TList, T>::get_value();
+inline constexpr auto mp_find = detail::MpFindImpl<TList, T>::value;
 
 /// @brief Returns the index of the first occurence of `T` in `TList` if `TList` contains `T`,
 /// `npos` otherwise
@@ -746,6 +761,8 @@ using MpPackFlatten = typename detail::MpFlattenOneImpl<TList, TList<Ts...>>::Ty
 // MpRemoveIf & MpFilter
 // ^^^^^^^^^^^^^^^^^^^^^
 
+// TODO: Look into Boost.Hana implementation
+
 namespace detail {
 
 template<bool V>
@@ -881,11 +898,11 @@ struct MpVFilterProjImpl<VList<Vs...>, Pred, Proj> {
 
 } // namespace detail
 
-template<class TList, template<class> class P>
-using MpRemoveIf = typename detail::MpRemoveIfImpl<TList, P>::Type;
+template<class TList, template<class> class Pred>
+using MpRemoveIf = typename detail::MpRemoveIfImpl<TList, Pred>::Type;
 
-template<class VList, template<auto> class P>
-using MpVRemoveIf = typename detail::MpVRemoveIfImpl<VList, P>::Type;
+template<class VList, template<auto> class Pred>
+using MpVRemoveIf = typename detail::MpVRemoveIfImpl<VList, Pred>::Type;
 
 template<class TList, template<class> class Pred, template<class> class Proj>
 using MpRemoveIfProj = typename detail::MpRemoveIfProjImpl<TList, Pred, Proj>::Type;
@@ -894,11 +911,11 @@ using MpRemoveIfProj = typename detail::MpRemoveIfProjImpl<TList, Pred, Proj>::T
 template<class VList, template<auto> class Pred, template<auto> class Proj>
 using MpVRemoveIfProj = typename detail::MpVRemoveIfProjImpl<VList, Pred, Proj>::Type;
 
-template<class TList, template<class> class P>
-using MpFilter = typename detail::MpFilterImpl<TList, P>::Type;
+template<class TList, template<class> class Pred>
+using MpFilter = typename detail::MpFilterImpl<TList, Pred>::Type;
 
-template<class VList, template<auto> class P>
-using MpVFilter = typename detail::MpVFilterImpl<VList, P>::Type;
+template<class VList, template<auto> class Pred>
+using MpVFilter = typename detail::MpVFilterImpl<VList, Pred>::Type;
 
 template<class TList, template<class> class Pred, template<class> class Proj>
 using MpFilterProj = typename detail::MpFilterProjImpl<TList, Pred, Proj>::Type;

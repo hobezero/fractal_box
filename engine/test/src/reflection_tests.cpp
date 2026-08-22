@@ -51,6 +51,29 @@ struct TemplateClassInAnInnerNs {
 } // namespace inner
 } // namespace frt
 
+namespace {
+
+struct Arc {
+	auto operator==(const Arc&) const noexcept -> bool = default;
+};
+
+struct Bag {
+	auto operator==(const Bag&) const noexcept -> bool = default;
+
+public:
+	int foo;
+	int bar;
+};
+
+struct Car {
+	auto operator==(const Car&) const noexcept -> bool = default;
+
+public:
+	int foo;
+};
+
+} // namespace
+
 using namespace std::string_view_literals;
 using namespace std::string_literals;
 
@@ -225,7 +248,7 @@ struct MyWidget: public MyParentA, protected MyParentB, private MyParentC {
 			fr::Name<"MyWidget">,
 			fr::DisplayName<"My Widget">,
 			fr::Bases<MyParentA, MyParentB>,
-			fr::Attributes<MyValueProp{42}, MyTypeProp<char>{}>,
+			fr::Attributes<MyValueProp{42}, MyTypeProp<char>{}, MyValueProp{52}>,
 			fr::Field<
 				&MyWidget::x,
 				fr::Name<"superX">,
@@ -234,7 +257,7 @@ struct MyWidget: public MyParentA, protected MyParentB, private MyParentC {
 			fr::Bases<MyParentC>,
 			fr::Field<
 				&MyWidget::yapp,
-				fr::Attributes<MySerializable{}>
+				fr::Attributes<MySerializable{}, Bag{11, 12}, Bag{21, 22}>
 			>,
 			fr::Field<
 				&MyWidget::z,
@@ -246,7 +269,7 @@ struct MyWidget: public MyParentA, protected MyParentB, private MyParentC {
 				[](const MyWidget& self) noexcept -> std::string_view { return self.u; },
 				[](MyWidget& self, auto&& value) { self.u = std::forward<decltype(u)>(value); },
 				fr::DisplayName<"U">,
-				fr::Attributes<MyHashable{}, MySerializable{}>
+				fr::Attributes<MyHashable{}, Car{31}, MySerializable{}, Car{32}>
 			>,
 			fr::Property<
 				"w",
@@ -271,11 +294,131 @@ public:
 
 } // namespace frt
 
-TEST_CASE("Description-concepts", "[u][engine][core][reflection]") {
-	STATIC_CHECK(std::same_as<fr::IsDescriptionName<fr::Name<"Abc">>, fr::TrueC>);
+TEST_CASE("Reflection-concepts", "[u][engine][core][reflection]") {
+	SECTION("Name") {
+		STATIC_CHECK(fr::is_description_name<fr::Name<"abc">>);
+		STATIC_CHECK(fr::c_description_name<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionName<fr::Name<"abc">>, fr::TrueC>);
 
-	STATIC_CHECK(fr::c_has_describe<frt::MyWidget>);
-	STATIC_CHECK_FALSE(fr::c_has_describe<frt::MyHashable>);
+		STATIC_CHECK_FALSE(fr::is_description_name<fr::DisplayName<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionName<fr::DisplayName<"abc">>, fr::FalseC>);
+		STATIC_CHECK_FALSE(fr::c_description_name<fr::DisplayName<"abc">>);
+		STATIC_CHECK_FALSE(fr::c_description_name<fr::Attributes<>>);
+
+		STATIC_CHECK(fr::is_class_description_part<fr::Name<"abc">>);
+		STATIC_CHECK(fr::c_class_description_part<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<fr::Name<"abc">>, fr::TrueC>);
+
+		STATIC_CHECK(fr::is_field_description_part<fr::Name<"abc">>);
+		STATIC_CHECK(fr::c_field_description_part<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<fr::Name<"abc">>, fr::TrueC>);
+
+		STATIC_CHECK_FALSE(fr::is_property_description_part<fr::Name<"abc">>);
+		STATIC_CHECK_FALSE(fr::c_property_description_part<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<fr::Name<"abc">>, fr::FalseC>);
+
+		STATIC_CHECK(fr::is_special_reflection_type<fr::Name<"abc">>);
+		STATIC_CHECK(fr::c_special_reflection_type<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<fr::Name<"abc">>, fr::TrueC>);
+	}
+	SECTION("DisplayName") {
+		STATIC_CHECK(fr::is_description_display_name<fr::DisplayName<"abc">>);
+		STATIC_CHECK(fr::c_description_display_name<fr::DisplayName<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionDisplayName<fr::DisplayName<"abc">>, fr::TrueC>);
+
+		STATIC_CHECK(fr::is_class_description_part<fr::DisplayName<"abc">>);
+		STATIC_CHECK(fr::c_class_description_part<fr::DisplayName<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<fr::DisplayName<"abc">>, fr::TrueC>);
+
+		STATIC_CHECK(fr::is_field_description_part<fr::DisplayName<"abc">>);
+		STATIC_CHECK(fr::c_field_description_part<fr::DisplayName<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<fr::DisplayName<"abc">>, fr::TrueC>);
+
+		STATIC_CHECK(fr::is_property_description_part<fr::DisplayName<"abc">>);
+		STATIC_CHECK(fr::c_property_description_part<fr::DisplayName<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<fr::DisplayName<"abc">>,
+			fr::TrueC>);
+
+		STATIC_CHECK(fr::is_special_reflection_type<fr::DisplayName<"abc">>);
+		STATIC_CHECK(fr::c_special_reflection_type<fr::DisplayName<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<fr::DisplayName<"abc">>, fr::TrueC>);
+	}
+	SECTION("Bases") {
+		STATIC_CHECK(fr::is_description_bases<fr::Bases<>>);
+		STATIC_CHECK(fr::is_description_bases<fr::Bases<Arc>>);
+		STATIC_CHECK(fr::is_description_bases<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionBases<fr::Bases<>>, fr::TrueC>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionBases<fr::Bases<Arc>>, fr::TrueC>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionBases<fr::Bases<Arc, Bag>>, fr::TrueC>);
+		STATIC_CHECK(fr::c_description_bases<fr::Bases<>>);
+		STATIC_CHECK(fr::c_description_bases<fr::Bases<Arc>>);
+		STATIC_CHECK(fr::c_description_bases<fr::Bases<Arc, Bag>>);
+
+		STATIC_CHECK_FALSE(fr::is_description_bases<fr::Attributes<frt::MySerializable{}>>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionBases<fr::Attributes<frt::MySerializable{}>>,
+			fr::FalseC>);
+		STATIC_CHECK_FALSE(fr::c_description_bases<fr::Attributes<frt::MySerializable{}>>);
+
+		STATIC_CHECK(fr::is_class_description_part<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK(fr::c_class_description_part<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<fr::Bases<Arc, Bag>>, fr::TrueC>);
+
+		STATIC_CHECK_FALSE(fr::is_field_description_part<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK_FALSE(fr::c_field_description_part<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<fr::Bases<Arc, Bag>>, fr::FalseC>);
+
+		STATIC_CHECK_FALSE(fr::is_property_description_part<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK_FALSE(fr::c_property_description_part<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<fr::Bases<Arc, Bag>>, fr::FalseC>);
+
+		STATIC_CHECK(fr::is_special_reflection_type<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK(fr::c_special_reflection_type<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<fr::Bases<Arc, Bag>>, fr::TrueC>);
+	}
+	SECTION("Attributes") {
+		STATIC_CHECK(fr::is_description_attributes<fr::Attributes<>>);
+		STATIC_CHECK(fr::is_description_attributes<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(fr::is_description_attributes<fr::Attributes<Arc{}, Bag{2, 3}>>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionAttributes<fr::Attributes<>>, fr::TrueC>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionAttributes<fr::Attributes<Arc{}>>, fr::TrueC>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionAttributes<fr::Attributes<Arc{}, Bag{2, 3}>>,
+			fr::TrueC>);
+		STATIC_CHECK(fr::c_description_attributes<fr::Attributes<>>);
+		STATIC_CHECK(fr::c_description_attributes<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(fr::c_description_attributes<fr::Attributes<Arc{}, Bag{2, 3}>>);
+
+		STATIC_CHECK_FALSE(fr::is_description_attributes<fr::Bases<Arc, Bag>>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionAttributes<fr::Bases<Arc, Bag>>, fr::FalseC>);
+		STATIC_CHECK_FALSE(fr::c_description_attributes<fr::Bases<Arc, Bag>>);
+	}
+	SECTION("Field") {
+	}
+	SECTION("Property") {
+	}
+	SECTION("ClassDesc") {
+	}
+	SECTION("c_class_description_part (negative)") {
+
+	}
+	SECTION("c_field_description_part (negative)") {
+
+	}
+	SECTION("c_property_description_part (negative)") {
+
+	}
+	SECTION("c_special_reflection_type (negative)") {
+
+	}
+	SECTION("c_has_describe") {
+		STATIC_CHECK(fr::c_has_describe<frt::MyWidget>);
+		STATIC_CHECK_FALSE(fr::c_has_describe<frt::MyHashable>);
+	}
+	SECTION("c_decomposable") {
+
+	}
+	SECTION("c_reflectable") {
+
+	}
 }
 
 TEST_CASE("Class-description.empty", "[u][engine][core][reflection]") {
@@ -283,7 +426,7 @@ TEST_CASE("Class-description.empty", "[u][engine][core][reflection]") {
 	STATIC_CHECK(fr::refl_display_name<frt::MyGadget> == "MyGadget");
 
 	STATIC_CHECK(std::same_as<
-		fr::ReflAttributes<frt::MyGadget>,
+		fr::ReflAllAttributes<frt::MyGadget>,
 		fr::MpValues<>
 	>);
 	STATIC_CHECK(std::same_as<
@@ -302,8 +445,14 @@ TEST_CASE("Class-description.empty", "[u][engine][core][reflection]") {
 		fr::ReflDecomposition<frt::MyGadget>,
 		fr::MpTypes<>
 	>);
+
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<frt::MyGadget, frt::MyHashable>);
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<frt::MyGadget, frt::MyValueProp>);
+
+	STATIC_CHECK(fr::refl_attributes<frt::MyGadget, frt::MyHashable>
+		== std::array<frt::MyHashable, 0zu>{});
+	STATIC_CHECK(fr::refl_attributes<frt::MyGadget, frt::MyValueProp>
+		== std::array<frt::MyValueProp, 0zu>{});
 }
 
 TEST_CASE("Class-description.non-empty", "[u][engine][core][reflection]") {
@@ -324,7 +473,7 @@ TEST_CASE("Class-description.non-empty", "[u][engine][core][reflection]") {
 			>,
 			fr::Field<
 				&frt::MyWidget::yapp,
-				fr::Attributes<frt::MySerializable{}>
+				fr::Attributes<frt::MySerializable{}, Bag{11, 12}, Bag{21, 22}>
 			>,
 			fr::Field<
 				&frt::MyWidget::z,
@@ -340,14 +489,20 @@ TEST_CASE("Class-description.non-empty", "[u][engine][core][reflection]") {
 	>);
 
 	STATIC_CHECK(std::same_as<
-		fr::ReflAttributes<frt::MyWidget>,
-		fr::MpValues<frt::MyValueProp{42}, frt::MyTypeProp<char>{}, frt::MyHashable{false}>
+		fr::ReflAllAttributes<frt::MyWidget>,
+		fr::MpValues<frt::MyValueProp{42}, frt::MyTypeProp<char>{}, frt::MyValueProp{52},
+			frt::MyHashable{false}>
 	>);
 
 	STATIC_CHECK(fr::refl_has_attribute<frt::MyWidget, frt::MyValueProp>);
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<frt::MyWidget, frt::MyDummyProp>);
 
-	STATIC_CHECK(fr::refl_attribute<frt::MyWidget, frt::MyValueProp> == frt::MyValueProp{42});
+	STATIC_CHECK(fr::refl_attributes<frt::MyWidget, frt::MyValueProp> == std::array{
+		frt::MyValueProp{42}, frt::MyValueProp{52}});
+	STATIC_CHECK(fr::refl_attributes<frt::MyWidget, frt::MyHashable> == std::array{
+		frt::MyHashable{false}});
+	STATIC_CHECK(fr::refl_attributes<frt::MyWidget, Arc> == std::array<Arc, 0zu>{});
+
 	STATIC_CHECK(fr::refl_attribute<frt::MyWidget, frt::MyHashable> == frt::MyHashable{false});
 }
 
@@ -382,17 +537,26 @@ TEST_CASE("Class-description.fields", "[u][engine][core][reflection]") {
 	STATIC_CHECK(std::same_as<fr::ReflFieldType<Z>, const char*>);
 
 	STATIC_CHECK(std::same_as<
-		fr::ReflAttributes<X>,
+		fr::ReflAllAttributes<X>,
 		fr::MpValues<frt::MySerializable{}, frt::MyHashable{false}>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::ReflAttributes<Y>,
-		fr::MpValues<frt::MySerializable{}>
+		fr::ReflAllAttributes<Y>,
+		fr::MpValues<frt::MySerializable{}, Bag{11, 12}, Bag{21, 22}>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::ReflAttributes<Z>,
+		fr::ReflAllAttributes<Z>,
 		fr::MpValues<>
 	>);
+
+	STATIC_CHECK(fr::refl_attributes<X, frt::MyHashable> == std::array{frt::MyHashable{false}});
+	STATIC_CHECK(fr::refl_attributes<Y, Bag> == std::array{Bag{11, 12}, Bag{21, 22}});
+	STATIC_CHECK(fr::refl_attributes<Y, Arc> == std::array<Arc, 0>{});
+
+	STATIC_CHECK(fr::refl_attribute<X, frt::MyHashable> == frt::MyHashable{false});
+
+	STATIC_CHECK(fr::refl_attribute_or<X, frt::MyHashable{true}> == frt::MyHashable{false});
+	STATIC_CHECK(fr::refl_attribute_or<Y, frt::MyHashable{false}> == frt::MyHashable{false});
 }
 
 TEST_CASE("Class-description.properties", "[u][engine][core][reflection]") {
@@ -416,13 +580,22 @@ TEST_CASE("Class-description.properties", "[u][engine][core][reflection]") {
 	>);
 
 	STATIC_CHECK(std::same_as<
-		fr::ReflAttributes<U>,
-		fr::MpValues<frt::MyHashable{true}, frt::MySerializable{true}>
+		fr::ReflAllAttributes<U>,
+		fr::MpValues<frt::MyHashable{true}, Car{31}, frt::MySerializable{true}, Car{32}>
 	>);
 	STATIC_CHECK(std::same_as<
-		fr::ReflAttributes<W>,
+		fr::ReflAllAttributes<W>,
 		fr::MpValues<>
 	>);
+
+	STATIC_CHECK(fr::refl_attributes<U, frt::MyHashable> == std::array{frt::MyHashable{}});
+	STATIC_CHECK(fr::refl_attributes<U, Car> == std::array{Car{31}, Car{32}});
+	STATIC_CHECK(fr::refl_attributes<U, Arc> == std::array<Arc, 0>{});
+
+	STATIC_CHECK(fr::refl_attribute<U, frt::MyHashable> == frt::MyHashable{});
+
+	STATIC_CHECK(fr::refl_attribute_or<U, frt::MyHashable{false}> == frt::MyHashable{true});
+	STATIC_CHECK(fr::refl_attribute_or<U, Bag{7, 8}> == Bag{7, 8});
 
 	auto widget = frt::MyWidget{};
 
@@ -679,7 +852,7 @@ TEST_CASE("Aggregate-reflection.class-API", "[u][engine][core][reflection]") {
 		fr::MpTypes<int, int, int>
 	>);
 
-	STATIC_CHECK(fr::mp_size<fr::ReflAttributes<frt::Fidget>> == 0);
+	STATIC_CHECK(fr::mp_size<fr::ReflAllAttributes<frt::Fidget>> == 0);
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<frt::Fidget, frt::MyHashable>);
 	STATIC_CHECK(std::same_as<fr::ReflHasAttribute<frt::Fidget, frt::MyHashable>, fr::FalseC>);
 }
@@ -718,10 +891,10 @@ TEST_CASE("Aggregate-reflection.fields", "[u][engine][core][reflection]") {
 	STATIC_CHECK(std::same_as<fr::ReflFieldType<F2>, std::optional<int>>);
 	STATIC_CHECK(std::same_as<fr::ReflFieldType<F3>, std::tuple<float, float>>);
 
-	STATIC_CHECK(std::same_as<fr::ReflAttributes<F0>, fr::MpValues<>>);
-	STATIC_CHECK(std::same_as<fr::ReflAttributes<F1>, fr::MpValues<>>);
-	STATIC_CHECK(std::same_as<fr::ReflAttributes<F2>, fr::MpValues<>>);
-	STATIC_CHECK(std::same_as<fr::ReflAttributes<F3>, fr::MpValues<>>);
+	STATIC_CHECK(std::same_as<fr::ReflAllAttributes<F0>, fr::MpValues<>>);
+	STATIC_CHECK(std::same_as<fr::ReflAllAttributes<F1>, fr::MpValues<>>);
+	STATIC_CHECK(std::same_as<fr::ReflAllAttributes<F2>, fr::MpValues<>>);
+	STATIC_CHECK(std::same_as<fr::ReflAllAttributes<F3>, fr::MpValues<>>);
 
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<F0, frt::MyHashable>);
 	STATIC_CHECK_FALSE(fr::refl_has_attribute<F1, frt::MyHashable>);

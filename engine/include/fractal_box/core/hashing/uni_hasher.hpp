@@ -368,8 +368,8 @@ private:
 	) {
 		using Type = ReflFieldOrPropertyType<Child>;
 		static constexpr auto should_hash = mode == HashableMode::OptOut
-			? refl_attribute_or<Child, Hashable, Hashable{true}>
-			: refl_attribute_or<Child, Hashable, Hashable{false}>;
+			? refl_attribute_or<Child, Hashable{true}>
+			: refl_attribute_or<Child, Hashable{false}>;
 		if constexpr (should_hash) {
 			build<Type>(appended(path, Idx));
 		}
@@ -967,8 +967,8 @@ public:
 				// call
 				for_each_type<ReflFieldsAndProperties<T>>([&]<class Child> FR_FORCE_INLINE_L {
 					static constexpr auto should_hash = mode == HashableMode::OptOut
-						? refl_attribute_or<Child, Hashable, Hashable{true}>
-						: refl_attribute_or<Child, Hashable, Hashable{false}>;
+						? refl_attribute_or<Child, Hashable{true}>
+						: refl_attribute_or<Child, Hashable{false}>;
 					if constexpr (should_hash) {
 						operator()(get_field_or_property<Child>(obj));
 					}

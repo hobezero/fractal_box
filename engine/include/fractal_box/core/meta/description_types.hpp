@@ -29,7 +29,7 @@ template<class T>
 using IsFieldDescriptionPart = BoolC<is_field_description_part<T>>;
 
 template<class T>
-concept c_field_description_part = is_class_description_part<T>;
+concept c_field_description_part = is_field_description_part<T>;
 
 // c_property_description_part
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -245,6 +245,24 @@ using IsClassDesc = BoolC<is_class_desc<T>>;
 
 template<class T>
 concept c_class_desc = is_class_desc<T>;
+
+// c_special_reflection_type
+// ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+template<class T>
+inline constexpr auto is_special_reflection_type = false;
+
+template<class T>
+using IsSpecialReflectionType = BoolC<is_special_reflection_type<T>>;
+
+template<class T>
+concept c_special_reflection_type = is_special_reflection_type<T>;
+
+template<c_class_description_part T>
+inline constexpr auto is_special_reflection_type<T> = true;
+
+template<c_class_desc T>
+inline constexpr auto is_special_reflection_type<T> = true;
 
 } // namespace fr
 #endif // include guard

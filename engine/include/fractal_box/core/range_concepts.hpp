@@ -7,6 +7,8 @@
 #include "fractal_box/core/concepts.hpp"
 #include "fractal_box/core/meta/meta.hpp"
 
+// TODO: Offer a customization point to opt out of concepts
+
 namespace fr {
 
 // Helpers
