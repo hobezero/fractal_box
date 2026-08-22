@@ -267,7 +267,7 @@ struct MyWidget: public MyParentA, protected MyParentB, private MyParentC {
 				"u",
 				std::string_view,
 				[](const MyWidget& self) noexcept -> std::string_view { return self.u; },
-				[](MyWidget& self, auto&& value) { self.u = std::forward<decltype(u)>(value); },
+				[](MyWidget& self, auto&& value) { self.u = std::forward<decltype(value)>(value); },
 				fr::DisplayName<"U">,
 				fr::Attributes<MyHashable{}, Car{31}, MySerializable{}, Car{32}>
 			>,
@@ -390,34 +390,181 @@ TEST_CASE("Reflection-concepts", "[u][engine][core][reflection]") {
 		STATIC_CHECK_FALSE(fr::is_description_attributes<fr::Bases<Arc, Bag>>);
 		STATIC_CHECK(std::same_as<fr::IsDescriptionAttributes<fr::Bases<Arc, Bag>>, fr::FalseC>);
 		STATIC_CHECK_FALSE(fr::c_description_attributes<fr::Bases<Arc, Bag>>);
+
+		STATIC_CHECK(fr::is_class_description_part<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(fr::c_class_description_part<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<fr::Attributes<Arc{}>>, fr::TrueC>);
+
+		STATIC_CHECK(fr::is_field_description_part<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(fr::c_field_description_part<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<fr::Attributes<Arc{}>>, fr::TrueC>);
+
+		STATIC_CHECK(fr::is_property_description_part<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(fr::c_property_description_part<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<fr::Attributes<Arc{}>>, fr::TrueC>);
+
+		STATIC_CHECK(fr::is_special_reflection_type<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(fr::c_special_reflection_type<fr::Attributes<Arc{}>>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<fr::Attributes<Arc{}>>, fr::TrueC>);
 	}
 	SECTION("Field") {
+		using XField = fr::Field<&frt::MyWidget::x, fr::Name<"superX">>;
+
+		STATIC_CHECK(fr::is_description_field<XField>);
+		STATIC_CHECK(fr::c_description_field<XField>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionField<XField>, fr::TrueC>);
+
+		STATIC_CHECK_FALSE(fr::is_description_field<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionField<fr::Name<"abc">>, fr::FalseC>);
+		STATIC_CHECK_FALSE(fr::c_description_field<fr::Name<"abc">>);
+
+		STATIC_CHECK(fr::is_class_description_part<XField>);
+		STATIC_CHECK(fr::c_class_description_part<XField>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<XField>, fr::TrueC>);
+
+		STATIC_CHECK_FALSE(fr::is_field_description_part<XField>);
+		STATIC_CHECK_FALSE(fr::c_field_description_part<XField>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<XField>, fr::FalseC>);
+
+		STATIC_CHECK_FALSE(fr::is_property_description_part<XField>);
+		STATIC_CHECK_FALSE(fr::c_property_description_part<XField>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<XField>, fr::FalseC>);
+
+		STATIC_CHECK(fr::is_special_reflection_type<XField>);
+		STATIC_CHECK(fr::c_special_reflection_type<XField>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<XField>, fr::TrueC>);
 	}
 	SECTION("Property") {
+		using WProp = fr::Property<"w", float, &frt::MyWidget::get_w, &frt::MyWidget::set_w>;
+
+		STATIC_CHECK(fr::is_description_property<WProp>);
+		STATIC_CHECK(fr::c_description_property<WProp>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionProperty<WProp>, fr::TrueC>);
+
+		STATIC_CHECK_FALSE(fr::is_description_property<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsDescriptionProperty<fr::Name<"abc">>, fr::FalseC>);
+		STATIC_CHECK_FALSE(fr::c_description_property<fr::Name<"abc">>);
+
+		STATIC_CHECK(fr::is_class_description_part<WProp>);
+		STATIC_CHECK(fr::c_class_description_part<WProp>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<WProp>, fr::TrueC>);
+
+		STATIC_CHECK_FALSE(fr::is_field_description_part<WProp>);
+		STATIC_CHECK_FALSE(fr::c_field_description_part<WProp>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<WProp>, fr::FalseC>);
+
+		STATIC_CHECK_FALSE(fr::is_property_description_part<WProp>);
+		STATIC_CHECK_FALSE(fr::c_property_description_part<WProp>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<WProp>, fr::FalseC>);
+
+		STATIC_CHECK(fr::is_special_reflection_type<WProp>);
+		STATIC_CHECK(fr::c_special_reflection_type<WProp>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<WProp>, fr::TrueC>);
 	}
 	SECTION("ClassDesc") {
+		using Desc = fr::ClassDesc<fr::Name<"abc">, fr::Bases<Arc>>;
+
+		STATIC_CHECK(fr::is_class_desc<Desc>);
+		STATIC_CHECK(fr::c_class_desc<Desc>);
+		STATIC_CHECK(std::same_as<fr::IsClassDesc<Desc>, fr::TrueC>);
+
+		STATIC_CHECK_FALSE(fr::is_class_desc<fr::Name<"abc">>);
+		STATIC_CHECK_FALSE(fr::c_class_desc<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsClassDesc<fr::Name<"abc">>, fr::FalseC>);
+
+		STATIC_CHECK(std::same_as<std::remove_cvref_t<decltype(fr::class_desc<fr::Name<"abc">>)>,
+			fr::ClassDesc<fr::Name<"abc">>>);
+
+		STATIC_CHECK(fr::is_special_reflection_type<Desc>);
+		STATIC_CHECK(fr::c_special_reflection_type<Desc>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<Desc>, fr::TrueC>);
 	}
 	SECTION("c_class_description_part (negative)") {
+		STATIC_CHECK_FALSE(fr::is_class_description_part<int>);
+		STATIC_CHECK_FALSE(fr::c_class_description_part<int>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<int>, fr::FalseC>);
 
+		STATIC_CHECK_FALSE(fr::is_class_description_part<Arc>);
+		STATIC_CHECK_FALSE(fr::c_class_description_part<Arc>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<Arc>, fr::FalseC>);
+
+		STATIC_CHECK_FALSE(fr::is_class_description_part<frt::MyDummyProp>);
+		STATIC_CHECK_FALSE(fr::c_class_description_part<frt::MyDummyProp>);
+		STATIC_CHECK(std::same_as<fr::IsClassDescriptionPart<frt::MyDummyProp>, fr::FalseC>);
 	}
 	SECTION("c_field_description_part (negative)") {
+		STATIC_CHECK_FALSE(fr::is_field_description_part<int>);
+		STATIC_CHECK_FALSE(fr::c_field_description_part<int>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<int>, fr::FalseC>);
 
+		STATIC_CHECK_FALSE(fr::is_field_description_part<Arc>);
+		STATIC_CHECK_FALSE(fr::c_field_description_part<Arc>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<Arc>, fr::FalseC>);
+
+		STATIC_CHECK_FALSE(fr::is_field_description_part<fr::Bases<Arc>>);
+		STATIC_CHECK_FALSE(fr::c_field_description_part<fr::Bases<Arc>>);
+		STATIC_CHECK(std::same_as<fr::IsFieldDescriptionPart<fr::Bases<Arc>>, fr::FalseC>);
 	}
 	SECTION("c_property_description_part (negative)") {
+		STATIC_CHECK_FALSE(fr::is_property_description_part<int>);
+		STATIC_CHECK_FALSE(fr::c_property_description_part<int>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<int>, fr::FalseC>);
 
+		STATIC_CHECK_FALSE(fr::is_property_description_part<fr::Name<"abc">>);
+		STATIC_CHECK_FALSE(fr::c_property_description_part<fr::Name<"abc">>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<fr::Name<"abc">>, fr::FalseC>);
+
+		STATIC_CHECK_FALSE(fr::is_property_description_part<fr::Bases<Arc>>);
+		STATIC_CHECK_FALSE(fr::c_property_description_part<fr::Bases<Arc>>);
+		STATIC_CHECK(std::same_as<fr::IsPropertyDescriptionPart<fr::Bases<Arc>>, fr::FalseC>);
 	}
 	SECTION("c_special_reflection_type (negative)") {
+		STATIC_CHECK_FALSE(fr::is_special_reflection_type<int>);
+		STATIC_CHECK_FALSE(fr::c_special_reflection_type<int>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<int>, fr::FalseC>);
 
+		STATIC_CHECK_FALSE(fr::is_special_reflection_type<Arc>);
+		STATIC_CHECK_FALSE(fr::c_special_reflection_type<Arc>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<Arc>, fr::FalseC>);
+
+		STATIC_CHECK_FALSE(fr::is_special_reflection_type<frt::MyWidget>);
+		STATIC_CHECK_FALSE(fr::c_special_reflection_type<frt::MyWidget>);
+		STATIC_CHECK(std::same_as<fr::IsSpecialReflectionType<frt::MyWidget>, fr::FalseC>);
 	}
 	SECTION("c_has_describe") {
 		STATIC_CHECK(fr::c_has_describe<frt::MyWidget>);
 		STATIC_CHECK_FALSE(fr::c_has_describe<frt::MyHashable>);
 	}
+	SECTION("c_described_class") {
+		STATIC_CHECK(fr::c_described_class<frt::MyWidget>);
+		STATIC_CHECK_FALSE(fr::c_described_class<Arc>);
+		// TODO: Check for described/undescribed enums
+	}
 	SECTION("c_decomposable") {
+		STATIC_CHECK(fr::c_decomposable<frt::MyWidget>);
+		STATIC_CHECK(fr::c_decomposable<frt::MyGadget>);
+		STATIC_CHECK(fr::c_decomposable<Bag>);
+		STATIC_CHECK(fr::c_decomposable<std::tuple<int, char>>);
+		STATIC_CHECK(fr::c_decomposable<std::pair<int, char>>);
 
+		// Not a class, so it's neither described nor record-like.
+		STATIC_CHECK_FALSE(fr::c_decomposable<int>);
+		// Has user-declared constructors, so it's neither described nor an aggregate/tuple-like.
+		STATIC_CHECK_FALSE(fr::c_decomposable<std::string>);
+		// A special reflection type is explicitly excluded even though it's an aggregate.
+		STATIC_CHECK_FALSE(fr::c_decomposable<fr::Name<"abc">>);
 	}
 	SECTION("c_reflectable") {
+		STATIC_CHECK(fr::c_reflectable<frt::MyWidget>);
+		STATIC_CHECK(fr::c_reflectable<frt::MyGadget>);
+		STATIC_CHECK(fr::c_reflectable<Bag>);
 
+		// Not a class, so it's neither described nor an aggregate.
+		STATIC_CHECK_FALSE(fr::c_reflectable<int>);
+		// Has user-declared constructors, so it's not an aggregate and isn't described either.
+		STATIC_CHECK_FALSE(fr::c_reflectable<std::tuple<int, char>>);
+		// A special reflection type is explicitly excluded even though it's an aggregate.
+		STATIC_CHECK_FALSE(fr::c_reflectable<fr::Name<"abc">>);
 	}
 }
 
