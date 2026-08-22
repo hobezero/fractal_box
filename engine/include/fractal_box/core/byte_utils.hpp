@@ -22,6 +22,7 @@ concept c_byte_like
 	|| std::same_as<T, std::byte>;
 
 /// @see Compiler Explorer: https://godbolt.org/z/bTf4EeYP5
+/// @todo TODO: Should we accept all `c_byte_like` types? `c_character` types?
 inline constexpr
 auto read32_to_64(const unsigned char* p) noexcept -> uint64_t {
 	if consteval {
@@ -46,6 +47,7 @@ auto read32_to_64(const unsigned char* p) noexcept -> uint64_t {
 }
 
 /// @see Compiler Explorer: https://godbolt.org/z/8vE7T69GW
+/// @todo TODO: Should we accept all `c_byte_like` types? `c_character` types?
 inline constexpr
 auto read64(const unsigned char* p) noexcept -> uint64_t {
 	if consteval {

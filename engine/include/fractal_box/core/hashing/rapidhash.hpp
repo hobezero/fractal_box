@@ -101,6 +101,7 @@ auto rapidhash_mix(uint64_t a, uint64_t b) noexcept -> uint64_t {
 }
 
 template<size_t Size, bool IsAvalanching, bool IsProtected>
+requires (Size <= 16zu)
 FR_FORCE_INLINE constexpr
 auto rapidhash_0_16(
 	const unsigned char* key,
