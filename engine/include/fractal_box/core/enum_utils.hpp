@@ -1,5 +1,5 @@
-#ifndef FRACTAL_BOX_CORE_FLAGS_HPP
-#define FRACTAL_BOX_CORE_FLAGS_HPP
+#ifndef FRACTAL_BOX_CORE_ENUM_UTILS_HPP
+#define FRACTAL_BOX_CORE_ENUM_UTILS_HPP
 
 #include <bit>
 #include <compare>
@@ -63,14 +63,16 @@ public:
 
 	/// @brief Construct Flags from a sequence of flags
 	template<class Range>
-	constexpr Flags(FromRangeInit, Range&& flags) noexcept
+	constexpr
+	Flags(FromRangeInit, Range&& flags) noexcept
 	// Poor man's `std::range_value_t` which doesn't require the <ranges> header
 	requires std::convertible_to<decltype(*std::begin(flags)), FlagEnum>:
 		_value{make_raw_union(std::forward<Range>(flags))}
 	{ }
 
 	friend
-	constexpr void swap(Flags &lhs, Flags &rhs) noexcept {
+	constexpr
+	void swap(Flags &lhs, Flags &rhs) noexcept {
 		using std::swap;
 		swap(lhs._value, rhs._value);
 	}
@@ -85,7 +87,7 @@ public:
 	/// @note Use `test(..)` member function to compare `Flags` with `FlagEnum`
 	auto operator==(FlagEnum rhs) -> bool = delete;
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto raw_value() const noexcept -> StorageType {
 		return _value;
 	}
@@ -120,7 +122,7 @@ public:
 	}
 
 	/// @post `this->test(flags) == on`
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto set(Flags flags, bool on) noexcept -> Flags& {
 		_value &= ~flags._value;
 		_value |= on * flags._value;
@@ -129,7 +131,7 @@ public:
 
 	/// @brief Equivalent to `this->set(flag, true)`
 	/// @post `this->test(flag)`
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto set(FlagEnum flag) noexcept -> Flags& {
 		_value |= std::bit_cast<StorageType>(flag);
 		return *this;
@@ -137,7 +139,7 @@ public:
 
 	/// @brief Equivalent to `this->set(flags, true)`
 	/// @post `this->test(flags)`
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto set(Flags flags) noexcept -> Flags& {
 		_value |= flags._value;
 		return *this;
@@ -145,7 +147,7 @@ public:
 
 	/// @brief Equivalent to `this->set(flag, false)`
 	/// @post `!this->test(flag)`
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto reset(FlagEnum flag) noexcept -> Flags& {
 		_value &= ~std::bit_cast<StorageType>(flag);
 		return *this;
@@ -153,42 +155,42 @@ public:
 
 	/// @brief Equivalent to `this->set(flags, false)`
 	/// @post `!this->test(flags)`
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto reset(Flags flags) noexcept -> Flags& {
 		_value &= ~flags._value;
 		return *this;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto flip(FlagEnum flag) noexcept -> Flags& {
 		_value ^= std::bit_cast<StorageType>(flag);
 		return *this;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto flip(Flags flags) noexcept -> Flags& {
 		_value ^= flags._value;
 		return *this;
 	}
 
 	/// @post `this->empty()`
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto clear() noexcept -> Flags& {
 		_value = {};
 		return *this;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	explicit operator bool() const noexcept {
 		return _value;
 	}
 
-	[[nodiscard]] constexpr
+	[[nodiscard]] FR_FORCE_INLINE constexpr
 	auto empty() const noexcept -> bool {
 		return !_value;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto count() const noexcept -> int
 	requires requires(StorageType v) { std::popcount(v); } {
 		return std::popcount(_value);
@@ -196,37 +198,37 @@ public:
 
 	// Bitwise operators
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto operator|=(Flags other) noexcept -> Flags& {
 		_value |= other._value;
 		return *this;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto operator|=(FlagEnum other) noexcept -> Flags& {
 		_value |= static_cast<StorageType>(other);
 		return *this;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto operator&=(Flags other) noexcept -> Flags& {
 		_value &= other._value;
 		return *this;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto operator&=(FlagEnum other) noexcept -> Flags& {
 		_value &= static_cast<StorageType>(other);
 		return *this;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto operator^=(Flags other) noexcept -> Flags& {
 		_value ^= other._value;
 		return *this;
 	}
 
-	constexpr
+	FR_FORCE_INLINE constexpr
 	auto operator^=(FlagEnum other) noexcept -> Flags& {
 		_value ^= static_cast<StorageType>(other);
 		return *this;
@@ -234,22 +236,22 @@ public:
 
 	// TODO: Implement operator~
 
-	friend constexpr
+	friend FR_FORCE_INLINE constexpr
 	auto operator|(Flags lhs, Flags rhs) noexcept -> Flags {
 		return Flags{adopt, lhs._value | rhs._value};
 	}
 
-	friend constexpr
+	friend FR_FORCE_INLINE constexpr
 	auto operator|(Flags lhs, FlagEnum rhs) noexcept -> Flags {
 		return Flags{adopt, lhs._value | static_cast<StorageType>(rhs)};
 	}
 
-	friend constexpr
+	friend FR_FORCE_INLINE constexpr
 	auto operator|(FlagEnum lhs, Flags rhs) noexcept -> Flags {
 		return Flags{adopt, static_cast<StorageType>(lhs) | rhs._value};
 	}
 
-	friend constexpr
+	friend FR_FORCE_INLINE constexpr
 	auto operator&(Flags lhs, Flags rhs) noexcept -> Flags {
 		return Flags{adopt, lhs._value & rhs._value};
 	}
@@ -259,22 +261,22 @@ public:
 		return Flags{adopt, lhs._value & static_cast<StorageType>(rhs)};
 	}
 
-	friend constexpr
+	friend FR_FORCE_INLINE constexpr
 	auto operator&(FlagEnum lhs, Flags rhs) noexcept -> Flags {
-		return Flags{adopt, static_cast<StorageType>(lhs._value) & rhs._value};
+		return Flags{adopt, static_cast<StorageType>(lhs) & rhs._value};
 	}
 
-	friend constexpr
+	friend FR_FORCE_INLINE constexpr
 	auto operator^(Flags lhs, Flags rhs) noexcept -> Flags {
 		return Flags{adopt, lhs._value ^ rhs._value};
 	}
 
-	friend constexpr
+	friend FR_FORCE_INLINE constexpr
 	auto operator^(Flags lhs, FlagEnum rhs) noexcept -> Flags {
 		return Flags{adopt, lhs._value ^ static_cast<StorageType>(rhs)};
 	}
 
-	friend constexpr
+	friend FR_FORCE_INLINE constexpr
 	auto operator^(FlagEnum lhs, Flags rhs) noexcept -> Flags {
 		return Flags{adopt, static_cast<StorageType>(lhs) ^ rhs._value};
 	}
@@ -294,4 +296,4 @@ private:
 };
 
 } // namespace fr
-#endif // FR_WARS_FLAGS_HPP
+#endif // include guard

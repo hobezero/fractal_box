@@ -296,32 +296,32 @@ public:
 
 	FR_FORCE_INLINE constexpr
 	auto cbegin() const noexcept -> ConstIterator {
-		return ConstIterator{_cells, _first_obj_idx};
+		return ConstIterator{_cells, _first_obj_idx.value()};
 	}
 
 	FR_FORCE_INLINE constexpr
 	auto begin() const noexcept -> ConstIterator {
-		return ConstIterator{_cells.begin(), _first_obj_idx.value()};
+		return ConstIterator{_cells, _first_obj_idx.value()};
 	}
 
 	FR_FORCE_INLINE constexpr
 	auto begin() noexcept -> Iterator {
-		return Iterator{_cells.begin(), _first_obj_idx.value()};
+		return Iterator{_cells, _first_obj_idx.value()};
 	}
 
 	FR_FORCE_INLINE constexpr
 	auto cend() const noexcept -> ConstIterator {
-		return ConstIterator{_cells.end(), _cells.end()};
+		return ConstIterator{_cells, _cells.size()};
 	}
 
 	FR_FORCE_INLINE constexpr
 	auto end() const noexcept -> ConstIterator {
-		return ConstIterator{_cells.end(), _cells.end()};
+		return ConstIterator{_cells, _cells.size()};
 	}
 
 	FR_FORCE_INLINE constexpr
 	auto end() noexcept -> Iterator {
-		return Iterator{_cells.end(), _cells.end()};
+		return Iterator{_cells, _cells.size()};
 	}
 
 private:

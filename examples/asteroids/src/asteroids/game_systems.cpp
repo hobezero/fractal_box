@@ -572,17 +572,17 @@ void CollisionResolutionSystem::run(
 		if (world.has_component<ToBeDestroyed>(col.first_entity())
 			|| world.has_component<ToBeDestroyed>(col.second_entity())
 		) {
-			return;
+			continue;
 		}
 
 		if (const auto m = col.match(collider_asteroid, collider_bullet); m) {
 			handle_asteroid_bullet_collision(world, score, resources, consts, prng, m->first,
 				m->second);
-			return;
+			continue;
 		}
 		if (const auto m = col.match(collider_player, collider_asteroid); m) {
 			msg_writer.push(ReqEndGame{});
-			return;
+			continue;
 		}
 	};
 }

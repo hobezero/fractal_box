@@ -331,7 +331,7 @@ class UncachedQuery {
 	using OptionalLocalIdxsArr = std::array<WithDefault<size_t, npos>, mp_size<OptionalComponents>>;
 
 public:
-	/// @todo TODO: Replace concept requirement with custom static_assert
+	/// @todo TODO: Replace concept requirement with custom static_assert (or not)
 	template<c_query_for_each_array_sink<TWorld, Params...> Sink>
 	auto for_each_array(Sink&& sink) const -> ControlFlow {
 		// # Algorithm:
@@ -447,7 +447,7 @@ public:
 		return ControlFlow::Continue;
 	}
 
-	/// @todo TODO: Replace concept requirement with custom static_assert
+	/// @todo TODO: Replace concept requirement with custom static_assert (or NOT)
 	template<c_query_for_each_sink<TWorld, Params...> Sink>
 	auto for_each(Sink&& sink) const -> ControlFlow {
 		using namespace detail;

@@ -126,7 +126,7 @@ public:
 	}
 
 	constexpr
-	void reserve(ConstIterator size) noexcept(noexcept(_buff.reserve(size)))
+	void reserve(SizeType size) noexcept(noexcept(_buff.reserve(size)))
 	requires requires(Container b) { b.reserve(size); } {
 		_buff.reserve(size);
 	}

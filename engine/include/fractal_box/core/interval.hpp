@@ -153,7 +153,7 @@ public:
 	constexpr
 	auto apply(R&& source) const {
 		using Difference = std::ranges::range_difference_t<R>;
-		std::ranges::subrange{
+		return std::ranges::subrange{
 			std::ranges::begin(source) + static_cast<Difference>(_from),
 			std::ranges::begin(source) + static_cast<Difference>(_from + _size),
 			_size
