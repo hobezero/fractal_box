@@ -7,6 +7,7 @@
 #include <vector>
 
 #include "fractal_box/core/assert.hpp"
+#include "fractal_box/core/platform.hpp"
 #include "fractal_box/core/containers/linear_flat_set.hpp"
 #include "fractal_box/core/containers/type_object_map.hpp"
 #include "fractal_box/core/init_tags.hpp"
@@ -530,20 +531,20 @@ public:
 	}
 
 	void reset() noexcept {
-		[&]<size_t... Is>(std::index_sequence<Is...>) {
+		[&]<size_t... Is>(std::index_sequence<Is...>) FR_FORCE_INLINE_L {
 			((_positions[Is] = {get_queue<Ts>(), 0, _positions[Is].end_idx}), ...);
 		}(std::make_index_sequence<ts_count>{});
 	}
 
 	void consume_all_pending() noexcept {
-		[&]<size_t... Is>(std::index_sequence<Is...>) {
+		[&]<size_t... Is>(std::index_sequence<Is...>) FR_FORCE_INLINE_L {
 			(get_queue<Ts>().consume_interval(_positions[Is].idx, _positions[Is].end_idx), ...);
 			((_positions[Is].idx = _positions[Is].end_idx), ...);
 		}(std::make_index_sequence<ts_count>{});
 	}
 
 	void consume_all() noexcept {
-		[&]<size_t... Is>(std::index_sequence<Is...>) {
+		[&]<size_t... Is>(std::index_sequence<Is...>) FR_FORCE_INLINE_L {
 			(get_queue<Ts>().consume_interval(0, _positions[Is].end_idx), ...);
 			((_positions[Is].idx = _positions[Is].end_idx), ...);
 		}(std::make_index_sequence<ts_count>{});
@@ -603,7 +604,7 @@ private:
 			return 0;
 
 		auto min_cursor = cursors[min_j];
-		[&]<size_t... Is>(std::index_sequence<Is...>) {
+		[&]<size_t... Is>(std::index_sequence<Is...>) FR_FORCE_INLINE_L {
 			static_cast<void>((... || (Is == min_j
 				? (sink_message(sink, min_cursor, get_queue<Ts>()), true) // Short-circuit
 				: false
@@ -710,7 +711,7 @@ public:
 
 	template<c_mp_types PhaseList>
 	void register_tick_phases() {
-		[this]<class... PhaseTags>(MpTypes<PhaseTags...>) {
+		[this]<class... PhaseTags>(MpTypes<PhaseTags...>) FR_FORCE_INLINE_L {
 			(_tick_phases.insert(TickPhaseTypeIdx::of<PhaseTags>), ...);
 		}(PhaseList{});
 	}
