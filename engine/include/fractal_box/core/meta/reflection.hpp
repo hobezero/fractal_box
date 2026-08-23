@@ -75,10 +75,10 @@ struct HashIdxPair {
 
 /// @todo TODO: Rename to Reflector
 template<class T>
-struct Reflection;
+struct Reflector;
 
 template<c_described_class T>
-struct Reflection<T> {
+struct Reflector<T> {
 private:
 	using Desc = decltype(fr_describe(std::declval<T>()));
 	using Parts = typename Desc::Parts;
@@ -179,8 +179,8 @@ public:
 		else {
 			return []<class... Fs, class... Ps>(MpTypes<Fs...>, MpTypes<Ps...>) {
 				constexpr std::string_view names[sizeof...(Fs) + sizeof...(Ps)] = {
-					Reflection<Fs>::name()...,
-					Reflection<Ps>::name()...
+					Reflector<Fs>::name()...,
+					Reflector<Ps>::name()...
 				};
 				return test_all_unique_small(names);
 			}(Fields{}, Properties{});
@@ -221,7 +221,7 @@ public:
 };
 
 template<c_description_field Field>
-struct Reflection<Field> {
+struct Reflector<Field> {
 private:
 	using Parts = typename Field::Parts;
 	using Names = MpFilter<Parts, IsDescriptionName>;
@@ -293,7 +293,7 @@ public:
 };
 
 template<c_description_property Property>
-struct Reflection<Property> {
+struct Reflector<Property> {
 private:
 	using Parts = typename Property::Parts;
 	using DisplayNames = MpFilter<Parts, IsDescriptionDisplayName>;
@@ -417,7 +417,7 @@ namespace detail {
 
 template<c_reflectable_aggregate T>
 requires (!c_has_describe<T>)
-struct Reflection<T> {
+struct Reflector<T> {
 	static constexpr
 	auto name() noexcept { return type_name<T>; }
 
@@ -452,7 +452,7 @@ struct Reflection<T> {
 };
 
 template<c_aggregate_field Field>
-struct Reflection<Field> {
+struct Reflector<Field> {
 	using ClassType = typename Field::ClassType;
 	using FieldType = typename Field::FieldType;
 
@@ -477,8 +477,8 @@ inline consteval
 auto refl_custom_name_impl(std::string_view fallback = type_name<T>) noexcept -> std::string_view {
 	if constexpr (c_described_class<T>) {
 		static_assert(!c_with_inline_name<T>, "There must be a single source of truth for name");
-		if constexpr (Reflection<T>::has_name)
-			return Reflection<T>::name();
+		if constexpr (Reflector<T>::has_name)
+			return Reflector<T>::name();
 		else
 			return fallback;
 	}
@@ -489,7 +489,7 @@ auto refl_custom_name_impl(std::string_view fallback = type_name<T>) noexcept ->
 		|| is_description_property<T>
 		|| is_aggregate_field<T>
 	) {
-		return Reflection<T>::name();
+		return Reflector<T>::name();
 	}
 	else {
 		return fallback;
@@ -502,8 +502,8 @@ auto refl_display_name_impl() noexcept -> std::string_view {
 	if constexpr (c_described_class<T>) {
 		static_assert(!c_with_inline_display_name<T>,
 			"There must be a single source of truth for display name");
-		if constexpr (Reflection<T>::has_display_name)
-			return Reflection<T>::display_name();
+		if constexpr (Reflector<T>::has_display_name)
+			return Reflector<T>::display_name();
 		else
 			return refl_custom_name_impl<T>(clean_type_name<T>);
 	}
@@ -514,7 +514,7 @@ auto refl_display_name_impl() noexcept -> std::string_view {
 		|| is_description_property<T>
 		|| is_aggregate_field<T>
 	) {
-		return Reflection<T>::display_name();
+		return Reflector<T>::display_name();
 	}
 	else {
 		return clean_type_name<T>;
@@ -522,14 +522,14 @@ auto refl_display_name_impl() noexcept -> std::string_view {
 }
 
 template<class Field>
-using TypeOfField = typename Reflection<Field>::FieldType;
+using TypeOfField = typename Reflector<Field>::FieldType;
 
 template<class T>
 struct ReflDecompositionImpl;
 
 template<c_described_class T>
 struct ReflDecompositionImpl<T> {
-	using Type = MpTransform<typename detail::Reflection<T>::Fields, TypeOfField>;
+	using Type = MpTransform<typename detail::Reflector<T>::Fields, TypeOfField>;
 };
 
 template<c_tuple_like T>
@@ -586,7 +586,7 @@ inline constexpr auto refl_display_name = detail::refl_display_name_impl<T>();
 // ^^^^^^^^^^^^^^^^^
 
 template<c_can_have_attributes T>
-using ReflAllAttributes = typename detail::Reflection<T>::Attributes;
+using ReflAllAttributes = typename detail::Reflector<T>::Attributes;
 
 template<c_can_have_attributes T>
 inline constexpr auto refl_all_attributes = ReflAllAttributes<T>{};
@@ -595,7 +595,7 @@ inline constexpr auto refl_all_attributes = ReflAllAttributes<T>{};
 // ^^^^^^^^^^^^^^^^^^
 
 template<c_can_have_attributes T, class Attr>
-inline constexpr auto refl_has_attribute = detail::Reflection<T>
+inline constexpr auto refl_has_attribute = detail::Reflector<T>
 	::template has_attribute<Attr>;
 
 template<c_can_have_attributes T, class Attr>
@@ -609,14 +609,14 @@ concept c_has_attribute = c_can_have_attributes<T> && refl_has_attribute<T, Attr
 
 /// @brief `std::arary<Attr, N>` of attributes
 template<c_can_have_attributes T, class Attr>
-inline constexpr auto refl_attributes = detail::Reflection<T>
+inline constexpr auto refl_attributes = detail::Reflector<T>
 	::template get_attributes_of_type<Attr>();
 
 // refl_attribute
 // ^^^^^^^^^^^^^^
 
 template<c_can_have_attributes T, class Attr>
-inline constexpr auto refl_attribute = detail::Reflection<T>
+inline constexpr auto refl_attribute = detail::Reflector<T>
 	::template get_attribute<Attr>();
 
 template<c_can_have_attributes T, class Attr>
@@ -655,7 +655,7 @@ using ReflAttributeOr = MpValue<refl_attribute_or<T, Fallback>>;
 // ^^^^^^^^^
 
 template<c_reflectable T>
-using ReflBases = typename detail::Reflection<T>::Bases;
+using ReflBases = typename detail::Reflector<T>::Bases;
 
 template<c_reflectable T>
 inline constexpr auto refl_bases = ReflBases<T>{};
@@ -664,7 +664,7 @@ inline constexpr auto refl_bases = ReflBases<T>{};
 // ^^^^^^^^^^
 
 template<c_reflectable T>
-using ReflFields = typename detail::Reflection<T>::Fields;
+using ReflFields = typename detail::Reflector<T>::Fields;
 
 template<c_reflectable T>
 inline constexpr auto refl_fields = ReflFields<T>{};
@@ -682,7 +682,7 @@ inline constexpr auto num_fields = NumFields<T>{};
 // ^^^^^^^^^^^^^^
 
 template<c_reflectable T>
-using ReflProperties = typename detail::Reflection<T>::Properties;
+using ReflProperties = typename detail::Reflector<T>::Properties;
 
 template<c_reflectable T>
 inline constexpr auto refl_properties = ReflProperties<T>{};
@@ -727,7 +727,7 @@ inline constexpr auto refl_field_ptr = Field::ptr;
 // ^^^^^^^^^^^^^^^^
 
 template<c_description_field Field>
-using ReflFieldPtrType = typename detail::Reflection<Field>::PtrType;
+using ReflFieldPtrType = typename detail::Reflector<Field>::PtrType;
 
 template<c_description_field Field>
 inline constexpr auto refl_field_ptr_type = mp_type<ReflFieldPtrType<Field>>;
@@ -737,7 +737,7 @@ inline constexpr auto refl_field_ptr_type = mp_type<ReflFieldPtrType<Field>>;
 
 template<class Field>
 requires (c_description_field<Field> || detail::c_aggregate_field<Field>)
-using ReflFieldClassType = typename detail::Reflection<Field>::ClassType;
+using ReflFieldClassType = typename detail::Reflector<Field>::ClassType;
 
 template<class Field>
 requires (c_description_field<Field> || detail::c_aggregate_field<Field>)
@@ -748,7 +748,7 @@ inline constexpr auto refl_field_class_type = mp_type<ReflFieldClassType<Field>>
 
 template<class Field>
 requires (c_description_field<Field> || detail::c_aggregate_field<Field>)
-using ReflFieldType = typename detail::Reflection<Field>::FieldType;
+using ReflFieldType = typename detail::Reflector<Field>::FieldType;
 
 template<class Field>
 requires (c_description_field<Field> || detail::c_aggregate_field<Field>)
@@ -843,7 +843,7 @@ auto visit(T&& obj, F&& f) -> decltype(auto) {
 // ^^^^^^^^^^^^^^^^
 
 template<c_description_property Property>
-using ReflPropertyType = typename detail::Reflection<Property>::FieldType;
+using ReflPropertyType = typename detail::Reflector<Property>::FieldType;
 
 template<c_description_property Property>
 inline constexpr auto refl_property_type = mp_type<ReflPropertyType<Property>>;
@@ -852,7 +852,7 @@ inline constexpr auto refl_property_type = mp_type<ReflPropertyType<Property>>;
 // ^^^^^^^^^^^^^^^^^^^^
 
 template<c_description_property Property>
-static constexpr auto refl_property_getter = detail::Reflection<Property>::getter;
+static constexpr auto refl_property_getter = detail::Reflector<Property>::getter;
 
 template<c_description_property Property>
 using ReflPropertyGetter = MpValue<refl_property_getter<Property>>;
@@ -861,7 +861,7 @@ using ReflPropertyGetter = MpValue<refl_property_getter<Property>>;
 // ^^^^^^^^^^^^^^^^^^^^
 
 template<c_description_property Property>
-static constexpr auto refl_property_setter = detail::Reflection<Property>::setter;
+static constexpr auto refl_property_setter = detail::Reflector<Property>::setter;
 
 template<c_description_property Property>
 using ReflPropertySettter = MpValue<refl_property_setter<Property>>;
@@ -905,7 +905,7 @@ void set_property(T&& obj, V&& value) {
 // ^^^^^^^^^^^^^^^^^^^^^^^
 
 template<c_field_or_property Child>
-using ReflFieldOrPropertyType = typename detail::Reflection<Child>::FieldType;
+using ReflFieldOrPropertyType = typename detail::Reflector<Child>::FieldType;
 
 template<c_field_or_property Child>
 inline constexpr auto refl_field_or_property_type = mp_type<ReflFieldOrPropertyType<Child>>;
