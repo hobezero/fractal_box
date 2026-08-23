@@ -49,6 +49,15 @@ namespace frt {
 	} \
 } while (false)
 
+#define FRT_CHECK_FALSE(...) do { \
+	if consteval { \
+		FR_PANIC_CHECK(!(__VA_ARGS__)); \
+	} \
+	else { \
+		CHECK_FALSE(__VA_ARGS__); \
+	} \
+} while (false)
+
 #define FRT_REQUIRE(...) do { \
 	if consteval { \
 		FR_PANIC_CHECK((__VA_ARGS__)); \
@@ -58,6 +67,14 @@ namespace frt {
 	} \
 } while (false)
 
+#define FRT_REQUIRE_FALSE(...) do { \
+	if consteval { \
+		FR_PANIC_CHECK(!(__VA_ARGS__)); \
+	} \
+	else { \
+		REQUIRE_FALSE(__VA_ARGS__); \
+	} \
+} while (false)
 
 template<bool IsCompTestEnabled = true>
 inline constexpr
@@ -177,7 +194,7 @@ concept c_func_call_spy = requires {
 
 static_assert(!c_func_call_spy<std::string>);
 
-/// @brief "Spy" in Martin Fowler's terms. Records calls to special member functions. Suitable
+/// "Spy" in Martin Fowler's terms. Records calls to special member functions. Suitable
 /// to test SBO implementations, as it is small enough to fit in any small buffer
 struct SmallCallSpy {
 	using Data = char;
@@ -237,7 +254,7 @@ public:
 
 static_assert(c_func_call_spy<SmallCallSpy>);
 
-/// @brief "Spy" in Martin Fowler's terms. Records calls to special member functions. Suitable
+/// "Spy" in Martin Fowler's terms. Records calls to special member functions. Suitable
 /// to test non-SBO paths in SBO implementations, as it is large enough to NOT fit in basically
 /// any small buffer
 struct LargeCallSpy {
@@ -295,6 +312,34 @@ struct LargeCallSpy {
 
 public:
 	std::array<std::string, 20> data = {};
+};
+
+/// Owns a `std::allocator`-backed buffer of `n` uninitialized `T`s. Unlike a raw `alignas`
+/// byte buffer, this doesn't need `reinterpret_cast` to get a typed pointer to the storage,
+/// which keeps it usable inside constant expressions
+template<class T>
+struct RawStorage {
+	explicit constexpr
+	RawStorage(size_t size): _data{_alloc.allocate(size)}, _size{size} { }
+
+	RawStorage(const RawStorage&) = delete;
+	auto operator=(const RawStorage&) = delete;
+	RawStorage(RawStorage&&) = delete;
+	auto operator=(RawStorage&&) noexcept -> RawStorage& = delete;
+
+	constexpr
+	~RawStorage() { _alloc.deallocate(_data, _size); }
+
+	constexpr
+	auto data() const noexcept -> T* { return _data; }
+
+	constexpr
+	auto size() const noexcept -> size_t { return _size; }
+
+private:
+	std::allocator<T> _alloc {};
+	T* _data = nullptr;
+	size_t _size = 0;
 };
 
 template<class First, class... Rest, class F, class... Args>

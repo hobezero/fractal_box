@@ -252,6 +252,8 @@
 
 #define FR_FORCE_INLINE HEDLEY_ALWAYS_INLINE
 
+/// FORCE_INLINE for lambdas. Put right after the closing parenthesis ')' of the argument list,
+/// before `mutable noexcept -> ReturnType {`
 #if FR_COMP_GCC_EMULATED && FR_HAS_ATTRIBUTE(always_inline)
 #define FR_HAS_FORCE_INLINE_L 1
 #define FR_FORCE_INLINE_L __attribute__((always_inline))

@@ -48,7 +48,7 @@ template<class T>
 concept c_described_class
 	= c_class<T>
 	&& c_has_describe<T>
-	&& requires(const T& obj) {
+	&& requires(T obj) {
 		{ fr_describe(obj) } -> c_class_desc;
 	};
 
