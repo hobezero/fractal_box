@@ -97,7 +97,6 @@ auto move_and_destroy(
 	return std::construct_at(dest, std::move(*src));
 }
 
-/// @note Unlike `unitialized_relocate_*` functions, returns pointer to beginning of the destination
 template<c_trivially_relocatable T>
 requires (!c_const<T>)
 FR_FORCE_INLINE
@@ -106,7 +105,7 @@ auto trivially_relocate(T* src_begin, T* src_end, T* dest_begin) noexcept -> T* 
 	// This is UB, but should work in every major compiler
 	std::memmove(static_cast<void*>(dest_begin), static_cast<const void*>(src_begin),
 		sizeof(T) * n);
-	return std::launder(dest_begin);
+	return std::launder(dest_begin) + n;
 }
 
 template<c_relocatable T>
@@ -120,7 +119,9 @@ auto relocate_at(T* dest, T* src) noexcept(c_nothrow_relocatable<T>) -> T* {
 			return move_and_destroy(dest, src);
 		}
 		else {
-			return trivially_relocate(src, src + 1, dest);
+			// NOTE: `trivially_relocate` returns a pointer past the end of the object, so move
+			// it back to the object itself to be consistent with `move_and_destroy`
+			return trivially_relocate(src, src + 1zu, dest) - 1zu;
 		}
 	}
 	else {
@@ -139,12 +140,11 @@ auto relocate_range_trivial(
 	SrcIter src_begin, SrcIter src_end, DestIter dest_begin
 ) noexcept -> DestIter {
 	const auto n = std::distance(src_begin, src_end);
-	const auto after_begin = trivially_relocate(
+	return trivially_relocate(
 		std::to_address(src_begin),
 		std::to_address(src_begin) + n,
 		std::to_address(dest_begin)
 	);
-	return after_begin + n;
 }
 
 template<class SrcIter, class Size, class DestIter>
@@ -152,16 +152,16 @@ FR_FORCE_INLINE
 auto relocate_n_trivial(
 	SrcIter src_begin, Size n, DestIter dest_begin
 ) noexcept -> std::pair<SrcIter, DestIter> {
-	const auto after_begin = trivially_relocate(
+	const auto dest_end = trivially_relocate(
 		std::to_address(src_begin),
 		std::to_address(src_begin) + n,
 		std::to_address(dest_begin)
 	);
-	return {src_begin + n, after_begin + n};
+	return {src_begin + n, dest_end};
 }
 
 template<class SrcIter, class DestIter>
-FR_FORCE_INLINE constexpr
+inline constexpr
 auto relocate_range_nothrow(SrcIter src_begin, SrcIter src_end, DestIter dest_begin) noexcept {
 	// TODO: Consider moving and destroying in bulk (`std::uninitialized_move` + `std::destroy`)
 	for (; src_begin != src_end; static_cast<void>(++src_begin), static_cast<void>(++dest_begin)) {
@@ -173,7 +173,7 @@ auto relocate_range_nothrow(SrcIter src_begin, SrcIter src_end, DestIter dest_be
 }
 
 template<class SrcIter, class Size, class DestIter>
-FR_FORCE_INLINE constexpr
+inline constexpr
 auto relocate_n_nothrow(
 	SrcIter src_begin, Size n, DestIter dest_begin
 ) noexcept -> std::pair<SrcIter, DestIter> {
@@ -189,7 +189,7 @@ auto relocate_n_nothrow(
 }
 
 template<class SrcIter, class DestIter>
-FR_FORCE_INLINE constexpr
+inline constexpr
 auto relocate_range_throwing(SrcIter src_begin, SrcIter src_end, DestIter dest_begin) {
 	auto dest_it = dest_begin;
 	try {
@@ -209,7 +209,7 @@ auto relocate_range_throwing(SrcIter src_begin, SrcIter src_end, DestIter dest_b
 }
 
 template<class SrcIter, class Size, class DestIter>
-FR_FORCE_INLINE constexpr
+inline constexpr
 auto relocate_n_throwing(
 	SrcIter src_begin, Size n, DestIter dest_begin
 ) -> std::pair<SrcIter, DestIter> {

@@ -258,7 +258,8 @@ TEST_CASE("move_and_destroy", "[u][engine][core][relocation]") {
 
 TEST_CASE("trivially_relocate", "[u][engine][core][relocation]") {
 	// NOTE: No double_test, as trivially_relocate is non-constexpr by design
-	constexpr size_t n = 4;
+	constexpr auto n = 7zu;
+
 	auto src_storage = frt::RawStorage<TrivialAggregate>{n};
 	auto dst_storage = frt::RawStorage<TrivialAggregate>{n};
 	for (auto i = 0; i < static_cast<int>(n); ++i) {
@@ -267,7 +268,7 @@ TEST_CASE("trivially_relocate", "[u][engine][core][relocation]") {
 
 	auto* after = fr::trivially_relocate(
 		src_storage.data(), src_storage.data() + n, dst_storage.data());
-	CHECK(after == dst_storage.data());
+	CHECK(after == dst_storage.data() + n);
 
 	for (auto i = 0; i < static_cast<int>(n); ++i) {
 		FRT_INFO("i = " << i);
@@ -424,7 +425,7 @@ auto make_unitialized_relocate_n_tester(size_t n, size_t failing_idx) {
 
 TEST_CASE("uninitialized_relocate", "[u][engine][core][relocation]") {
 	frt::double_test("trivially relocatable type", [] {
-		constexpr size_t n = 3;
+		constexpr auto n = 7zu;
 
 		auto src_storage = frt::RawStorage<TrivialAggregate>{n};
 		auto dst_storage = frt::RawStorage<TrivialAggregate>{n};
@@ -467,17 +468,17 @@ TEST_CASE("uninitialized_relocate", "[u][engine][core][relocation]") {
 		std::destroy(dst_storage.data(), dst_storage.data() + n);
 	});
 	// TODO: Enable compile time testing in C++26 once we get `throw` in constexpr contexts
-	frt::double_test<false>("throw on move at the start of relocation",
+	frt::double_test<false>("throw on move at the start of array relocation",
 		make_unitialized_relocate_tester(8zu, 0zu));
-	frt::double_test<false>("throw on move in the middle of relocation",
+	frt::double_test<false>("throw on move in the middle of array relocation",
 		make_unitialized_relocate_tester(8zu, 5zu));
-	frt::double_test<false>("throw on move at the end of relocation",
+	frt::double_test<false>("throw on move at the end of array relocation",
 		make_unitialized_relocate_tester(8zu, 7zu));
 }
 
 TEST_CASE("uninitialized_relocate_n", "[u][engine][core][relocation]") {
 	frt::double_test("trivially relocatable type", [] {
-		constexpr size_t n = 3;
+		constexpr auto n = 7zu;
 
 		auto src_storage = frt::RawStorage<TrivialAggregate>{n};
 		auto dst_storage = frt::RawStorage<TrivialAggregate>{n};
@@ -497,7 +498,7 @@ TEST_CASE("uninitialized_relocate_n", "[u][engine][core][relocation]") {
 		std::destroy(dst_storage.data(), dst_storage.data() + n);
 	});
 	frt::double_test("non-trivially relocatable, nothrow-movable type", [] {
-		constexpr size_t n = 3;
+		constexpr auto n = 7zu;
 
 		auto stats = std::array<FuncCallStats, n>{};
 
@@ -522,10 +523,10 @@ TEST_CASE("uninitialized_relocate_n", "[u][engine][core][relocation]") {
 		std::destroy(dst_storage.data(), dst_storage.data() + n);
 	});
 	// TODO: Enable compile time testing in C++26 once we get `throw` in constexpr contexts
-	frt::double_test<false>("throw on move at the start of relocation",
+	frt::double_test<false>("throw on move at the start of array relocation",
 		make_unitialized_relocate_n_tester(8zu, 0zu));
-	frt::double_test<false>("throw on move in the middle of relocation",
+	frt::double_test<false>("throw on move in the middle of array relocation",
 		make_unitialized_relocate_n_tester(8zu, 5zu));
-	frt::double_test<false>("throw on move at the end of relocation",
+	frt::double_test<false>("throw on move at the end of array relocation",
 		make_unitialized_relocate_n_tester(8zu, 7zu));
 }
