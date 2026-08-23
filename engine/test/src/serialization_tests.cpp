@@ -121,10 +121,26 @@ public:
 };
 
 class PrivateClass {
+public:
+	auto operator==(const PrivateClass&) const noexcept -> bool = default;
+
+	auto foo() const noexcept -> int { return _foo; }
+
 private:
 	[[maybe_unused]]
 	int _foo;
 };
+
+} // namespace
+
+template<>
+struct std::hash<PrivateClass> {
+	auto operator()(const PrivateClass& self) const noexcept -> size_t {
+		return std::hash<decltype(self.foo())>{}(self.foo());
+	}
+};
+
+namespace {
 
 struct NoDefaultCtor {
 	NoDefaultCtor() = delete;
@@ -1238,11 +1254,14 @@ TEST_CASE("SbsDataFormat.vectors", "[u][engine][core][serialization]") {
 }
 
 TEST_CASE("SbsDataFormat.variants", "[u][engine][core][serialization]") {
-	using Var = std::variant<int64_t, FriendCustomizedStruct>;
+	// NOTE: Order is important for libstdc++. `int64_t` can't come first.
+	// libstdc++ constructs scalar types in a temporary, so that exceptions thrown during its
+	// construction don't affect the internal state
+	using Var = std::variant<FriendCustomizedStruct, int64_t>;
 	using Index = fr::SbsDataFormat::VariantIndexType<Var>;
 	test_common_serde_scenarios(
 		"non-valueless variants",
-		[] static { return Var{67}; },
+		[] static { return Var{std::in_place_type<int64_t>, 67}; },
 		[] static { return Var{std::in_place_type<FriendCustomizedStruct>, 15, "abc"}; },
 		fr::size_c<sizeof(Index) + sizeof(int64_t)>,
 		fr::size_c<sizeof(Index) + sizeof(int) + sizeof(size_t) + 3>
@@ -1259,8 +1278,8 @@ TEST_CASE("SbsDataFormat.variants", "[u][engine][core][serialization]") {
 
 		FRT_CHECK(fr::SbsDataFormat::encode(writer, in_value) == value_size);
 
-		auto out_value1 = std::variant<int64_t, FriendCustomizedStruct>{0};
-		auto out_value2 = fr::make_valueless_variant<std::variant<int64_t, FriendCustomizedStruct>>();
+		auto out_value1 = Var{0};
+		auto out_value2 = fr::make_valueless_variant<Var>();
 
 		auto reader1 = fr::SpanReader{buf};
 		auto reader2 = fr::SpanReader{buf};

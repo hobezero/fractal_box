@@ -3,7 +3,6 @@
 
 #include <concepts>
 #include <memory>
-#include <span>
 #include <type_traits>
 #include <utility>
 
@@ -19,6 +18,8 @@ namespace fr {
 template<class T>
 requires std::is_object_v<T>
 class NonDefault {
+	using SelfParam = PassAbiAs<NonDefault, T>;
+
 public:
 	using ValueType = T;
 
@@ -65,13 +66,13 @@ public:
 	/// @note `constexpr`-ness annd `noexcept`-ness are deduced
 	/// @todo TODO: Deduce correct comparison category in case `T` doesn't provide `operator<=>`
 	FR_FORCE_INLINE constexpr
-	auto operator==(this PassAbi<NonDefault> lhs, PassAbi<NonDefault> rhs) noexcept -> bool
+	auto operator==(this SelfParam lhs, SelfParam rhs) noexcept -> bool
 	requires std::equality_comparable<T> {
 		return lhs._value == rhs._value;
 	}
 
 	FR_FORCE_INLINE constexpr
-	auto operator<=>(this PassAbi<NonDefault> lhs, PassAbi<NonDefault> rhs) noexcept
+	auto operator<=>(this SelfParam lhs, SelfParam rhs) noexcept
 	requires std::totally_ordered<T> {
 		return synth_three_way(lhs._value, rhs._value);
 	}
@@ -110,6 +111,8 @@ inline constexpr bool is_with_default<WithDefault<T, DefaultValue>> = true;
 ///   TODO: Consider other names: Disengageable, IntrusiveOptional
 template<std::copyable T, T DefaultValue>
 class WithDefault {
+	using SelfParam = PassAbiAs<WithDefault, T>;
+
 public:
 	using ValueType = T;
 	static constexpr T default_value = DefaultValue;
@@ -230,11 +233,14 @@ public:
 	// Comparison with the same WithDefault
 	// ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-	auto operator==(this PassAbi<WithDefault> lhs, PassAbi<WithDefault> rhs) noexcept -> bool {
+	FR_FORCE_INLINE
+	auto operator==(this SelfParam lhs, SelfParam rhs) noexcept -> bool {
 		return lhs._value == rhs._value;
 	}
 
-	auto operator<=>(this PassAbi<WithDefault> lhs, PassAbi<WithDefault> rhs) noexcept
+
+	FR_FORCE_INLINE
+	auto operator<=>(this SelfParam lhs, SelfParam rhs) noexcept
 	requires std::totally_ordered<T> {
 		return synth_three_way(lhs._value, rhs._value);
 	}
@@ -246,8 +252,7 @@ public:
 	requires std::equality_comparable<T>
 	FR_FORCE_INLINE constexpr
 	auto operator==(
-		this PassAbi<WithDefault> lhs,
-		const WithDefault<T, OtherDefaultValue>& rhs
+		this SelfParam lhs, const WithDefault<T, OtherDefaultValue>& rhs
 	) noexcept -> bool {
 		return lhs._value == rhs._value;
 	}
@@ -256,8 +261,7 @@ public:
 	requires std::totally_ordered<T>
 	FR_FORCE_INLINE constexpr
 	auto operator<=>(
-		this PassAbi<WithDefault> lhs,
-		const WithDefault<T, OtherDefaultValue>& rhs
+		this SelfParam lhs, const WithDefault<T, OtherDefaultValue>& rhs
 	) noexcept {
 		return synth_three_way(lhs._value, rhs._value);
 	}
@@ -266,13 +270,13 @@ public:
 	// ^^^^^^^^^^^^^^^^^^
 
 	FR_FORCE_INLINE constexpr
-	auto operator==(this PassAbi<WithDefault> lhs, PassAbi<T> rhs) noexcept -> bool
+	auto operator==(this SelfParam lhs, PassAbi<T> rhs) noexcept -> bool
 	requires std::equality_comparable<T> {
 		return lhs._value == rhs;
 	}
 
 	FR_FORCE_INLINE constexpr
-	auto operator<=>(this PassAbi<WithDefault> lhs, PassAbi<T> rhs) noexcept
+	auto operator<=>(this SelfParam lhs, PassAbi<T> rhs) noexcept
 	requires std::totally_ordered<T> {
 		return synth_three_way(lhs._value, rhs);
 	}

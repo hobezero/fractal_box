@@ -34,7 +34,7 @@ template<class T>
 extern const FakeWrapper<T> fake_object_assert;
 
 template<class T>
-inline constexpr
+inline consteval
 auto fake_object() noexcept -> const T& {
 	return fake_object_assert<T>.value;
 }
@@ -91,7 +91,7 @@ struct EnumNameHelper {
 
 struct MemberNameHelper {
 	static constexpr auto test_name = pretty_func_name<
-		&fr_detail_ReflStruct::_refl_member>();
+		&::fr_detail_ReflStruct::_refl_member>();
 	static constexpr char test_str[] = "&fr_detail_ReflStruct::_refl_member";
 	static constexpr size_t start_pos = test_name.find(test_str);
 	static_assert(start_pos != std::string_view::npos);
@@ -100,7 +100,7 @@ struct MemberNameHelper {
 
 struct MemberNameHelper2 {
 	static constexpr auto test_name = pretty_func_name<
-		&fake_object<fr_detail_ReflStruct>()._refl_member>();
+		&fake_object<::fr_detail_ReflStruct>()._refl_member>();
 	static constexpr char test_str[] = "_refl_member";
 	static constexpr size_t start_pos = test_name.find(test_str);
 	static_assert(start_pos != std::string_view::npos);
@@ -215,9 +215,11 @@ inline constexpr auto member_name_lit = detail::get_member_name<Member>();
 template<class T>
 inline constexpr auto type_name = std::string_view{type_name_lit<T>};
 
+/// @brief `type_name` but without namespaces and outer classes
 template<class T>
 inline constexpr auto unqualified_type_name = std::string_view{unqualified_type_name_lit<T>};
 
+/// @brief `type_name` but without namespaces, outer classes, and template parameters
 template<class T>
 inline constexpr auto clean_type_name = std::string_view{clean_type_name_lit<T>};
 

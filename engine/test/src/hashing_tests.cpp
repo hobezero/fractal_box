@@ -1239,9 +1239,12 @@ TEST_CASE("UniHasher.records", "[u][engine][core][hashing]") {
 			FRT_INFO(fr::unqualified_type_name<Hasher>);
 			constexpr auto hasher = make_hasher<Hasher>();
 
-			const auto a = HashableAggregate{10, "aaa", {25, 35}, {"a0", 12, "a2"}};
-			const auto b = HashableAggregate{10, "aaa", {35, 25}, {"b0", 13, "b2"}};
-			const auto c = HashableAggregate{10, "aaa", {25, 35}, {"a0", 12, "a2"}};
+			// NOTE: A bug in libstdc++'s std::string small string initialization code prevents us
+			// to make these objects `const`. Funnily enough, create a naked `const std::string`
+			// or a wrapper struct with exactly one member `std::string` works just fine
+			auto a = HashableAggregate{10, "aaa", {25, 35}, {"a0", 12, "a2"}};
+			auto b = HashableAggregate{10, "aaa", {35, 25}, {"b0", 13, "b2"}};
+			auto c = HashableAggregate{10, "aaa", {25, 35}, {"a0", 12, "a2"}};
 
 			FRT_CHECK(hasher(a) != hasher(b));
 			FRT_CHECK(hasher(a) == hasher(c));

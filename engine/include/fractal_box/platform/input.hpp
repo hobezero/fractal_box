@@ -171,6 +171,26 @@ enum class SwitchEvent: uint8_t {
 	JustReleased,
 };
 
+using SwitchId = uint64_t;
+static_assert(sizeof(SwitchId) >= sizeof(KeyCode) + sizeof(MouseButton));
+
+struct SwitchInput {
+	SwitchId id;
+	SwitchEvent mode;
+	// TODO: modifiers?
+
+	friend consteval
+	auto fr_describe(SwitchInput) noexcept {
+		return class_desc<
+			Attributes<Hashable{}>,
+			Field<&SwitchInput::id>,
+			Field<&SwitchInput::mode>
+		>;
+	}
+
+	auto operator==(const SwitchInput& rhs) const noexcept -> bool = default;
+};
+
 /// @brief Implements Godot-like API for mapping and accessing user input actions
 ///
 /// The biggest difference between our fr::Input and Godot Input is that we can map
@@ -224,26 +244,6 @@ public:
 private:
 	/// @brief PIMPL without data
 	struct Impl;
-
-	using SwitchId = uint64_t;
-	static_assert(sizeof(SwitchId) >= sizeof(KeyCode) + sizeof(MouseButton));
-
-	struct SwitchInput {
-		SwitchId id;
-		SwitchEvent mode;
-		// TODO: modifiers?
-
-		friend consteval
-		auto fr_describe(SwitchInput) noexcept {
-			return class_desc<
-				Attributes<Hashable{}>,
-				Field<&SwitchInput::id>,
-				Field<&SwitchInput::mode>
-			>;
-		}
-
-		auto operator==(const SwitchInput& rhs) const noexcept -> bool = default;
-	};
 
 	// std::vector because not many actions get fired each frame
 	using ActionSet = std::vector<ActionId>;

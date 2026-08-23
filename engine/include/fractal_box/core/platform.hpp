@@ -529,6 +529,16 @@ extern "C" void* _ReturnAddress();
 #	define FR_DIAGNOSTIC_DISABLE_UNREACHABLE_CODE
 #endif
 
+/// @brief Warns on definition of a class which previously failed to be complete in a SFINAE context
+#if FR_COMP_GCC > FR_VERSION_ENCODE(16, 0, 0)
+#	define FR_HAS_DIAGNOSTIC_SFINAE_INCOMPLETE 1
+#	define FR_DIAGNOSTIC_DISABLE_SFINAE_INCOMPLETE \
+		_Pragma("GCC diagnostic ignored \"-Wsfinae-incomplete\"")
+#else
+#	define FR_HAS_DIAGNOSTIC_SFINAE_INCOMPLETE 0
+#	define FR_DIAGNOSTIC_DISABLE_SFINAE_INCOMPLETE
+#endif
+
 // Misc
 // ----
 

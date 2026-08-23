@@ -323,6 +323,9 @@ TEST_CASE("c_specialization", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::c_specialization<std::string, std::basic_string_view>);
 }
 
+FR_DIAGNOSTIC_PUSH
+FR_DIAGNOSTIC_DISABLE_SFINAE_INCOMPLETE
+
 namespace {
 
 struct Complete { };
@@ -344,6 +347,8 @@ struct Incomplete { };
 TEST_CASE("is_complete.2", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::is_complete<Incomplete>);
 }
+
+FR_DIAGNOSTIC_POP
 
 // meta.hpp tests
 // --------------

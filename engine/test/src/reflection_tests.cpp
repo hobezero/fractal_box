@@ -131,9 +131,7 @@ TEST_CASE("unqualified_type_name", "[u][engine][core][reflection]") {
 	STATIC_CHECK(fr::unqualified_type_name_lit<frt::inner::ClassInAnInnerNs>
 		== "ClassInAnInnerNs"sv);
 	STATIC_CHECK(
-		fr::unqualified_type_name_lit<
-			frt::inner::TemplateClassInAnInnerNs<frt::S<int>, 5>
-		>
+		fr::unqualified_type_name_lit<frt::inner::TemplateClassInAnInnerNs<frt::S<int>, 5>>
 		== "TemplateClassInAnInnerNs<frt::S<int>, 5>"sv
 	);
 }

@@ -138,6 +138,9 @@ concept c_fast_by_value
 template<c_object T>
 using PassAbi = MpLazyIf<c_fast_by_value<T>>::template Type<std::decay_t<T>, const T&>;
 
+template<class Target, c_object Example>
+using PassAbiAs = CopyConstRef<Target, PassAbi<Example>>;
+
 namespace detail {
 
 template<class F>
@@ -377,7 +380,9 @@ struct FuncTraitsImpl<Ret (Args...) const volatile && noexcept>: FuncTraitsBase<
 /// @brief Query information about a callable type at compile time
 /// @note C-style variadic functions are NOT supported
 template<class F>
-struct FuncTraits;
+struct FuncTraits {
+	static constexpr int poison {};
+};
 
 template<class F>
 requires std::is_function_v<std::remove_cvref_t<std::remove_pointer_t<F>>>
@@ -399,7 +404,7 @@ struct FuncTraits<C>: FuncTraits<decltype(&std::remove_cvref_t<C>::operator())> 
 };
 
 template<class T>
-concept c_callable = is_complete<FuncTraits<T>>;
+concept c_callable = !requires { FuncTraits<T>::poison; };
 
 template<class T>
 concept c_static_callable
