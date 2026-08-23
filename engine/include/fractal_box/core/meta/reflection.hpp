@@ -18,8 +18,8 @@
 
 namespace fr {
 
-// Description-based reflection
-// ============================
+// Concepts
+// ========
 
 template<class T>
 concept c_with_inline_name = requires {
@@ -65,6 +65,46 @@ concept c_reflectable_aggregate = c_aggregate<T> && !c_special_reflection_type<T
 
 namespace detail {
 
+template<size_t Idx, StringLiteral Name, class Class, class Member>
+struct AggregateField;
+
+} // namespace detail
+
+template<class T>
+inline constexpr auto is_aggregate_field = false;
+
+template<size_t Idx, StringLiteral Name, class Class, class Member>
+inline constexpr auto is_aggregate_field<detail::AggregateField<Idx, Name, Class, Member>> = true;
+
+template<class T>
+using IsAggregateField = BoolC<is_aggregate_field<T>>;
+
+template<class T>
+concept c_aggregate_field = is_aggregate_field<T>;
+
+template<size_t Idx, StringLiteral Name, class Class, class Member>
+inline constexpr auto is_special_reflection_type<detail::AggregateField<Idx, Name, Class, Member>>
+	= true;
+
+template<class T>
+concept c_can_have_attributes =
+	c_has_describe<T>
+	|| c_description_field<T>
+	|| c_description_property<T>
+	|| c_aggregate<T>
+	|| c_aggregate_field<T>;
+
+template<class T>
+concept c_field_or_property
+	= c_description_field<T>
+	|| c_aggregate_field<T>
+	|| c_description_property<T>;
+
+// Description-based reflection
+// ============================
+
+namespace detail {
+
 template<class T>
 using SelectParts = typename T::Parts;
 
@@ -73,7 +113,6 @@ struct HashIdxPair {
 	size_t idx;
 };
 
-/// @todo TODO: Rename to Reflector
 template<class T>
 struct Reflector;
 
@@ -396,25 +435,6 @@ struct AggregateField {
 	using ClassType = Class;
 };
 
-template<class T>
-inline constexpr auto is_aggregate_field = false;
-
-template<size_t Idx, StringLiteral Name, class Class, class Member>
-inline constexpr auto is_aggregate_field<AggregateField<Idx, Name, Class, Member>> = true;
-
-template<class T>
-using IsAggregateField = BoolC<is_aggregate_field<T>>;
-
-template<class T>
-concept c_aggregate_field = is_aggregate_field<T>;
-
-} // namespace detail
-
-template<detail::c_aggregate_field Field>
-inline constexpr auto is_special_reflection_type<Field> = true;
-
-namespace detail {
-
 template<c_reflectable_aggregate T>
 requires (!c_has_describe<T>)
 struct Reflector<T> {
@@ -485,10 +505,7 @@ auto refl_custom_name_impl(std::string_view fallback = type_name<T>) noexcept ->
 	else if constexpr (c_with_inline_name<T>) {
 		return T::name;
 	}
-	else if constexpr (is_description_field<T>
-		|| is_description_property<T>
-		|| is_aggregate_field<T>
-	) {
+	else if constexpr (c_field_or_property<T>) {
 		return Reflector<T>::name();
 	}
 	else {
@@ -510,10 +527,7 @@ auto refl_display_name_impl() noexcept -> std::string_view {
 	else if constexpr (c_with_inline_display_name<T>) {
 		return T::display_name;
 	}
-	else if constexpr (is_description_field<T>
-		|| is_description_property<T>
-		|| is_aggregate_field<T>
-	) {
+	else if constexpr (c_field_or_property<T>) {
 		return Reflector<T>::display_name();
 	}
 	else {
@@ -549,23 +563,6 @@ struct ReflDecompositionImpl<T> {
 };
 
 } // namespace detail
-
-// Additional concepts
-// ===================
-
-template<class T>
-concept c_can_have_attributes =
-	c_has_describe<T>
-	|| c_description_field<T>
-	|| c_description_property<T>
-	|| c_aggregate<T>
-	|| detail::c_aggregate_field<T>;
-
-template<class T>
-concept c_field_or_property
-	= c_description_field<T>
-	|| detail::c_aggregate_field<T>
-	|| c_description_property<T>;
 
 // Reflection API
 // ==============
@@ -736,36 +733,36 @@ inline constexpr auto refl_field_ptr_type = mp_type<ReflFieldPtrType<Field>>;
 // ^^^^^^^^^^^^^^^^^^
 
 template<class Field>
-requires (c_description_field<Field> || detail::c_aggregate_field<Field>)
+requires (c_description_field<Field> || c_aggregate_field<Field>)
 using ReflFieldClassType = typename detail::Reflector<Field>::ClassType;
 
 template<class Field>
-requires (c_description_field<Field> || detail::c_aggregate_field<Field>)
+requires (c_description_field<Field> || c_aggregate_field<Field>)
 inline constexpr auto refl_field_class_type = mp_type<ReflFieldClassType<Field>>;
 
 // ReflFieldType
 // ^^^^^^^^^^^^^
 
 template<class Field>
-requires (c_description_field<Field> || detail::c_aggregate_field<Field>)
+requires (c_description_field<Field> || c_aggregate_field<Field>)
 using ReflFieldType = typename detail::Reflector<Field>::FieldType;
 
 template<class Field>
-requires (c_description_field<Field> || detail::c_aggregate_field<Field>)
+requires (c_description_field<Field> || c_aggregate_field<Field>)
 inline constexpr auto refl_field_type = mp_type<ReflFieldClassType<Field>>;
 
 // Functions
 // ^^^^^^^^^
 
 template<class Field, class T>
-requires ((c_description_field<Field> || detail::c_aggregate_field<Field>)
+requires ((c_description_field<Field> || c_aggregate_field<Field>)
 	&& std::same_as<ReflFieldClassType<Field>, std::remove_cvref_t<T>>)
 FR_FORCE_INLINE constexpr
 auto apply_field(T&& obj) noexcept -> decltype(auto) {
 	if constexpr (is_description_field<Field>) {
 		return std::forward<T>(obj).*Field::ptr;
 	}
-	else if constexpr (detail::is_aggregate_field<Field>) {
+	else if constexpr (is_aggregate_field<Field>) {
 		return detail::get_nth_record_field<Field::index>(obj);
 	}
 	else {
