@@ -185,7 +185,7 @@ public:
 	int dtor_count = 0;
 };
 
-inline constinit FuncCallStats global_call_stats {};
+inline constinit auto global_call_stats = FuncCallStats{};
 
 template<class T>
 concept c_func_call_spy = requires {

@@ -23,20 +23,11 @@ public:
 
 static_assert(std::is_trivially_copyable_v<TrivialAggregate>);
 
-/// Per-object move/destroy counters. Unlike `frt::SmallCallSpy`/`frt::LargeCallSpy`
-/// (which record into a `constinit` global and therefore can't be touched during constant
-/// evaluation), these are meant to be owned by the caller as a plain local variable, so spies
-/// pointing at them work both at compile time and at runtime
-struct FuncCallStats {
-	int move_ctor_count = 0;
-	int dtor_count = 0;
-};
-
 /// Move-only and NOT trivially copyable (user-provided special members), so it always
 /// takes the `move_and_destroy` path in `relocate_at`, never the `memmove` one
 struct MoveOnlySpy {
 	constexpr
-	MoveOnlySpy(FuncCallStats& c, int v) noexcept: stats{&c}, value{v} { }
+	MoveOnlySpy(frt::FuncCallStats& c, int v) noexcept: stats{&c}, value{v} { }
 
 	MoveOnlySpy(const MoveOnlySpy&) = delete;
 	auto operator=(const MoveOnlySpy&) -> MoveOnlySpy& = delete;
@@ -45,7 +36,7 @@ struct MoveOnlySpy {
 	constexpr
 	MoveOnlySpy(MoveOnlySpy&& other) noexcept:
 		stats{other.stats},
-		value{std::exchange(other.value, -1)}
+		value{std::exchange(other.value, 0)}
 	{
 		if (stats)
 			++this->stats->move_ctor_count;
@@ -58,7 +49,7 @@ struct MoveOnlySpy {
 	}
 
 public:
-	FuncCallStats* stats = nullptr;
+	frt::FuncCallStats* stats = nullptr;
 	int value = 0;
 };
 
@@ -67,8 +58,7 @@ static_assert(!std::is_trivially_copyable_v<MoveOnlySpy>);
 static_assert(std::is_nothrow_move_constructible_v<MoveOnlySpy>);
 static_assert(std::is_nothrow_destructible_v<MoveOnlySpy>);
 
-/// @brief Structurally the same as `MoveOnlySpy`, but opts into trivial relocation via the
-/// customization point
+/// Structurally the same as `MoveOnlySpy`, but opts into trivial relocation
 struct CustomTriviallyRelocatable {
 	explicit constexpr
 	CustomTriviallyRelocatable(int v) noexcept: value{v} { }
@@ -79,7 +69,7 @@ struct CustomTriviallyRelocatable {
 
 	constexpr
 	CustomTriviallyRelocatable(CustomTriviallyRelocatable&& other) noexcept:
-		value{std::exchange(other.value, -1)}
+		value{std::exchange(other.value, 0)}
 	{ }
 
 	constexpr
@@ -94,6 +84,20 @@ public:
 
 static_assert(std::move_constructible<CustomTriviallyRelocatable>);
 static_assert(!std::is_trivially_copyable_v<CustomTriviallyRelocatable>);
+
+/// Trivially copyable aggregate, but opts out of trivial relocation
+struct CustomNonTriviallyRelocatable {
+	friend
+	auto fr_custom_is_trivially_relocatable(CustomNonTriviallyRelocatable) -> fr::FalseC;
+
+public:
+	int x;
+	float y;
+	char* z;
+};
+
+static_assert(std::move_constructible<CustomNonTriviallyRelocatable>);
+static_assert(std::is_trivially_copyable_v<CustomNonTriviallyRelocatable>);
 
 /// Opts into trivial relocation via the customization point, but is NOT move-constructible nor
 /// copy-constructible
@@ -119,7 +123,7 @@ struct BoomException { };
 /// and at runtime - there's no consteval/runtime divergence
 struct ThrowOnMoveSpy {
 	constexpr
-	ThrowOnMoveSpy(FuncCallStats& s, int v, bool should_throw = false) noexcept:
+	ThrowOnMoveSpy(frt::FuncCallStats& s, int v, bool should_throw = false) noexcept:
 		stats{&s},
 		value{v},
 		throw_on_move{should_throw}
@@ -130,9 +134,9 @@ struct ThrowOnMoveSpy {
 	auto operator=(ThrowOnMoveSpy&&) noexcept -> ThrowOnMoveSpy& = delete;
 
 	constexpr
-	ThrowOnMoveSpy(ThrowOnMoveSpy&& other):
+	ThrowOnMoveSpy(ThrowOnMoveSpy&& other) noexcept(false):
 		stats{other.stats},
-		value{other.value},
+		value{std::exchange(other.value, 0)},
 		throw_on_move{false}
 	{
 		if (other.throw_on_move)
@@ -148,7 +152,7 @@ struct ThrowOnMoveSpy {
 	}
 
 public:
-	FuncCallStats* stats = nullptr;
+	frt::FuncCallStats* stats = nullptr;
 	int value = 0;
 	bool throw_on_move = false;
 };
@@ -174,7 +178,7 @@ struct Catch::StringMaker<TrivialAggregate> {
 	}
 };
 
-TEST_CASE("relocation concepts and traits", "[u][engine][core][relocation]") {
+TEST_CASE("relocation-concepts", "[u][engine][core][relocation]") {
 	SECTION("trivially copyable type") {
 		STATIC_CHECK(fr::is_relocatable<TrivialAggregate>);
 		STATIC_CHECK(fr::c_relocatable<TrivialAggregate>);
@@ -183,7 +187,7 @@ TEST_CASE("relocation concepts and traits", "[u][engine][core][relocation]") {
 		STATIC_CHECK(fr::c_nothrow_relocatable<TrivialAggregate>);
 		STATIC_CHECK((fr::c_relocatable_from<TrivialAggregate, TrivialAggregate>));
 	}
-	SECTION("movable, but not trivially copyable, and no custom opt-in") {
+	SECTION("movable, not trivially copyable, and no custom opt-in") {
 		STATIC_CHECK(fr::is_relocatable<MoveOnlySpy>);
 		STATIC_CHECK(fr::c_relocatable<MoveOnlySpy>);
 		STATIC_CHECK_FALSE(fr::is_trivially_relocatable<MoveOnlySpy>);
@@ -196,6 +200,13 @@ TEST_CASE("relocation concepts and traits", "[u][engine][core][relocation]") {
 		STATIC_CHECK(fr::is_trivially_relocatable<CustomTriviallyRelocatable>);
 		STATIC_CHECK(fr::c_trivially_relocatable<CustomTriviallyRelocatable>);
 		STATIC_CHECK(fr::c_nothrow_relocatable<CustomTriviallyRelocatable>);
+	}
+	SECTION("movable, trivially copyable, opted out of trivial relocation") {
+		STATIC_CHECK(fr::is_relocatable<CustomNonTriviallyRelocatable>);
+		STATIC_CHECK(fr::c_relocatable<CustomNonTriviallyRelocatable>);
+		STATIC_CHECK_FALSE(fr::is_trivially_relocatable<CustomNonTriviallyRelocatable>);
+		STATIC_CHECK_FALSE(fr::c_trivially_relocatable<CustomNonTriviallyRelocatable>);
+		STATIC_CHECK(fr::c_nothrow_relocatable<CustomNonTriviallyRelocatable>);
 	}
 	SECTION("not move-constructible, opted into trivial relocation anyway") {
 		STATIC_CHECK_FALSE(fr::is_relocatable<NonMovableTaggedTrivial>);
@@ -218,7 +229,7 @@ TEST_CASE("relocation concepts and traits", "[u][engine][core][relocation]") {
 
 TEST_CASE("move_and_destroy", "[u][engine][core][relocation]") {
 	frt::double_test("moves the value and destroys the source", [] {
-		auto stats = FuncCallStats{};
+		auto stats = frt::FuncCallStats{};
 		auto src_storage = frt::RawStorage<MoveOnlySpy>{1};
 		auto dst_storage = frt::RawStorage<MoveOnlySpy>{1};
 		std::construct_at(src_storage.data(), stats, 42);
@@ -233,7 +244,7 @@ TEST_CASE("move_and_destroy", "[u][engine][core][relocation]") {
 	});
 	// TODO: Enable compile time testing in C++26 once we get `throw` in constexpr contexts
 	frt::double_test<false>("destroys the source even if the move constructor throws", [] {
-		auto stats = FuncCallStats{};
+		auto stats = frt::FuncCallStats{};
 		auto src_storage = frt::RawStorage<ThrowOnMoveSpy>{1};
 		auto dst_storage = frt::RawStorage<ThrowOnMoveSpy>{1};
 		std::construct_at(src_storage.data(), stats, 42, /* should_throw =*/ true);
@@ -280,7 +291,7 @@ TEST_CASE("trivially_relocate", "[u][engine][core][relocation]") {
 
 TEST_CASE("relocate_at", "[u][engine][core][relocation]") {
 	frt::double_test("relocating to the same address is a no-op", [] {
-		auto stats = FuncCallStats{};
+		auto stats = frt::FuncCallStats{};
 		auto storage = frt::RawStorage<MoveOnlySpy>{1};
 		std::construct_at(storage.data(), stats, 42);
 
@@ -315,7 +326,7 @@ TEST_CASE("relocate_at", "[u][engine][core][relocation]") {
 		std::destroy_at(result);
 	});
 	frt::double_test("non-trivially relocatable, movable type", [] {
-		auto counters = FuncCallStats{};
+		auto counters = frt::FuncCallStats{};
 		auto src_storage = frt::RawStorage<MoveOnlySpy>{1};
 		auto dst_storage = frt::RawStorage<MoveOnlySpy>{1};
 		std::construct_at(src_storage.data(), counters, 42);
@@ -333,7 +344,7 @@ TEST_CASE("relocate_at", "[u][engine][core][relocation]") {
 static constexpr
 auto make_unitialized_relocate_tester(size_t n, size_t failing_idx) {
 	return [n, failing_idx] {
-		auto stats = std::vector<FuncCallStats>(n);
+		auto stats = std::vector<frt::FuncCallStats>(n);
 		auto src_storage = frt::RawStorage<ThrowOnMoveSpy>{n};
 		auto dst_storage = frt::RawStorage<ThrowOnMoveSpy>{n};
 		for (auto i = 0zu; i < n; ++i) {
@@ -380,7 +391,7 @@ auto make_unitialized_relocate_tester(size_t n, size_t failing_idx) {
 static constexpr
 auto make_unitialized_relocate_n_tester(size_t n, size_t failing_idx) {
 	return [n, failing_idx] {
-		auto stats = std::vector<FuncCallStats>(n);
+		auto stats = std::vector<frt::FuncCallStats>(n);
 		auto src_storage = frt::RawStorage<ThrowOnMoveSpy>{n};
 		auto dst_storage = frt::RawStorage<ThrowOnMoveSpy>{n};
 		for (auto i = 0zu; i < n; ++i) {
@@ -446,7 +457,7 @@ TEST_CASE("uninitialized_relocate", "[u][engine][core][relocation]") {
 	frt::double_test("non-trivially relocatable, nothrow-movable type", [] {
 		constexpr size_t n = 3;
 
-		auto stats = std::array<FuncCallStats, n>{};
+		auto stats = std::array<frt::FuncCallStats, n>{};
 		auto src_storage = frt::RawStorage<MoveOnlySpy>{n};
 		auto dst_storage = frt::RawStorage<MoveOnlySpy>{n};
 		for (auto i = 0zu; i < n; ++i) {
@@ -500,7 +511,7 @@ TEST_CASE("uninitialized_relocate_n", "[u][engine][core][relocation]") {
 	frt::double_test("non-trivially relocatable, nothrow-movable type", [] {
 		constexpr auto n = 7zu;
 
-		auto stats = std::array<FuncCallStats, n>{};
+		auto stats = std::array<frt::FuncCallStats, n>{};
 
 		auto src_storage = frt::RawStorage<MoveOnlySpy>{n};
 		auto dst_storage = frt::RawStorage<MoveOnlySpy>{n};
