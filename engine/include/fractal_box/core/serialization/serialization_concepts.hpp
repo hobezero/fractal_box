@@ -156,7 +156,38 @@ namespace detail {
 template<SerializableMode Mode, class Child>
 inline consteval
 void verify_serializable_child() noexcept {
+	static_assert(!refl_has_attribute<Child, SerializableCategory>,
+		"SerializableCategory is not an attribute");
+	static_assert(!refl_has_attribute<Child, SerializableMode>,
+		"SerializableMode is not an attribute");
 
+	using Type = ReflFieldOrPropertyType<Child>;
+	if constexpr (Mode == SerializableMode::OptOut) {
+		//            | Serializable | Unserializable
+		//------------|--------------|---------------
+		// Makred T   | T            | F
+		// Marked F   | T            | T
+		// Unmarked   | T            | F
+		constexpr auto attr = refl_attribute_or<Child, Serializable{true}>;
+		static_assert(!attr || get_serializability<Type>(),
+			"Unserializable field or property marked as serializable");
+	}
+	else if constexpr (Mode == SerializableMode::OptIn) {
+		//            | Serializable | Unserializable
+		//------------|--------------|---------------
+		// Makred T   | T            | F
+		// Marked F   | T            | T
+		// Unmarked   | T            | T
+		constexpr auto attr = refl_attribute_or<Child, Serializable{false}>;
+		static_assert(!attr || get_serializability<Type>(),
+			"Unserializable field or property marked as serializable");
+	}
+	else if constexpr (Mode == SerializableMode::None) {
+		return;
+	}
+	else {
+		static_assert(false);
+	}
 }
 
 template<class T>
