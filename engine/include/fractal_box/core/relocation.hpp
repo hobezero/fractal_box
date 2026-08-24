@@ -102,7 +102,8 @@ requires (!c_const<T>)
 FR_FORCE_INLINE
 auto trivially_relocate(T* src_begin, T* src_end, T* dest_begin) noexcept -> T* {
 	const auto n = static_cast<size_t>(src_end - src_begin);
-	// This is UB, but should work in every major compiler
+	// NOTE: This is technically UB, but should work in every major compiler
+	// TODO: Verify that we don't trigger any sanitizers checks (no false-positives found so far)
 	std::memmove(static_cast<void*>(dest_begin), static_cast<const void*>(src_begin),
 		sizeof(T) * n);
 	return std::launder(dest_begin) + n;
@@ -243,7 +244,11 @@ auto uninitialized_relocate(
 	SrcIter src_begin, SrcIter src_end, DestIter dest_begin
 ) noexcept(c_nothrow_relocatable<std::iter_value_t<SrcIter>>) -> DestIter {
 	using Value = std::iter_value_t<SrcIter>;
-	if constexpr (is_trivially_relocatable<Value> && std::contiguous_iterator<SrcIter>) {
+	if constexpr (
+		is_trivially_relocatable<Value>
+		&& std::contiguous_iterator<SrcIter>
+		&& std::contiguous_iterator<DestIter>
+	) {
 		if consteval {
 			return detail::relocate_range_nothrow(std::move(src_begin), std::move(src_end),
 				std::move(dest_begin));
@@ -264,14 +269,18 @@ auto uninitialized_relocate(
 }
 
 /// @pre No overlap: `dest_begin` is not in the range `[src_begin, src_begin + n)`
-template<std::forward_iterator SrcIter, class Size, std::forward_iterator DestIter>
+template<std::forward_iterator SrcIter, std::integral Size, std::forward_iterator DestIter>
 requires c_relocatable_from<std::iter_value_t<SrcIter>, std::iter_value_t<DestIter>>
 FR_FORCE_INLINE constexpr
 auto uninitialized_relocate_n(
 	SrcIter src_begin, Size n, DestIter dest_begin
 ) noexcept(c_nothrow_relocatable<std::iter_value_t<SrcIter>>) -> std::pair<SrcIter, DestIter> {
 	using Value = std::iter_value_t<SrcIter>;
-	if constexpr (is_trivially_relocatable<Value> && std::contiguous_iterator<SrcIter>) {
+	if constexpr (
+		is_trivially_relocatable<Value>
+		&& std::contiguous_iterator<SrcIter>
+		&& std::contiguous_iterator<DestIter>
+	) {
 		if consteval {
 			return detail::relocate_n_nothrow(std::move(src_begin), n, std::move(dest_begin));
 		}
