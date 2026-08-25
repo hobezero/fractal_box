@@ -131,6 +131,7 @@ auto get_hashability() noexcept -> Hashability {
 	using enum HashableCategory;
 	using enum HashableMode;
 	static constexpr auto has_unique_repr = std::has_unique_object_representations_v<PT>;
+	static constexpr auto is_standart_layout = std::is_standard_layout_v<PT>;
 
 	if constexpr (std::is_fundamental_v<PT>) {
 		static_assert(!c_has_custom_hash<PT>, "Can't customize hashing for primitives");
@@ -222,6 +223,7 @@ auto get_hashability() noexcept -> Hashability {
 				"Byte-hashable class must have byte-hashable bases");
 			static_assert(has_unique_repr, "Byte-hashable class must have unique object"
 				"representations");
+			static_assert(is_standart_layout, "Byte-hashable class must be a standard layout type");
 			static_assert(mp_all_of<ReflDecomposition<PT>, IsByteHashable>,
 				"Byte-hashable class must have byte-hashable fields");
 			[]<class... Bases, class... FieldTypes>(MpTypes<Bases...>, MpTypes<FieldTypes...>) {

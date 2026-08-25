@@ -11,6 +11,8 @@ enum class HashableMode: uint8_t {
 	OptIn,
 	/// @brief As a member of another class, type can be hashed as a sequence of bytes
 	AsBytes,
+	///
+	// TODO: AsBytesIfEligible
 	None,
 
 	Default = OptOut,
