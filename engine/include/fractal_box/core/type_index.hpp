@@ -56,16 +56,16 @@ public:
 		if constexpr (has_init_value)
 			return Domain::init_value;
 		else
-			return 0;
+			return ValueType{0};
 	}
 
 
 	static constexpr auto has_null_value = requires { Domain::null_value; };
 
 	static FR_FORCE_INLINE consteval
-	auto null_value() noexcept -> ValueType {
-		if constexpr (has_null_value)
-			return Domain::null_value;
+	auto null_value() noexcept -> ValueType
+	requires (has_null_value) {
+		return Domain::null_value;
 	}
 
 	template<class T>

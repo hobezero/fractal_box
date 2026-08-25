@@ -59,7 +59,7 @@ template<class T>
 concept c_scalar = std::is_scalar_v<T>;
 
 template<class T>
-concept c_compoundd = std::is_compound_v<T>;
+concept c_compound = std::is_compound_v<T>;
 
 template<class T>
 concept c_empty = std::is_empty_v<T>;

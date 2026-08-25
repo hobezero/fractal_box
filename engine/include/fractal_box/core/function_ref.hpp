@@ -1,6 +1,8 @@
 #ifndef FRACTAL_BOX_CORE_FUNCTION_REF_HPP
 #define FRACTAL_BOX_CORE_FUNCTION_REF_HPP
 
+// Adapted from https://github.com/zhihaoy/nontype_functional/blob/main/include/std23/function_ref.h
+
 #include <functional>
 #include <utility>
 
@@ -11,8 +13,7 @@
 namespace fr {
 
 template<auto V>
-struct NonType
-{
+struct NonType {
 	explicit
 	NonType() = default;
 };
@@ -66,11 +67,10 @@ using AdaptSignature = AdaptSignatureImpl<Fp>::Type;
 
 template<class S>
 struct NotQualifyingThis
-{};
+{ };
 
 template<class R, class... Args>
-struct NotQualifyingThis<R(Args...)>
-{
+struct NotQualifyingThis<R(Args...)> {
 	using Type = R(Args...);
 };
 
@@ -217,8 +217,7 @@ template<class Sig>
 struct QualFnSig;
 
 template<class R, class... Args>
-struct QualFnSig<R(Args...)>
-{
+struct QualFnSig<R(Args...)> {
 	using Function = R(Args...);
 	using WithoutNoexcept = Function;
 	static constexpr bool is_noexcept = false;
@@ -231,8 +230,7 @@ struct QualFnSig<R(Args...)>
 };
 
 template<class R, class... Args>
-struct QualFnSig<R(Args...) noexcept>
-{
+struct QualFnSig<R(Args...) noexcept> {
 	using Function = R(Args...);
 	using WithoutNoexcept = Function;
 	static constexpr bool is_noexcept = true;
@@ -245,8 +243,7 @@ struct QualFnSig<R(Args...) noexcept>
 };
 
 template<class R, class... Args>
-struct QualFnSig<R(Args...) const>: QualFnSig<R(Args...)>
-{
+struct QualFnSig<R(Args...) const>: QualFnSig<R(Args...)> {
 	template<class T>
 	using Cv = const T;
 
@@ -254,8 +251,7 @@ struct QualFnSig<R(Args...) const>: QualFnSig<R(Args...)>
 };
 
 template<class R, class... Args>
-struct QualFnSig<R(Args...) const noexcept>: QualFnSig<R(Args...) noexcept>
-{
+struct QualFnSig<R(Args...) const noexcept>: QualFnSig<R(Args...) noexcept> {
 	template<class T>
 	using Cv = const T;
 
@@ -286,14 +282,16 @@ struct FunctionRefBase {
 
 	template<class T>
 	constexpr static
-	auto get(Storage obj)
-	{
-		if constexpr (std::is_const_v<T>)
+	auto get(Storage obj) {
+		if constexpr (std::is_const_v<T>) {
 			return static_cast<T*>(obj.const_ptr);
-		else if constexpr (std::is_object_v<T>)
+		}
+		else if constexpr (std::is_object_v<T>) {
 			return static_cast<T*>(obj.ptr);
-		else
+		}
+		else {
 			return reinterpret_cast<T*>(obj.func_ptr);
+		}
 	}
 };
 
@@ -306,15 +304,14 @@ template<class From, class To>
 inline constexpr bool is_ref_convertible = false;
 
 template<class T, class U>
-inline constexpr bool is_ref_convertible<FunctionRef<T>, FunctionRef<U>> =
-	std::is_convertible_v<
-		typename detail::NotQualifyingThis<T>::Type &,
-		typename detail::NotQualifyingThis<U>::Type &
+inline constexpr bool is_ref_convertible<FunctionRef<T>, FunctionRef<U>>
+	= std::is_convertible_v<
+		typename detail::NotQualifyingThis<T>::Type&,
+		typename detail::NotQualifyingThis<U>::Type&
 	>;
 
 template<class Sig, class R, class... Args>
-class FunctionRef<Sig, R(Args...)>: detail::FunctionRefBase
-{
+class FunctionRef<Sig, R(Args...)>: detail::FunctionRefBase {
 	using Signature = detail::QualFnSig<Sig>;
 
 	template<class T>
@@ -342,11 +339,11 @@ public:
 	explicit(false)
 	FunctionRef(F* f) noexcept
 	requires std::is_function_v<F> && is_invocable_using<F>:
-		_thunk{[](Storage fn_, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
+		_thunk{[](Storage fn, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
 			if constexpr (std::is_void_v<R>)
-				get<F>(fn_)(static_cast<decltype(args)>(args)...);
+				get<F>(fn)(static_cast<decltype(args)>(args)...);
 			else
-				return get<F>(fn_)(static_cast<decltype(args)>(args)...);
+				return get<F>(fn)(static_cast<decltype(args)>(args)...);
 		}},
 		_obj{f}
 	{
@@ -360,8 +357,8 @@ public:
 		!std::is_member_pointer_v<T> &&
 		is_invocable_using<CvRef<T>>
 	):
-		_thunk{[](Storage fn_, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
-			CvRef<T> obj = *get<T>(fn_);
+		_thunk{[](Storage fn, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
+			CvRef<T> obj = *get<T>(fn);
 			if constexpr (std::is_void_v<R>)
 				obj(static_cast<decltype(args)>(args)...);
 			else
@@ -374,8 +371,8 @@ public:
 	explicit(false) constexpr
 	FunctionRef(F f) noexcept
 	requires (!std::same_as<F, FunctionRef> && is_convertible_from_specialization<F>):
-		_thunk{f.fptr_},
-		_obj{f.obj_}
+		_thunk{f._thunk},
+		_obj{f._obj}
 	{ }
 
 	template<class T>
@@ -401,8 +398,8 @@ public:
 	constexpr
 	FunctionRef(NonType<F>, U&& obj) noexcept
 	requires (!std::is_rvalue_reference_v<U&&> && is_invocable_using<decltype((F)), CvRef<T>>):
-		_thunk{[](Storage this_, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
-			CvRef<T> o = *get<T>(this_);
+		_thunk{[](Storage store, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
+			CvRef<T> o = *get<T>(store);
 			return std::invoke_r<R>(F, o, static_cast<decltype(args)>(args)...);
 		}},
 		_obj{std::addressof(obj)}
@@ -416,8 +413,8 @@ public:
 	constexpr
 	FunctionRef(NonType<F>, Cv<T> *obj) noexcept
 	requires is_invocable_using<decltype((F)), decltype(obj)>:
-		_thunk{[](Storage this_, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
-			return std::invoke_r<R>(F, get<Cv<T>>(this_), static_cast<decltype(args)>(args)...);
+		_thunk{[](Storage store, detail::FuncRefParam<Args>... args) noexcept(noex) -> R {
+			return std::invoke_r<R>(F, get<Cv<T>>(store), static_cast<decltype(args)>(args)...);
 		}},
 		_obj{obj}
 	{

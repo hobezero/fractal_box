@@ -420,7 +420,7 @@ concept c_getter_setter_pair
 	= FuncTraits<decltype(G)>::kind == CallableKind::MemberFunction
 	&& FuncTraits<decltype(S)>::kind == CallableKind::MemberFunction
 	&& std::same_as<typename FuncTraits<decltype(G)>::ClassType,
-		typename FuncTraits<decltype(G)>::ClassType>
+		typename FuncTraits<decltype(S)>::ClassType>
 	&& requires(typename FuncTraits<decltype(G)>::ClassType x) {
 		(x.*S)((x.*G)());
 	};

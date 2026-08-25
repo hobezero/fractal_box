@@ -704,7 +704,7 @@ concept c_string_view_like
 
 		typename S::traits_type;
 		typename S::value_type;
-		!requires { typename S::allocator_type; };
+		requires !requires { typename S::allocator_type; };
 		typename S::pointer;
 		typename S::const_pointer;
 		typename S::reference;

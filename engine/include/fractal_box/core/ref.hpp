@@ -22,6 +22,7 @@ class Ref {
 		return std::addressof(obj);
 	}
 
+	/// Ban conversion from temporaries
 	static
 	void to_ptr(T&& obj) = delete;
 
@@ -33,7 +34,8 @@ public:
 	/// @brief Construct Ref from a compatible reference
 	/// @note See LWG 2993, LWG 3041 for more details on the design
 	template<class U>
-	requires (!std::same_as<Ref, std::remove_cv_t<U>> && requires(U u) { Ref::to_ptr(u); })
+	requires (!std::same_as<Ref, std::remove_cv_t<U>>)
+		&& requires { Ref::to_ptr(std::declval<U>()); }
 	FR_FORCE_INLINE constexpr
 	Ref(U&& obj) noexcept(noexcept(Ref::to_ptr(std::declval<U>()))):
 		_ptr(Ref::to_ptr(std::forward<U>(obj)))

@@ -54,32 +54,32 @@ TEST_CASE("poly_is", "[u][engine][core][poly]") {
 	}
 }
 
-TEST_CASE("dynCast", "[u][engine][core][poly]") {
+TEST_CASE("dyn_cast", "[u][engine][core][poly]") {
 	A a; E e; B b; C c; D d; F f;
 	X x; Y y;
 
 	SECTION("upcast is trivial") {
-		CHECK(fr::poly::dynCast<A*>(&a));
-		CHECK(fr::poly::dynCast<A*>(static_cast<A*>(&c)));
-		CHECK(fr::poly::dynCast<A*>(&c));
-		CHECK(fr::poly::dynCast<B*>(&c));
-		CHECK(fr::poly::dynCast<B*>(&f));
-		CHECK(fr::poly::dynCast<A*>(&f));
-		CHECK(fr::poly::dynCast<X*>(&y));
+		CHECK(fr::poly::dyn_cast<A*>(&a));
+		CHECK(fr::poly::dyn_cast<A*>(static_cast<A*>(&c)));
+		CHECK(fr::poly::dyn_cast<A*>(&c));
+		CHECK(fr::poly::dyn_cast<B*>(&c));
+		CHECK(fr::poly::dyn_cast<B*>(&f));
+		CHECK(fr::poly::dyn_cast<A*>(&f));
+		CHECK(fr::poly::dyn_cast<X*>(&y));
 	}
 
 	SECTION("downcast") {
-		CHECK(fr::poly::dynCast<B*>(static_cast<A*>(&b)));
-		CHECK(fr::poly::dynCast<B*>(static_cast<A*>(&c)));
-		CHECK(fr::poly::dynCast<B*>(static_cast<A*>(&f)));
-		CHECK(fr::poly::dynCast<C*>(static_cast<B*>(&f)));
-		CHECK(fr::poly::dynCast<C*>(static_cast<B*>(&f)));
-		CHECK(fr::poly::dynCast<F*>(static_cast<B*>(&f)));
+		CHECK(fr::poly::dyn_cast<B*>(static_cast<A*>(&b)));
+		CHECK(fr::poly::dyn_cast<B*>(static_cast<A*>(&c)));
+		CHECK(fr::poly::dyn_cast<B*>(static_cast<A*>(&f)));
+		CHECK(fr::poly::dyn_cast<C*>(static_cast<B*>(&f)));
+		CHECK(fr::poly::dyn_cast<C*>(static_cast<B*>(&f)));
+		CHECK(fr::poly::dyn_cast<F*>(static_cast<B*>(&f)));
 	}
 
 	SECTION("sidecast") {
-		CHECK(!fr::poly::dynCast<D*>(static_cast<A*>(&e)));
-		CHECK(!fr::poly::dynCast<C*>(static_cast<B*>(&d)));
-		CHECK(!fr::poly::dynCast<F*>(static_cast<B*>(&d)));
+		CHECK(!fr::poly::dyn_cast<D*>(static_cast<A*>(&e)));
+		CHECK(!fr::poly::dyn_cast<C*>(static_cast<B*>(&d)));
+		CHECK(!fr::poly::dyn_cast<F*>(static_cast<B*>(&d)));
 	}
 }
