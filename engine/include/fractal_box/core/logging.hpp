@@ -79,8 +79,8 @@ void log_message_now(
 	// Clamp log level into the supported range
 #	if FR_OVERRIDE_LOG_LEVEL > FR_LOG_LEVEL_MAX
 		HEDLEY_WARNING("Unsupported FR_OVERRIDE_LOG_LEVEL. Using the value of " \
-			"FR_OVERRIDE_LOG_LEVEL instead")
-#		define FR_ASSERT_LEVEL FR_LOG_LEVEL_MAX
+			"FR_OVERRIDE_LOG_LEVEL_MAX instead")
+#		define FR_LOG_LEVEL FR_LOG_LEVEL_MAX
 #	else
 #		define FR_LOG_LEVEL FR_OVERRIDE_LOG_LEVEL
 #	endif
@@ -89,7 +89,7 @@ void log_message_now(
 		&& FR_OVERRIDE_LOG_LEVEL != FR_LOG_LEVEL_AUTO \
 	)
 		HEDLEY_WARNING("Unsupported FR_OVERRIDE_LOG_LEVEL. Using the value of " \
-			"FR_LOG_LEVEL_AUTODETECT instead")
+			"FR_LOG_LEVEL_AUTO instead")
 #	endif
 	// Autodetect log level only if FR_OVERRIDE_LOG_LEVEL is negative or hasn't been
 	// explicitly set

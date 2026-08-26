@@ -118,15 +118,15 @@
 #define FR_DETAIL_UNUSED_8(a0, a1, a2, a3, a4, a5, a6, a7) \
 	static_cast<void>(a0); static_cast<void>(a1); static_cast<void>(a2); static_cast<void>(a3); \
 	static_cast<void>(a4); static_cast<void>(a5); static_cast<void>(a6); static_cast<void>(a7)
-#define FR_DETAIL_UNUSED_9(a00, a01, a02, a03, a04, a05, a06, a07, a08, a09, a10, a11) \
-	static_cast<void>(a00); static_cast<void>(a01); static_cast<void>(a02); static_cast<void>(a03);\
-	static_cast<void>(a04); static_cast<void>(a05); static_cast<void>(a06); static_cast<void>(a07);\
-	static_cast<void>(a08);
-#define FR_DETAIL_UNUSED_10(a00, a01, a02, a03, a04, a05, a06, a07, a08, a09, a10, a11) \
-	static_cast<void>(a00); static_cast<void>(a01); static_cast<void>(a02); static_cast<void>(a03);\
-	static_cast<void>(a04); static_cast<void>(a05); static_cast<void>(a06); static_cast<void>(a07);\
-	static_cast<void>(a08); static_cast<void>(a09);
-#define FR_DETAIL_UNUSED_11(a00, a01, a02, a03, a04, a05, a06, a07, a08, a09, a10, a11) \
+#define FR_DETAIL_UNUSED_9(a0, a1, a2, a3, a4, a5, a6, a7, a8) \
+	static_cast<void>(a0); static_cast<void>(a1); static_cast<void>(a2); static_cast<void>(a3);\
+	static_cast<void>(a4); static_cast<void>(a5); static_cast<void>(a6); static_cast<void>(a7);\
+	static_cast<void>(a8);
+#define FR_DETAIL_UNUSED_10(a0, a1, a2, a3, a4, a5, a6, a7, a8, a9) \
+	static_cast<void>(a00); static_cast<void>(a1); static_cast<void>(a2); static_cast<void>(a3);\
+	static_cast<void>(a04); static_cast<void>(a5); static_cast<void>(a6); static_cast<void>(a7);\
+	static_cast<void>(a08); static_cast<void>(a9);
+#define FR_DETAIL_UNUSED_11(a00, a01, a02, a03, a04, a05, a06, a07, a08, a09, a10) \
 	static_cast<void>(a00); static_cast<void>(a01); static_cast<void>(a02); static_cast<void>(a03);\
 	static_cast<void>(a04); static_cast<void>(a05); static_cast<void>(a06); static_cast<void>(a07);\
 	static_cast<void>(a08); static_cast<void>(a09); static_cast<void>(a10);

@@ -143,6 +143,8 @@ This project incorporates parts of the source code of several third-party projec
  - [rapidhash](https://github.com/Nicoshev/rapidhash) licensed under the MIT License
  - [P0792 reference implementation](https://github.com/zhihaoy/nontype_functional) licensed under
    the BSD 2-Clause License
+ - [qlibs/reflect](https://github.com/qlibs/reflect/blob/main/reflect) licensed under The MIT
+   License
 
 ## Licensing
 

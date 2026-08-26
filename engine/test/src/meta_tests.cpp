@@ -616,6 +616,12 @@ TEST_CASE("mp_pack_count", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::mp_pack_count<B, int, A, int, A, A, B> == 1);
 	STATIC_CHECK(fr::mp_pack_count<C, int, A, int, A, A, B> == 0);
 	STATIC_CHECK(fr::mp_pack_count<int> == 0);
+
+	STATIC_CHECK(std::same_as<fr::MpPackCount<int, int, A, int, A, A, B>, fr::SizeC<2>>);
+	STATIC_CHECK(std::same_as<fr::MpPackCount<A, int, A, int, A, A, B>, fr::SizeC<3>>);
+	STATIC_CHECK(std::same_as<fr::MpPackCount<B, int, A, int, A, A, B>, fr::SizeC<1>>);
+	STATIC_CHECK(std::same_as<fr::MpPackCount<C, int, A, int, A, A, B>, fr::SizeC<0>>);
+	STATIC_CHECK(std::same_as<fr::MpPackCount<int>, fr::SizeC<0>>);
 }
 
 TEST_CASE("mp_is_unique", "[u][engine][core][meta]") {

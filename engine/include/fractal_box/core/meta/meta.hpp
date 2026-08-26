@@ -489,7 +489,7 @@ template<class T, class... Ts>
 inline constexpr auto mp_pack_count = (0zu + ... + (std::is_same_v<Ts, T> ? 1zu : 0zu));
 
 template<class T, class... Ts>
-using MpPackCount = SizeC<mp_count<T, Ts...>>;
+using MpPackCount = SizeC<mp_pack_count<T, Ts...>>;
 
 // mp_is_unique
 // ^^^^^^^^^^^^

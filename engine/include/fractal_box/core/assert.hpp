@@ -354,7 +354,7 @@ FR_DIAGNOSTIC_POP \
 
 #define FR_UNREACHABLE_FAST_MSG(msg) \
 	do { \
-		FR_ASSERT_FAST(false, msg); \
+		FR_ASSERT_FAST_MSG(false, msg); \
 		FR_UNREACHABLE_UNCHECKED(); \
 	} while (false)
 

@@ -299,7 +299,7 @@
 		HEDLEY_STATIC_CAST(bool, __builtin_expect(HEDLEY_STATIC_CAST(bool, (expr)), 0))
 #else
 #	define FR_HAS_LIKELY 0
-#	define FR_HAS_ULIKELY 0
+#	define FR_HAS_UNLIKELY 0
 
 #	define FR_LIKELY(expr) HEDLEY_STATIC_CAST(bool, (expr))
 #	define FR_UNLIKELY(expr) HEDLEY_STATIC_CAST(bool, (expr))
@@ -493,7 +493,7 @@ extern "C" void* _ReturnAddress();
 
 #if FR_COMP_CLANG && FR_HAS_WARNING("-Wunneeded-internal-declaration")
 #	define FR_HAS_DIAGNOSTIC_UNNEEDED_INTERNAL 1
-#	define FR_DIAGNOSTIC_DISABLE_UNNEEDED_INTERNAL
+#	define FR_DIAGNOSTIC_DISABLE_UNNEEDED_INTERNAL \
 		_Pragma("clang diagnostic ignored \"-Wunneeded-internal-declaration\"")
 #else
 #	define FR_HAS_DIAGNOSTIC_UNNEEDED_INTERNAL 0
@@ -502,7 +502,7 @@ extern "C" void* _ReturnAddress();
 
 #if FR_COMP_CLANG && FR_HAS_WARNING("-Wundefined-var-template")
 #	define FR_HAS_DIAGNOSTIC_UNDEFINED_VAR_TEMPLATE 1
-#	define FR_DIAGNOSTIC_DISABLE_UNDEFINED_VAR_TEMPLATE
+#	define FR_DIAGNOSTIC_DISABLE_UNDEFINED_VAR_TEMPLATE \
 		_Pragma("clang diagnostic ignored \"-Wundefined-var-template\"")
 #else
 #	define FR_HAS_DIAGNOSTIC_UNDEFINED_VAR_TEMPLATE 0
@@ -511,7 +511,7 @@ extern "C" void* _ReturnAddress();
 
 #if FR_COMP_CLANG && FR_HAS_WARNING("-Wundefined-internal")
 #	define FR_HAS_DIAGNOSTIC_UNDEFINED_INTERNAL 1
-#	define FR_DIAGNOSTIC_DISABLE_UNDEFINED_INTERNAL
+#	define FR_DIAGNOSTIC_DISABLE_UNDEFINED_INTERNAL \
 		_Pragma("clang diagnostic ignored \"-Wundefined-internal\"")
 #else
 #	define FR_HAS_DIAGNOSTIC_UNDEFINED_INTERNAL 0

@@ -707,6 +707,5 @@ struct ThrowingConvertible {
 };
 
 } // namespace detail
-
 } // namespace fr
 #endif // include guard
