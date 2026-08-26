@@ -108,6 +108,20 @@ TEST_CASE("c_nothrow_explicitly_convertible_to", "[u][engine][core][concepts]") 
 	}
 }
 
+TEST_CASE("c_function_pointer", "[u][engine][core][concepts]") {
+	STATIC_CHECK(fr::c_function_pointer<int (*)(char, float)>);
+	STATIC_CHECK(fr::c_function_pointer<int (*const)(char, float)>);
+	STATIC_CHECK(fr::c_function_pointer<int (*const volatile)(char, float)>);
+	STATIC_CHECK(fr::c_function_pointer<void (*)()>);
+	STATIC_CHECK(fr::c_function_pointer<void (*)(...)>);
+	STATIC_CHECK(fr::c_function_pointer<void (*)(char, ...)>);
+
+	STATIC_CHECK_FALSE(fr::c_function_pointer<int (char, float)>);
+	STATIC_CHECK_FALSE(fr::c_function_pointer<int (&)(char)>);
+	STATIC_CHECK_FALSE(fr::c_function_pointer<int (*&)(char)>);
+	STATIC_CHECK_FALSE(fr::c_function_pointer<int (**)(char)>);
+}
+
 // range_concepts.hpp
 // ==================
 

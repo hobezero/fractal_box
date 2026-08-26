@@ -170,6 +170,9 @@ concept c_value_wrapper = std::copyable<T> && requires(T wrapper) {
 	{ T{typename T::ValueType{}} };
 };
 
+template<class T>
+concept c_function_pointer = c_pointer<T> && c_function<std::remove_pointer_t<T>>;
+
 // Where should we put these?
 // --------------------------
 
