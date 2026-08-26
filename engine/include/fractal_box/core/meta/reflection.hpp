@@ -21,6 +21,9 @@ namespace fr {
 // Concepts
 // ========
 
+// Names
+// ^^^^^
+
 template<class T>
 concept c_with_inline_name = requires {
 	{ T::name } -> c_implicitly_convertible_to<std::string_view>;
@@ -38,6 +41,9 @@ template<class T>
 concept c_maybe_with_inline_display_name = !requires { T::display_name; }
 	|| c_with_inline_display_name<T>;
 
+// Clases
+// ^^^^^^
+
 // TODO: Accept T::describe static function
 template<class T>
 concept c_has_describe = requires(const T& obj) {
@@ -48,57 +54,88 @@ template<class T>
 concept c_described_class
 	= c_class<T>
 	&& c_has_describe<T>
-	&& requires(T obj) {
-		{ fr_describe(obj) } -> c_class_desc;
-	};
+	&& requires(T obj) { { fr_describe(obj) } -> c_class_desc; }
+;
 
 template<class T>
 concept c_decomposable = (c_described_class<T> || c_record_like<T>)
 	&& !c_special_reflection_type<T>;
 
 template<class T>
-concept c_reflectable = (c_described_class<T> || c_aggregate<T>)
+concept c_reflectable_class = (c_described_class<T> || c_aggregate<T>)
 	&& !c_special_reflection_type<T>;
 
 template<class T>
 concept c_reflectable_aggregate = c_aggregate<T> && !c_special_reflection_type<T>;
 
+// ReflectedAggregateField
+// ^^^^^^^^^^^^^^^^^^^^^^^
+
 namespace detail {
 
-template<size_t Idx, StringLiteral Name, class Class, class Member>
-struct AggregateField;
+template<size_t Idx, StringLiteral Name, class Parent, class Member>
+struct ReflectedAggregateField;
 
 } // namespace detail
 
 template<class T>
-inline constexpr auto is_aggregate_field = false;
+inline constexpr auto is_reflected_aggregate_field = false;
 
 template<size_t Idx, StringLiteral Name, class Class, class Member>
-inline constexpr auto is_aggregate_field<detail::AggregateField<Idx, Name, Class, Member>> = true;
+inline constexpr auto is_reflected_aggregate_field<
+	detail::ReflectedAggregateField<Idx, Name, Class, Member>> = true;
 
 template<class T>
-using IsAggregateField = BoolC<is_aggregate_field<T>>;
+using IsReflectedAggregateField = BoolC<is_reflected_aggregate_field<T>>;
 
 template<class T>
-concept c_aggregate_field = is_aggregate_field<T>;
+concept c_reflected_aggregate_field = is_reflected_aggregate_field<T>;
 
 template<size_t Idx, StringLiteral Name, class Class, class Member>
-inline constexpr auto is_special_reflection_type<detail::AggregateField<Idx, Name, Class, Member>>
-	= true;
+inline constexpr auto is_special_reflection_type<
+	detail::ReflectedAggregateField<Idx, Name, Class, Member>> = true;
+
+// ReflectedProperty
+// ^^^^^^^^^^^^^^^^^
+
+namespace detail {
+
+template<class Parent, c_description_property Prop>
+struct ReflectedProperty: public Prop {
+	using ClassType = Parent;
+};
+
+} // namespace detail
 
 template<class T>
-concept c_can_have_attributes =
-	c_has_describe<T>
+inline constexpr auto is_reflected_property = false;
+
+template<class Parent, class Prop>
+inline constexpr auto is_reflected_property<detail::ReflectedProperty<Parent, Prop>> = true;
+
+template<class T>
+using IsWrappedProperty = BoolC<is_reflected_property<T>>;
+
+template<class T>
+concept c_reflected_property = is_reflected_property<T>;
+
+template<class Parent, class Prop>
+inline constexpr auto is_special_reflection_type<detail::ReflectedProperty<Parent, Prop>> = true;
+
+template<class T>
+concept c_can_have_attributes
+	= c_reflectable_class<T>
 	|| c_description_field<T>
-	|| c_description_property<T>
-	|| c_aggregate<T>
-	|| c_aggregate_field<T>;
+	|| c_reflected_property<T>
+	|| c_reflected_aggregate_field<T>
+;
 
 template<class T>
 concept c_field_or_property
 	= c_description_field<T>
-	|| c_aggregate_field<T>
-	|| c_description_property<T>;
+	|| c_reflected_aggregate_field<T>
+	|| c_reflected_property<T>
+;
 
 // Description-based reflection
 // ============================
@@ -132,6 +169,9 @@ private:
 		MpConcat
 	>;
 
+	template<class Prop>
+	using ToReflectedProperty = ReflectedProperty<T, Prop>;
+
 public:
 	static constexpr auto has_name = !mp_is_empty<Names>;
 
@@ -149,7 +189,7 @@ public:
 
 	using Bases = MpFlatten<MpTransform<MpFilter<Parts, IsDescriptionBases>, detail::SelectParts>>;
 	using Fields = MpFilter<Parts, IsDescriptionField>;
-	using Properties = MpFilter<Parts, IsDescriptionProperty>;
+	using Properties = MpTransform<MpFilter<Parts, IsDescriptionProperty>, ToReflectedProperty>;
 
 	template<class U>
 	using IsBaseOfT = typename std::is_base_of<U, T>::type;
@@ -212,7 +252,7 @@ public:
 
 	static consteval
 	auto check_field_names() noexcept -> bool {
-		if constexpr (mp_is_empty<Fields>) {
+		if constexpr (mp_is_empty<Fields> && mp_is_empty<Properties>) {
 			return true;
 		}
 		else {
@@ -331,8 +371,8 @@ public:
 	}
 };
 
-template<c_description_property Property>
-struct Reflector<Property> {
+template<class Parent, class Property>
+struct Reflector<ReflectedProperty<Parent, Property>> {
 private:
 	using Parts = typename Property::Parts;
 	using DisplayNames = MpFilter<Parts, IsDescriptionDisplayName>;
@@ -360,10 +400,28 @@ public:
 			return Property::name;
 	}
 
+	using ClassType = Parent;
 	using FieldType = typename Property::Type;
 
-	static constexpr auto getter = Property::getter;
-	static constexpr auto setter = Property::setter;
+	static constexpr
+	auto has_setter() noexcept -> bool {
+		using SetterType = std::remove_cvref_t<decltype(Property::setter)>;
+
+		// TODO: Should we replace this with std::invocable?
+		if constexpr (std::is_same_v<SetterType, std::nullptr_t>) {
+			return false;
+		}
+		else if constexpr (c_function_pointer<SetterType>
+			|| std::is_member_function_pointer_v<SetterType>
+		) {
+			return Property::setter != nullptr;
+		}
+		else {
+			return requires(Parent& obj, const FieldType& value) {
+				Property::setter(obj, value);
+			};
+		}
+	};
 
 	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValues<>,
 		AttributeList>;
@@ -427,12 +485,12 @@ auto get_nth_aggregate_field_name() noexcept {
 template<class T, size_t Idx>
 inline constexpr auto nth_aggregate_field_name_lit = detail::get_nth_aggregate_field_name<T, Idx>();
 
-template<size_t Idx, StringLiteral Name, class Class, class Member>
-struct AggregateField {
+template<size_t Idx, StringLiteral Name, class Parent, class Member>
+struct ReflectedAggregateField {
 	static constexpr auto index = Idx;
 	static constexpr auto name = Name;
 	using FieldType = Member;
-	using ClassType = Class;
+	using ClassType = Parent;
 };
 
 template<c_reflectable_aggregate T>
@@ -452,7 +510,7 @@ struct Reflector<T> {
 		= std::remove_reference_t<decltype(get_nth_record_field<Idx>(std::declval<T&&>()))>;
 
 	template<size_t Idx>
-	using NthField = AggregateField<
+	using NthField = ReflectedAggregateField<
 		Idx,
 		nth_aggregate_field_name_lit<T, Idx>,
 		T,
@@ -471,7 +529,7 @@ struct Reflector<T> {
 	auto get_attributes() noexcept -> std::array<A, 0zu> { return {}; }
 };
 
-template<c_aggregate_field Field>
+template<c_reflected_aggregate_field Field>
 struct Reflector<Field> {
 	using ClassType = typename Field::ClassType;
 	using FieldType = typename Field::FieldType;
@@ -651,19 +709,19 @@ using ReflAttributeOr = MpValue<refl_attribute_or<T, Fallback>>;
 // ReflBases
 // ^^^^^^^^^
 
-template<c_reflectable T>
+template<c_reflectable_class T>
 using ReflBases = typename detail::Reflector<T>::Bases;
 
-template<c_reflectable T>
+template<c_reflectable_class T>
 inline constexpr auto refl_bases = ReflBases<T>{};
 
 // ReflFields
 // ^^^^^^^^^^
 
-template<c_reflectable T>
+template<c_reflectable_class T>
 using ReflFields = typename detail::Reflector<T>::Fields;
 
-template<c_reflectable T>
+template<c_reflectable_class T>
 inline constexpr auto refl_fields = ReflFields<T>{};
 
 // num_fields
@@ -678,10 +736,10 @@ inline constexpr auto num_fields = NumFields<T>{};
 // ReflProperties
 // ^^^^^^^^^^^^^^
 
-template<c_reflectable T>
+template<c_reflectable_class T>
 using ReflProperties = typename detail::Reflector<T>::Properties;
 
-template<c_reflectable T>
+template<c_reflectable_class T>
 inline constexpr auto refl_properties = ReflProperties<T>{};
 
 // ReflDecomposition
@@ -733,36 +791,36 @@ inline constexpr auto refl_field_ptr_type = mp_type<ReflFieldPtrType<Field>>;
 // ^^^^^^^^^^^^^^^^^^
 
 template<class Field>
-requires (c_description_field<Field> || c_aggregate_field<Field>)
+requires (c_description_field<Field> || c_reflected_aggregate_field<Field>)
 using ReflFieldClassType = typename detail::Reflector<Field>::ClassType;
 
 template<class Field>
-requires (c_description_field<Field> || c_aggregate_field<Field>)
+requires (c_description_field<Field> || c_reflected_aggregate_field<Field>)
 inline constexpr auto refl_field_class_type = mp_type<ReflFieldClassType<Field>>;
 
 // ReflFieldType
 // ^^^^^^^^^^^^^
 
 template<class Field>
-requires (c_description_field<Field> || c_aggregate_field<Field>)
+requires (c_description_field<Field> || c_reflected_aggregate_field<Field>)
 using ReflFieldType = typename detail::Reflector<Field>::FieldType;
 
 template<class Field>
-requires (c_description_field<Field> || c_aggregate_field<Field>)
+requires (c_description_field<Field> || c_reflected_aggregate_field<Field>)
 inline constexpr auto refl_field_type = mp_type<ReflFieldClassType<Field>>;
 
 // Functions
 // ^^^^^^^^^
 
 template<class Field, class T>
-requires ((c_description_field<Field> || c_aggregate_field<Field>)
+requires ((c_description_field<Field> || c_reflected_aggregate_field<Field>)
 	&& std::same_as<ReflFieldClassType<Field>, std::remove_cvref_t<T>>)
 FR_FORCE_INLINE constexpr
 auto apply_field(T&& obj) noexcept -> decltype(auto) {
 	if constexpr (is_description_field<Field>) {
 		return std::forward<T>(obj).*Field::ptr;
 	}
-	else if constexpr (is_aggregate_field<Field>) {
+	else if constexpr (is_reflected_aggregate_field<Field>) {
 		return detail::get_nth_record_field<Field::index>(obj);
 	}
 	else {
@@ -839,35 +897,35 @@ auto visit(T&& obj, F&& f) -> decltype(auto) {
 // ReflPropertyType
 // ^^^^^^^^^^^^^^^^
 
-template<c_description_property Property>
+template<c_reflected_property Property>
 using ReflPropertyType = typename detail::Reflector<Property>::FieldType;
 
-template<c_description_property Property>
+template<c_reflected_property Property>
 inline constexpr auto refl_property_type = mp_type<ReflPropertyType<Property>>;
 
 // refl_property_getter
 // ^^^^^^^^^^^^^^^^^^^^
 
-template<c_description_property Property>
+template<c_reflected_property Property>
 static constexpr auto refl_property_getter = detail::Reflector<Property>::getter;
 
-template<c_description_property Property>
+template<c_reflected_property Property>
 using ReflPropertyGetter = MpValue<refl_property_getter<Property>>;
 
 // refl_property_setter
 // ^^^^^^^^^^^^^^^^^^^^
 
-template<c_description_property Property>
+template<c_reflected_property Property>
 static constexpr auto refl_property_setter = detail::Reflector<Property>::setter;
 
-template<c_description_property Property>
+template<c_reflected_property Property>
 using ReflPropertySettter = MpValue<refl_property_setter<Property>>;
 
 // Functions
 // ^^^^^^^^^
 
 /// @todo TODO: Get field/property by name
-template<c_description_property Property, class T>
+template<c_reflected_property Property, class T>
 FR_FORCE_INLINE constexpr
 auto get_property(T&& obj) -> decltype(auto) {
 	using Getter = std::remove_cvref_t<decltype(Property::getter)>;
@@ -881,8 +939,8 @@ auto get_property(T&& obj) -> decltype(auto) {
 }
 
 /// @todo TODO: Set field/property by name
-template<c_description_property Property, class T, class V>
-requires Property::has_setter
+template<c_reflected_property Property, class T, class V>
+requires (detail::Reflector<Property>::has_setter())
 FR_FORCE_INLINE constexpr
 void set_property(T&& obj, V&& value) {
 	using Setter = std::remove_cvref_t<decltype(Property::setter)>;
@@ -910,10 +968,10 @@ inline constexpr auto refl_field_or_property_type = mp_type<ReflFieldOrPropertyT
 // ReflFieldsAndProperties
 // ^^^^^^^^^^^^^^^^^^^^^^^
 
-template<c_reflectable T>
+template<c_reflectable_class T>
 using ReflFieldsAndProperties = MpConcat<ReflFields<T>, ReflProperties<T>>;
 
-template<c_reflectable T>
+template<c_reflectable_class T>
 inline constexpr auto refl_fields_and_properties = ReflFieldsAndProperties<T>{};
 
 // Functions
@@ -922,7 +980,7 @@ inline constexpr auto refl_fields_and_properties = ReflFieldsAndProperties<T>{};
 template<c_field_or_property FP, class T>
 FR_FORCE_INLINE constexpr
 auto get_field_or_property(T&& obj) -> decltype(auto) {
-	if constexpr (c_description_property<FP>)
+	if constexpr (c_reflected_property<FP>)
 		return get_property<FP>(std::forward<T>(obj));
 	else
 		return apply_field<FP>(std::forward<T>(obj));
@@ -931,7 +989,7 @@ auto get_field_or_property(T&& obj) -> decltype(auto) {
 template<c_field_or_property FP, class T, class V>
 FR_FORCE_INLINE constexpr
 void set_field_or_property(T&& obj, V&& value) {
-	if constexpr (c_description_property<FP>)
+	if constexpr (c_reflected_property<FP>)
 		set_property<FP>(std::forward<T>(obj), std::forward<V>(value));
 	else
 		apply_field<FP>(std::forward<T>(obj)) = std::forward<V>(value);

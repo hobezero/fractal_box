@@ -554,7 +554,7 @@ template<class TList, template<class> class F>
 using MpAllOf = BoolC<mp_all_of<TList, F>>;
 
 template<class TList, template<class> class F>
-concept c_mp_all_of = mp_all_of<TList, F>();
+concept c_mp_all_of = mp_all_of<TList, F>;
 
 // mp_none_of
 // ^^^^^^^^^^
@@ -569,7 +569,7 @@ template<class TList, template<class> class F>
 using MpNoneOf = BoolC<mp_none_of<TList, F>>;
 
 template<class TList, template<class> class F>
-concept c_mp_none_of = mp_none_of<TList, F>();
+concept c_mp_none_of = mp_none_of<TList, F>;
 
 // mp_any_of
 // ^^^^^^^^^
@@ -584,7 +584,7 @@ template<class TList, template<class> class F>
 using MpAnyOf = BoolC<mp_any_of<TList, F>>;
 
 template<class TList, template<class> class F>
-concept c_mp_any_of = mp_any_of<TList, F>();
+concept c_mp_any_of = mp_any_of<TList, F>;
 
 // MpRepack
 // ^^^^^^^^

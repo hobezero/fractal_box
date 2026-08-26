@@ -552,17 +552,17 @@ TEST_CASE("Reflection-concepts", "[u][engine][core][reflection]") {
 		// A special reflection type is explicitly excluded even though it's an aggregate.
 		STATIC_CHECK_FALSE(fr::c_decomposable<fr::Name<"abc">>);
 	}
-	SECTION("c_reflectable") {
-		STATIC_CHECK(fr::c_reflectable<frt::MyWidget>);
-		STATIC_CHECK(fr::c_reflectable<frt::MyGadget>);
-		STATIC_CHECK(fr::c_reflectable<Bag>);
+	SECTION("c_reflectable_class") {
+		STATIC_CHECK(fr::c_reflectable_class<frt::MyWidget>);
+		STATIC_CHECK(fr::c_reflectable_class<frt::MyGadget>);
+		STATIC_CHECK(fr::c_reflectable_class<Bag>);
 
 		// Not a class, so it's neither described nor an aggregate.
-		STATIC_CHECK_FALSE(fr::c_reflectable<int>);
+		STATIC_CHECK_FALSE(fr::c_reflectable_class<int>);
 		// Has user-declared constructors, so it's not an aggregate and isn't described either.
-		STATIC_CHECK_FALSE(fr::c_reflectable<std::tuple<int, char>>);
+		STATIC_CHECK_FALSE(fr::c_reflectable_class<std::tuple<int, char>>);
 		// A special reflection type is explicitly excluded even though it's an aggregate.
-		STATIC_CHECK_FALSE(fr::c_reflectable<fr::Name<"abc">>);
+		STATIC_CHECK_FALSE(fr::c_reflectable_class<fr::Name<"abc">>);
 	}
 }
 

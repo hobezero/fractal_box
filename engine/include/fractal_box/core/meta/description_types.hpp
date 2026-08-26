@@ -195,15 +195,6 @@ struct Property {
 
 	using GetterType = std::remove_cvref_t<decltype(Getter)>;
 	using SetterType = std::remove_cvref_t<decltype(Setter)>;
-
-	static constexpr auto has_setter = [] -> bool {
-		if constexpr (std::is_same_v<SetterType, std::nullptr_t>)
-			return false;
-		else if constexpr (std::is_pointer_v<SetterType> || std::is_member_function_pointer_v<T>)
-			return Setter != nullptr;
-		else
-			return true;
-	}();
 };
 
 template<class T>

@@ -421,7 +421,7 @@ private:
 				? refl_attribute_or<Child, Serializable{true}>
 				: refl_attribute_or<Child, Serializable{false}>;
 			if constexpr (should_include) {
-				if constexpr (c_description_property<Child>) {
+				if constexpr (c_reflected_property<Child>) {
 					using ValueType = ReflPropertyType<Child>;
 					auto tmp = ValueType{};
 					if (!decode_one(tmp))
