@@ -688,8 +688,8 @@ public:
 					see2 = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[2], p[5] ^ see2);
 					see3 = detail::rapidhash_mix<IsProtected>(p[6] ^ _secret[3], p[7] ^ see3);
 					see4 = detail::rapidhash_mix<IsProtected>(p[8] ^ _secret[4], p[9] ^ see4);
-					see5 = detail::rapidhash_mix<IsProtected>(p[10] ^ _secret[4], p[11] ^ see5);
-					see6 = detail::rapidhash_mix<IsProtected>(p[12] ^ _secret[4], p[13] ^ see6);
+					see5 = detail::rapidhash_mix<IsProtected>(p[10] ^ _secret[5], p[11] ^ see5);
+					see6 = detail::rapidhash_mix<IsProtected>(p[12] ^ _secret[6], p[13] ^ see6);
 					p += block_size_words;
 					remaining -= block_size_words;
 				} while (remaining > block_size_words);
@@ -701,16 +701,16 @@ public:
 					see2 = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[2], p[5] ^ see2);
 					see3 = detail::rapidhash_mix<IsProtected>(p[6] ^ _secret[3], p[7] ^ see3);
 					see4 = detail::rapidhash_mix<IsProtected>(p[8] ^ _secret[4], p[9] ^ see4);
-					see5 = detail::rapidhash_mix<IsProtected>(p[10] ^ _secret[4], p[11] ^ see5);
-					see6 = detail::rapidhash_mix<IsProtected>(p[12] ^ _secret[4], p[13] ^ see6);
+					see5 = detail::rapidhash_mix<IsProtected>(p[10] ^ _secret[5], p[11] ^ see5);
+					see6 = detail::rapidhash_mix<IsProtected>(p[12] ^ _secret[6], p[13] ^ see6);
 
 					_seed = detail::rapidhash_mix<IsProtected>(p[14] ^ _secret[0], p[15] ^ _seed);
 					see1 = detail::rapidhash_mix<IsProtected>(p[16] ^ _secret[1], p[17] ^ see1);
 					see2 = detail::rapidhash_mix<IsProtected>(p[18] ^ _secret[2], p[19] ^ see2);
 					see3 = detail::rapidhash_mix<IsProtected>(p[20] ^ _secret[3], p[21] ^ see3);
 					see4 = detail::rapidhash_mix<IsProtected>(p[22] ^ _secret[4], p[23] ^ see4);
-					see5 = detail::rapidhash_mix<IsProtected>(p[24] ^ _secret[4], p[25] ^ see5);
-					see6 = detail::rapidhash_mix<IsProtected>(p[26] ^ _secret[4], p[27] ^ see6);
+					see5 = detail::rapidhash_mix<IsProtected>(p[24] ^ _secret[5], p[25] ^ see5);
+					see6 = detail::rapidhash_mix<IsProtected>(p[26] ^ _secret[6], p[27] ^ see6);
 
 					p += 2zu * block_size_words;
 					remaining -= 2zu * block_size_words;
@@ -722,8 +722,8 @@ public:
 					see2 = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[2], p[5] ^ see2);
 					see3 = detail::rapidhash_mix<IsProtected>(p[6] ^ _secret[3], p[7] ^ see3);
 					see4 = detail::rapidhash_mix<IsProtected>(p[8] ^ _secret[4], p[9] ^ see4);
-					see5 = detail::rapidhash_mix<IsProtected>(p[10] ^ _secret[4], p[11] ^ see5);
-					see6 = detail::rapidhash_mix<IsProtected>(p[12] ^ _secret[4], p[13] ^ see6);
+					see5 = detail::rapidhash_mix<IsProtected>(p[10] ^ _secret[5], p[11] ^ see5);
+					see6 = detail::rapidhash_mix<IsProtected>(p[12] ^ _secret[6], p[13] ^ see6);
 
 					p += block_size_words;
 					remaining -= block_size_words;
@@ -796,9 +796,9 @@ public:
 			do {
 				_seed = detail::rapidhash_mix<IsProtected>(p[0] ^ _secret[0], p[1] ^ _seed);
 				see1 = detail::rapidhash_mix<IsProtected>(p[2] ^ _secret[1], p[3] ^ see1);
-				see2 = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[2], p[5] ^ see1);
-				see3 = detail::rapidhash_mix<IsProtected>(p[6] ^ _secret[3], p[7] ^ see1);
-				see4 = detail::rapidhash_mix<IsProtected>(p[8] ^ _secret[4], p[9] ^ see1);
+				see2 = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[2], p[5] ^ see2);
+				see3 = detail::rapidhash_mix<IsProtected>(p[6] ^ _secret[3], p[7] ^ see3);
+				see4 = detail::rapidhash_mix<IsProtected>(p[8] ^ _secret[4], p[9] ^ see4);
 				p += block_size_words;
 				remaining -= block_size_words;
 			} while (remaining > block_size_words);
@@ -856,7 +856,7 @@ public:
 			do {
 				_seed = detail::rapidhash_mix<IsProtected>(p[0] ^ _secret[0], p[1] ^ _seed);
 				see1 = detail::rapidhash_mix<IsProtected>(p[2] ^ _secret[1], p[3] ^ see1);
-				see2 = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[2], p[5] ^ see1);
+				see2 = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[2], p[5] ^ see2);
 				p += block_size_words;
 				remaining -= block_size_words;
 			} while (remaining > block_size_words);

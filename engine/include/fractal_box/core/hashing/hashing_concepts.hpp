@@ -103,6 +103,7 @@ void verify_hashable_child() noexcept {
 	else if constexpr (Mode == HashableMode::AsBytes) {
 		static_assert(refl_attribute_or<Child, Hashable{true}>,
 			"Can't opt out from hashing a member of a byte-hashable class");
+		// NOTE: Unmarked properties don't participate in AsBytes hashing
 		if constexpr (is_description_property<Child>) {
 			static_assert(!refl_attribute_or<Child, Hashable{false}>,
 				"Byte-hashable class can't have hashable properties");

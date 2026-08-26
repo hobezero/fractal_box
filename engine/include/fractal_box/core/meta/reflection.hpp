@@ -807,7 +807,7 @@ using ReflFieldType = typename detail::Reflector<Field>::FieldType;
 
 template<class Field>
 requires (c_description_field<Field> || c_reflected_aggregate_field<Field>)
-inline constexpr auto refl_field_type = mp_type<ReflFieldClassType<Field>>;
+inline constexpr auto refl_field_type = ReflFieldType<Field>{};
 
 // Functions
 // ^^^^^^^^^

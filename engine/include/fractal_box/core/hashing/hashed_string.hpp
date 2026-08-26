@@ -184,10 +184,10 @@ public:
 		StringIdType{str}, _str(str)
 	{ }
 
-	friend constexpr
-	auto operator==(const BasicHashedStr& lhs, const BasicHashedStr& rhs) noexcept -> bool {
-		FR_ASSERT_AUDIT(lhs._hash == rhs._hash && lhs._str == rhs._str);
-		return lhs._hash == rhs._hash;
+	constexpr
+	auto operator==(const BasicHashedStr& other) const noexcept -> bool {
+		FR_ASSERT_AUDIT(this->_hash == other._hash && this->_str == other._str);
+		return this->_hash == other._hash;
 	}
 
 	friend consteval
@@ -263,6 +263,7 @@ public:
 
 	friend constexpr
 	auto operator==(BasicHashedCStrView lhs, BasicHashedCStrView rhs) noexcept -> bool {
+		FR_ASSERT_AUDIT(lhs._hash == rhs._hash && std::strcmp(lhs._str, rhs._str) == 0);
 		return lhs._hash == rhs._hash;
 	}
 
@@ -330,10 +331,10 @@ public:
 		StringIdType{str, length}, _str(str, length)
 	{ }
 
-	friend constexpr
-	auto operator==(BasicHashedStrView lhs, BasicHashedStrView rhs) noexcept -> bool {
-		FR_ASSERT_AUDIT(lhs._hash == rhs._hash && std::strcmp(lhs._str, rhs._str) == 0);
-		return lhs._hash == rhs._hash;
+	constexpr
+	auto operator==(const BasicHashedStrView& other) const noexcept -> bool {
+		FR_ASSERT_AUDIT(this->_hash == other._hash && this->_str == other._str);
+		return this->_hash == other._hash;
 	}
 
 	friend consteval

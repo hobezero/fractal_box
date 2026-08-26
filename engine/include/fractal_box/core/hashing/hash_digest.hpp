@@ -70,14 +70,18 @@ concept c_hash_digest
 template<c_hash_digest Digest>
 FR_FORCE_INLINE consteval
 auto hash_digest_type_name() noexcept -> std::string_view {
-	if constexpr (std::is_same_v<Digest, HashDigest16>)
+	if constexpr (std::is_same_v<Digest, HashDigest16>) {
 		return "HashDigest16";
-	if constexpr (std::is_same_v<Digest, HashDigest32>)
+	}
+	else if constexpr (std::is_same_v<Digest, HashDigest32>) {
 		return "HashDigest32";
-	else if constexpr (std::is_same_v<Digest, HashDigest64>)
+	}
+	else if constexpr (std::is_same_v<Digest, HashDigest64>) {
 		return "HashDigest64";
-	else
+	}
+	else {
 		static_assert(false);
+	}
 }
 
 namespace hash_literals {
