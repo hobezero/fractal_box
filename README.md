@@ -39,19 +39,19 @@ with the Standard.
 ## Design Principles and Coding Practices
 
 1. Complete set of features for building applications in the target domain.
-Skip the features we don't need. Covering every use case is impossible
-2. API that is easy to use, hard to misuse
+Skip the features we don't need. Covering every use case is impossible.
+2. API that is easy to use, hard to misuse.
 3. High performance. No unreasonable overhead by default, highly optimized critical components.
 4. Data-oriented design. Entity Component System as a core storage mechanism for data. Keep away
-from OOP pitfalls, but use its features if needed
-5. Modular components that can be reasonably customized or replaced
+from OOP pitfalls, but use its features if needed.
+5. Modular components that can be reasonably customized or replaced.
 6. Prefer in-house solutions to third-party dependencies. Everything should be coherent and follow
-the same design ideas. Adjacent APIs should fit together
-7. Prefer compile-time errors to runtime errors
+the same design ideas. Adjacent APIs should fit together.
+7. Prefer compile-time errors to runtime errors.
 8. Correctness is important. Assume a fallible API can and will fail. Detect, process, log and
 report errors to the user. Don't recover from contract violations. Prefer hard crashes to data
-corruption
-9. Modern C++23/CMake/other languages with the best practices applied
+corruption.
+9. Modern C++23/CMake/other languages with the best practices applied.
 10. Use tools to write bug-free and performant code:
   - Compiler warnings
   - Code sanitizers

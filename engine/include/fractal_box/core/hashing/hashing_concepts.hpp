@@ -242,7 +242,9 @@ auto get_hashability() noexcept -> Hashability {
 		return {Described, mode};
 	}
 	else if constexpr (std::is_enum_v<PT>) {
-		return {Enum, get_hashability<std::underlying_type_t<PT>>().mode()};
+		// NOTE: `std::has_unique_object_representations_v` might return different values for
+		// enum and it's underlying type (technically)
+		return {Enum, has_unique_repr ? AsBytes : Default };
 	}
 	else if constexpr (c_optional_like<PT>) {
 		return {Optional, get_hashability<typename PT::value_type>() ? Default : None};

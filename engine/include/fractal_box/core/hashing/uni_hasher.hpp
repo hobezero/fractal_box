@@ -656,6 +656,10 @@ public:
 				const auto canon = obj == T{} ? T{} : obj;
 				callback(canon);
 			}
+			else if constexpr (std::is_enum_v<T>) {
+				// Not sure if casting to underlying type makes any practical difference
+				callback(static_cast<std::underlying_type_t<T>>(obj));
+			}
 			else {
 				callback(obj);
 			}
@@ -817,7 +821,7 @@ public:
 				}
 				else {
 					_state.template absorb_fixed_bytes<new_size>(
-						reinterpret_cast<const unsigned char*>(new_size));
+						reinterpret_cast<const unsigned char*>(str.data));
 				}
 			}
 		}
