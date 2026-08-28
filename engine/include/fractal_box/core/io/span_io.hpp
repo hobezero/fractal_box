@@ -102,7 +102,7 @@ struct SpanReader {
 
 	constexpr
 	auto read(std::span<CharType> data) noexcept -> Result<size_t, BufferOverrun> {
-		if (_buffer.empty())
+		if (_buffer.empty() && !data.empty())
 			return from_error;
 
 		const auto chunk_size = std::min(_buffer.size(), data.size());

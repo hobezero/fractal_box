@@ -741,7 +741,7 @@ public:
 	StringError(Func&& func): _func{std::move(func)} { }
 
 	static constexpr
-	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Warning; }
+	auto severity() noexcept -> DiagnosticSeverity { return DiagnosticSeverity::Error; }
 
 	friend
 	auto to_string(const StringError& context) -> std::string { return context._func(); }
@@ -849,16 +849,16 @@ private:
 };
 
 /// @brief Sink every result (an `std::expected`-like object) that is an error
-template<typename... T>
-requires (sizeof...(T) > 1)
-inline  bool sinkErrors(IDiagnosticSink& sink, T&&... results) {
+template<typename... Rs>
+requires (sizeof...(Rs) > 1)
+inline  bool sink_errors(IDiagnosticSink& sink, Rs&&... results) {
 	bool ok = true;
 	// Expands into:
 	// (ok = ok && result1, result1) || (sink.add(std::move(result1.error()), false));
 	// ...
 	// (ok = ok && resultN, resultN) || (sink.add(std::move(resultN.error()), false));
 	(static_cast<void>(
-		((ok = ok && results) || results) || (sink(std::move(results).error()), false)),
+		((ok = ok && results) || results) || (sink(std::forward<Rs>(results).error()), false)),
 	...);
 	return ok;
 }

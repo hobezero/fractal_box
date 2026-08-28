@@ -453,7 +453,8 @@ private:
 	auto decode_enum(Reader& reader, E& obj) -> DecodeResult<Reader> {
 		std::underlying_type_t<E> value;
 		auto result = decode_primitive(reader, value);
-		obj = static_cast<E>(value);
+		if (result)
+			obj = static_cast<E>(value);
 		return result;
 	}
 
@@ -926,8 +927,8 @@ private:
 		else if constexpr (std::is_same_v<DecodeResult<Reader>, size_t>) {
 			for (auto i = 0zu; i < size_value; ++i) {
 				auto v = typename T::key_type{};
-				obj.insert(std::move(v));
 				ret += SbsDataFormat::decode(reader, v);
+				obj.insert(std::move(v));
 			}
 		}
 		else {
@@ -956,7 +957,7 @@ private:
 				std::visit([&](const auto& var) {
 					auto res = SbsDataFormat::encode(writer, var);
 					if (res)
-						*ret += *ret;
+						*ret += *res;
 					else
 						ret = std::move(res);
 				}, obj);
@@ -1167,7 +1168,6 @@ public:
 		else {
 			static_assert(false);
 		}
-		(..., SbsDataFormat::decode(*_reader, args));
 	}
 
 private:

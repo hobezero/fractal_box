@@ -123,7 +123,7 @@ public:
 	using Iterator = IndexedPoolIter<T, Container, false>;
 	using ConstIterator = IndexedPoolIter<T, Container, true>;
 	using InsertResult = IndexedPoolInsertResult<T, SizeType>;
-	inline static constexpr auto npos_idx = static_cast<typename CellContainer::size_type>(-1);
+	inline static constexpr auto npos_idx = npos_for<typename CellContainer::size_type>;
 
 	using value_type = ValueType;
 	using size_type = SizeType;
@@ -181,7 +181,7 @@ public:
 		}
 		{
 			// At this point we know there are free cells, so `_head_idx` must point to *something*
-			// FR_ASSERT_AUDIT(_head_idx != npos_idx);
+			FR_ASSERT_AUDIT(_head_idx != npos_idx);
 
 			const auto idx = _head_idx.value();
 			auto& old_head = _cells[_head_idx.value()];

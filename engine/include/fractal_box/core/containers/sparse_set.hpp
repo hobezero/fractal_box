@@ -41,7 +41,7 @@ struct RawTypeDetector<T> {
 } // namespace detail
 
 template<class T>
-using RawUnderlying =  typename detail::RawTypeDetector<T>::Type;
+using RawUnderlying = typename detail::RawTypeDetector<T>::Type;
 
 template<int Bits>
 inline constexpr auto default_sparse_version_bit_width = detail::MpIllegal{};
@@ -110,10 +110,12 @@ public:
 
 	static FR_FORCE_INLINE constexpr
 	auto is_valid(KeyType key) noexcept -> bool {
-		if constexpr (has_version)
+		if constexpr (has_version) {
 			return (as_raw(key) & loc_mask) != loc_mask;
-		else
+		}
+		else {
 			return key != null;
+		}
 	}
 
 	static FR_FORCE_INLINE constexpr
@@ -136,10 +138,12 @@ public:
 	auto make(RawType loc, RawType version) noexcept -> KeyType {
 		FR_ASSERT_AUDIT(version <= max_version);
 		FR_ASSERT_AUDIT(loc <= max_location);
-		if constexpr (has_version)
+		if constexpr (has_version) {
 			return as_key((version << location_bit_width) | loc);
-		else
+		}
+		else {
 			return as_key(loc);
+		}
 	}
 
 	static FR_FORCE_INLINE constexpr

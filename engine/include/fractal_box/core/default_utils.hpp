@@ -17,7 +17,7 @@ namespace fr {
 
 template<class T>
 requires std::is_object_v<T>
-class NonDefault {
+class NonDefault final {
 	using SelfParam = PassAbiAs<NonDefault, T>;
 
 public:
@@ -110,7 +110,7 @@ inline constexpr bool is_with_default<WithDefault<T, DefaultValue>> = true;
 ///   TODO: Do we need deduction guides?
 ///   TODO: Consider other names: Disengageable, IntrusiveOptional
 template<std::copyable T, T DefaultValue>
-class WithDefault {
+class WithDefault final {
 	using SelfParam = PassAbiAs<WithDefault, T>;
 
 public:

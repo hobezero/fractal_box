@@ -257,10 +257,10 @@ auto get_serializability_impl() noexcept -> Serializability {
 		return {Vector, get_serializability<typename PT::value_type>().mode()};
 	}
 	else if constexpr (
-		c_map_like<T>
-		|| c_multimap_like<T>
-		|| c_unordered_map_like<T>
-		|| c_unordered_multimap_like<T>
+		c_map_like<PT>
+		|| c_multimap_like<PT>
+		|| c_unordered_map_like<PT>
+		|| c_unordered_multimap_like<PT>
 	) {
 		return {Map, get_serializability<typename PT::key_type>()
 			&& get_serializability<typename PT::value_type>() ? Default : None};

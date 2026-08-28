@@ -203,7 +203,7 @@ public:
 	constexpr FR_FLATTEN
 	auto error(this Self&& self) noexcept -> FwdLike<MpPackFirst<Errs...>, Self> {
 		FR_PANIC_CHECK(self._state.index() == 2zu);
-		return std::get<1zu>(std::forward<Self>(self)._state);
+		return std::get<2zu>(std::forward<Self>(self)._state);
 	}
 
 	template<c_mp_pack_contains_once<Errs...> E, class Self>
