@@ -355,7 +355,6 @@ using MpAt = typename detail::MpAtImpl<TList>::template Type<Idx>;
 /// @brief Checks whether the element of `TList` at index `Idx` is of type `T`
 template<class TList, auto Idx, class T>
 inline constexpr auto mp_at_idx_is = std::is_same_v<MpAt<TList, Idx>, T>;
-
 template<class TList, auto Idx, class T>
 concept c_mp_at_idx_is = std::same_as<MpAt<TList, Idx>, T>;
 
@@ -372,6 +371,7 @@ auto mp_pack_at(Args&&... args) noexcept -> MpPackAt<Idx, Args...>&& {
 	using Ret = MpPackAt<Idx, Args...>&&;
 	return [&]<size_t... Ns>(std::index_sequence<Ns...>) FR_FORCE_INLINE_L -> Ret {
 		return [](
+			// TODO: Add a fallback implementation in case `sizeof(size_t) != sizeof(void*)`
 			decltype(reinterpret_cast<const void*>(Ns))..., auto* nth, auto* ...
 		) FR_FORCE_INLINE_L -> Ret {
 			return static_cast<Ret>(*nth);

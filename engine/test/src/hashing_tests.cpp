@@ -583,19 +583,33 @@ TEST_CASE("get_hashability", "[u][engine][core][hashing]") {
 
 TEST_CASE("UniHasher.lenses1", "[u][engine][core][hashing]") {
 	using L1 = fr::detail::UniHashableLens1;
-	SECTION("one transparent") {
+	frt::double_test("one transparent", [] {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<char>};
-		CHECK(lenses.transparents() == std::vector<L1>{{{}, 1}});
-	}
-	SECTION("one transparent float") {
+		FRT_CHECK(lenses.transparents() == std::vector<L1>{{{}, 1, 1}});
+	});
+	frt::double_test("one transparent float", [] {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<float>};
-		CHECK(lenses.transparents() == std::vector<L1>{{{}, 4}});
-	}
-	SECTION("one opaque") {
+		FRT_CHECK(lenses.transparents() == std::vector<L1>{{{}, 4, 4}});
+	});
+	frt::double_test("four transparents", [] {
+		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<
+			float,
+			int32_t[3],
+			double
+		>};
+		FRT_CHECK(lenses.transparents() == std::vector<L1>{
+			// Larger alignment wins over larger size
+			{{2}, 8, 8},
+			// With equal alignment, larger size wins
+			{{1}, 12, 4},
+			{{0}, 4, 4},
+		});
+	});
+	frt::double_test("one opaque", [] {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<long double>};
-		CHECK(lenses.opaques() == std::vector<L1>{{{}, 0}});
-	}
-	SECTION("many") {
+		FRT_CHECK(lenses.opaques() == std::vector<L1>{{{}}});
+	});
+	frt::double_test("many", [] {
 		const auto lenses = fr::detail::UniHashableLenses1{fr::mp_types<
 			int32_t,
 			long double,
@@ -605,45 +619,47 @@ TEST_CASE("UniHasher.lenses1", "[u][engine][core][hashing]") {
 			DescribedHashableWithBasesAndProps
 		>};
 
-		CHECK(lenses.transparents().size() == 9);
-
+		// NOTE: `Catch2::Matchers::UnorderedEquals` exists exactly for this purpose, but it gives
+		// terrible diagnostics
+		FRT_CHECK(lenses.transparents().size() == 9);
 		// int32_t
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{0}, 4}));
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{0}, 4, 4}));
 		// DescribedOptInClass::_x
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{2, 0}, 4}));
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{2, 0}, 4, 4}));
 		// char
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{3}, 1}));
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{3}, 1, 1}));
 		// HashableAggregate::i
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 0}, 4}));
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 0}, 4, 4}));
 		// HashableAggregate::a
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 2}, 16}));
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 2}, 16, 8}));
 		// HashableAggregate::a2[1]
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 3, 1}, 1}));
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{4, 3, 1}, 1, 1}));
 		// WithBasesAndProps::BaseA::a
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 0}, 4}));
-		// WithBasesAndProps::BaseA::b
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 1, 0}, 2}));
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 0}, 4, 4}));
+		// WithBasesAndProps::BaseB::b
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 1, 0}, 2, 2}));
 		// WithBasesAndProps::_z
-		CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 4}, 8}));
+		FRT_CHECK(std::ranges::contains(lenses.transparents(), L1{{5, 4}, 8, 8}));
 
-		CHECK(lenses.opaques() == std::vector<L1>{
-			{{1}, 0},
-			{{2, 2}, 0},
+		FRT_CHECK(lenses.opaques() == std::vector<L1>{
+			{{1}},
+			{{2, 2}},
 			// Aggregate
-			{{4, 1}, 0},
-			{{4, 3, 0}, 0},
-			{{4, 3, 2}, 0},
+			{{4, 1}},
+			{{4, 3, 0}},
+			{{4, 3, 2}},
 			// WithBasesAndProps
-			{{5, 1, 1}, 0}, // BaseB::c
+			{{5, 1, 1}}, // BaseB::c
 			{{5, 5}, 0} // y
 		});
-	}
+	});
 }
 
 namespace {
 
 struct LensTester {
 	template<auto Lens>
+	constexpr
 	auto get() const -> decltype(auto) {
 		return fr::detail::apply_uni_hashable_lens<Lens>(a0, a1, a2, a3, a4, a5);
 	}
@@ -660,15 +676,15 @@ public:
 } // namespace
 
 TEST_CASE("UniHasher.lenses2", "[u][engine][core][hashing]") {
-	SECTION("one transparent") {
+	frt::double_test("one transparent", [] {
 		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_types<char>);
-		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.transparents[0]>('a') == 'a');
-	}
-	SECTION("one opaque") {
+		FRT_CHECK(fr::detail::apply_uni_hashable_lens<lenses2.transparents[0]>('a') == 'a');
+	});
+	frt::double_test("one opaque", [] {
 		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_types<long double>);
-		CHECK(fr::detail::apply_uni_hashable_lens<lenses2.opaques[0]>(1.l) == 1.l);
-	}
-	SECTION("many transparents and opaques") {
+		FRT_CHECK(fr::detail::apply_uni_hashable_lens<lenses2.opaques[0]>(1.l) == 1.l);
+	});
+	frt::double_test("many transparents and opaques", [] {
 		constexpr auto lenses2 = fr::detail::build_uni_hashable_lenses2(fr::mp_types<
 			int32_t,
 			long double,
@@ -678,10 +694,10 @@ TEST_CASE("UniHasher.lenses2", "[u][engine][core][hashing]") {
 			DescribedHashableWithBasesAndProps
 		>);
 
-		REQUIRE(lenses2.transparents.size() == 9);
-		REQUIRE(lenses2.opaques.size() == 7);
+		FRT_REQUIRE(lenses2.transparents.size() == 9);
+		FRT_REQUIRE(lenses2.opaques.size() == 7);
 
-		const auto tester = LensTester{};
+		/* const */ auto tester = LensTester{};
 		// CHECK(tester.get<lenses2.transparents[0]>() == 0);
 		// CHECK(tester.get<lenses2.transparents[1]>() == 2);
 		// CHECK(tester.get<lenses2.transparents[2]>() == '3');
@@ -692,14 +708,14 @@ TEST_CASE("UniHasher.lenses2", "[u][engine][core][hashing]") {
 		// CHECK(tester.get<lenses2.transparents[7]>() == 50);
 		// CHECK(tester.get<lenses2.transparents[8]>() == 5020);
 
-		CHECK(tester.get<lenses2.opaques[0]>() == 1.l);
-		CHECK(tester.get<lenses2.opaques[1]>() == "desc");
-		CHECK(tester.get<lenses2.opaques[2]>() == "aggr");
-		CHECK(tester.get<lenses2.opaques[3]>() == "t0");
-		CHECK(tester.get<lenses2.opaques[4]>() == "t2");
-		CHECK(tester.get<lenses2.opaques[5]>() == "bp");
-		CHECK(tester.get<lenses2.opaques[6]>() == "BP");
-	}
+		FRT_CHECK(tester.get<lenses2.opaques[0]>() == 1.l);
+		FRT_CHECK(tester.get<lenses2.opaques[1]>() == "desc");
+		FRT_CHECK(tester.get<lenses2.opaques[2]>() == "aggr");
+		FRT_CHECK(tester.get<lenses2.opaques[3]>() == "t0");
+		FRT_CHECK(tester.get<lenses2.opaques[4]>() == "t2");
+		FRT_CHECK(tester.get<lenses2.opaques[5]>() == "bp");
+		FRT_CHECK(tester.get<lenses2.opaques[6]>() == "BP");
+	});
 }
 
 // UniHasher tests

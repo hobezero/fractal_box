@@ -32,7 +32,7 @@
 /// both issues by extracting `fr_custom_hash` for specific hashers into a separate compilation
 /// unit instead of making it inline, but you will lose most optimization opportunities. We advise
 /// to use `RapidhashAlgo::Nano` as it produces significantly fewer instructions compared to
-/// `Micro`/`Full` at the cost of lower throughput on large objects.
+/// `Micro`/`Full` at the cost of lower throughput on large data (especially strings and vectors).
 ///
 /// ## Terminology
 /// - Lens: a unique path, a list of integers that describes how to reach a specific subobject
@@ -48,13 +48,13 @@
 /// - Opaque objects: lensed objects that follow the push model.
 ///   Hashing an opaque object involves complex logic with loops/conditionals, or a function call
 ///   boundary. In both cases we can't at compile time decompose them into a fixed set of
-///   byte-hashable primitives, so our batching optimizations became inapplicable. Hasher has to
+///   byte-hashable primitives, so our batching optimizations become inapplicable. Hasher has to
 ///   call the appropriate function which "pushes" the object into the hashing state.
 ///   Categories: customized classes, most wrappers, containers, optionals, strings.
 ///
 /// ## Hashing algorithm
 /// 1. Deconstruct the hashing tree into a list of lenses.
-/// 2. Sort the lenses in order: transparents first, opaques last.
+/// 2. Sort the lenses: transparents in descending order by alignment, then opaques.
 /// 3. If all transparent objects fit into the algorithm's short limit, pack them together into a
 ///    single buffer by pulling the corresponding values from the hashing tree using lenses.
 ///    Rapidhash the buffer in one go.
@@ -120,6 +120,7 @@ struct UniHashableLens1 {
 public:
 	std::vector<size_t> path;
 	size_t byte_size = 0zu;
+	size_t alignment = 0zu;
 };
 
 template<size_t MaxSize>
@@ -136,6 +137,7 @@ struct UniHashableLens2 {
 		path{},
 		path_size{lens.path.size()},
 		byte_size{lens.byte_size},
+		alignment{lens.alignment},
 		byte_buffer_offset{offset},
 		start_word_idx{start_word},
 		end_word_idx{end_word}
@@ -159,6 +161,8 @@ public:
 	size_t path_size;
 	/// @note Non-zero for transparent lenses, zero for opaque lenses
 	size_t byte_size;
+	/// @note Non-zero for transparent lenses, zero for opaque lenses
+	size_t alignment;
 	/// @brief Starting byte index of the lensed object in the short buffer
 	size_t byte_buffer_offset;
 	/// @brief Starting word index of the lensed object in the word buffer
@@ -228,8 +232,10 @@ public:
 	explicit constexpr
 	UniHashableLenses1(MpTypes<Ts...>) {
 		build<Ts...>();
-		std::ranges::sort(_transparents, std::ranges::greater{}, [](const auto& lens) {
-			return lens.byte_size;
+		std::ranges::sort(_transparents, [](const auto& lhs, const auto& rhs) {
+			if (lhs.alignment != rhs.alignment)
+				return lhs.alignment > rhs.alignment;
+			return lhs.byte_size > rhs.byte_size;
 		});
 	}
 
@@ -267,13 +273,15 @@ private:
 		constexpr auto category = hashability.category();
 
 		if constexpr (mode == AsBytes) {
-			add_transparent(path, sizeof(PT));
+			add_transparent(path, sizeof(PT), alignof(PT));
 		}
 		else if constexpr (category == Fundamental) {
-			if constexpr (std::is_same_v<PT, float> || std::is_same_v<PT, double>)
-				add_transparent(path, sizeof(PT));
-			else
+			if constexpr (std::is_same_v<PT, float> || std::is_same_v<PT, double>) {
+				add_transparent(path, sizeof(PT), alignof(PT));
+			}
+			else {
 				add_opaque(path);
+			}
 		}
 		else if constexpr (category == Wrapper) {
 			if constexpr (is_hvb_wrapper_tuple<PT>) {
@@ -336,8 +344,8 @@ private:
 	}
 
 	constexpr
-	void add_transparent(std::vector<size_t> path, size_t byte_size) {
-		_transparents.emplace_back(std::move(path), byte_size);
+	void add_transparent(std::vector<size_t> path, size_t byte_size, size_t alignment) {
+		_transparents.emplace_back(std::move(path), byte_size, alignment);
 	}
 
 	constexpr

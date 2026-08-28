@@ -11,7 +11,7 @@ template<>
 struct Catch::StringMaker<fr::detail::UniHashableLens1> {
 	static
 	auto convert(const fr::detail::UniHashableLens1& lens) -> std::string {
-		return fmt::format("{{{}, {}}}", lens.path, lens.byte_size);
+		return fmt::format("{{{}, {}, {}}}", lens.path, lens.byte_size, lens.alignment);
 	}
 };
 
