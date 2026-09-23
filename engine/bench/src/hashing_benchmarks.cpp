@@ -171,9 +171,10 @@ public:
 };
 
 struct DescribedClass {
+	using Self = DescribedClass;
+
 	[[maybe_unused]] friend constexpr
 	auto fr_describe(const DescribedClass&) noexcept {
-		using Self = DescribedClass;
 		return fr::class_desc<
 			fr::Attributes<fr::Hashable{}>,
 			fr::Field<&Self::a>,
@@ -264,8 +265,7 @@ template<class T>
 struct std::hash<MyPair<T>> {
 	constexpr
 	auto operator()(const MyPair<T>& self) const noexcept -> size_t {
-		const auto sub = std::hash<T>{};
-		return fr::hash_mix_boost(sub(self.first), sub(self.second));
+		return fr::hash_mix_boost(calc_std_hash(self.first), calc_std_hash(self.second));
 	}
 };
 

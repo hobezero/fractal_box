@@ -65,9 +65,6 @@ template<class T>
 concept c_empty = std::is_empty_v<T>;
 
 template<class T>
-concept c_cv_or_ref = c_cv_qualified<T> || c_ref<T>;
-
-template<class T>
 concept c_default_constructible = std::is_default_constructible_v<T>;
 
 template<class From, class To>
@@ -130,6 +127,9 @@ template<class T, class U>
 concept c_maybe_const_of = std::same_as<std::remove_const_t<T>, U>;
 
 template<class T>
+concept c_cv_or_ref = c_cv_qualified<T> || c_ref<T>;
+
+template<class T>
 concept c_user_object = (c_class<T> || c_union<T> || c_enum<T>) && !c_cv_qualified<T>;
 
 /// @see See diagram at https://en.cppreference.com/w/cpp/language/type
@@ -172,6 +172,11 @@ concept c_value_wrapper = std::copyable<T> && requires(T wrapper) {
 
 template<class T>
 concept c_function_pointer = c_pointer<T> && c_function<std::remove_pointer_t<T>>;
+
+/// @note Can't be a concept because concepts are cached
+/// @note Default argument is necessary to force instantiation at every usage
+template<class T, bool Value = requires(T) { sizeof(T); }>
+inline constexpr auto is_complete = Value;
 
 // Where should we put these?
 // --------------------------

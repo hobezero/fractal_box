@@ -20,9 +20,6 @@ union B { };
 struct C { };
 struct D { };
 
-template<class...>
-struct MyTemplate { };
-
 template<auto V>
 struct MyValue {
 	using type = MyValue;
@@ -74,118 +71,20 @@ struct MyValueWrongValue {
 	static constexpr auto value = decltype(V){};
 };
 
+template<class...>
+struct MyTemplate { };
+
+template<class T>
+using HasFoo = decltype(std::declval<T&>().foo());
+
+struct ClassWithFoo {
+	auto foo() const -> int { return 5; }
+};
+
+struct Complete { };
+struct Incomplete;
+
 } // namespace
-
-// concepts.hpp tests
-// ------------------
-
-TEST_CASE("cv_or_ref", "[u][engine][core][meta]") {
-	STATIC_CHECK_FALSE(fr::c_cv_or_ref<int>);
-
-	STATIC_CHECK_FALSE(fr::c_cv_or_ref<int*>);
-	STATIC_CHECK_FALSE(fr::c_cv_or_ref<const int*>);
-	STATIC_CHECK_FALSE(fr::c_cv_or_ref<volatile int*>);
-	STATIC_CHECK_FALSE(fr::c_cv_or_ref<const volatile int*>);
-
-	STATIC_CHECK(fr::c_cv_or_ref<const int>);
-	STATIC_CHECK(fr::c_cv_or_ref<volatile int>);
-	STATIC_CHECK(fr::c_cv_or_ref<const volatile int>);
-
-	STATIC_CHECK(fr::c_cv_or_ref<int&>);
-	STATIC_CHECK(fr::c_cv_or_ref<const int&>);
-	STATIC_CHECK(fr::c_cv_or_ref<volatile int&>);
-	STATIC_CHECK(fr::c_cv_or_ref<const volatile int&>);
-
-	STATIC_CHECK(fr::c_cv_or_ref<int&&>);
-	STATIC_CHECK(fr::c_cv_or_ref<const int&&>);
-	STATIC_CHECK(fr::c_cv_or_ref<volatile int&&>);
-	STATIC_CHECK(fr::c_cv_or_ref<const volatile int&&>);
-
-	STATIC_CHECK(fr::c_cv_or_ref<const int* const>);
-	STATIC_CHECK(fr::c_cv_or_ref<volatile int* const>);
-	STATIC_CHECK(fr::c_cv_or_ref<const volatile int* const>);
-
-	STATIC_CHECK(fr::c_cv_or_ref<int*&>);
-	STATIC_CHECK(fr::c_cv_or_ref<const int*&>);
-	STATIC_CHECK(fr::c_cv_or_ref<volatile int*&>);
-	STATIC_CHECK(fr::c_cv_or_ref<const volatile int*&>);
-
-	STATIC_CHECK(fr::c_cv_or_ref<int*&&>);
-	STATIC_CHECK(fr::c_cv_or_ref<const int*&&>);
-	STATIC_CHECK(fr::c_cv_or_ref<volatile int*&&>);
-	STATIC_CHECK(fr::c_cv_or_ref<const volatile int*&&>);
-}
-
-TEST_CASE("c_pure_object", "[u][engine][core][meta]") {
-	STATIC_CHECK(fr::c_pure_object<int>);
-	STATIC_CHECK(fr::c_pure_object<A>);
-
-	STATIC_CHECK_FALSE(fr::c_pure_object<void>);
-
-	STATIC_CHECK_FALSE(fr::c_pure_object<const int*>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<volatile int*>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<const volatile int*>);
-
-	STATIC_CHECK_FALSE(fr::c_pure_object<const int>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<volatile int>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<const volatile int>);
-
-	STATIC_CHECK_FALSE(fr::c_pure_object<int&>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<const int&>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<volatile int&>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<const volatile int&>);
-
-	STATIC_CHECK_FALSE(fr::c_pure_object<int&&>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<const int&&>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<volatile int&&>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<const volatile int&&>);
-
-	STATIC_CHECK_FALSE(fr::c_pure_object<int[]>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<int[5]>);
-	STATIC_CHECK_FALSE(fr::c_pure_object<void (int, char)>);
-}
-
-TEST_CASE("CopyConst", "[u][engine][core][meta]") {
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, char>, long>);
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, const char>, const long>);
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, const volatile char>, const long>);
-
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, char&>, long>);
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, const char&>, const long>);
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, const volatile char&>, const long>);
-
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, char&&>, long>);
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, const char&&>, const long>);
-	STATIC_CHECK(std::same_as<fr::CopyConst<long, const volatile char&&>, const long>);
-}
-
-TEST_CASE("CopyCv", "[u][engine][core][meta]") {
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, char>, long>);
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, const char>, const long>);
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, const volatile char>, const volatile long>);
-
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, char&>, long>);
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, const char&>, const long>);
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, const volatile char&>, const volatile long>);
-
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, char&&>, long>);
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, const char&&>, const long>);
-	STATIC_CHECK(std::same_as<fr::CopyCv<long, const volatile char&&>, const volatile long>);
-}
-
-TEST_CASE("CopyCvRef", "[u][engine][core][meta]") {
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, char>, long>);
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const char>, const long>);
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const volatile char>, const volatile long>);
-
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, char&>, long&>);
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const char&>, const long&>);
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const volatile char&>, const volatile long&>);
-
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, char&&>, long&&>);
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const char&&>, const long&&>);
-	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const volatile char&&>, const volatile long&&>);
-}
 
 // meta_basics.hpp tests
 // ---------------------
@@ -213,11 +112,6 @@ TEST_CASE("MpValue.comparison", "[u][engine][core][meta]") {
 		STATIC_CHECK(fr::mp_value<short{12}> != fr::mp_value<12>);
 		STATIC_CHECK(fr::mp_value<12> != fr::mp_value<12u>);
 	}
-}
-
-TEST_CASE("MpIf", "[u][engine][core][meta]") {
-	STATIC_CHECK(std::same_as<fr::MpLazyIf<true>::Type<int, char>, int>);
-	STATIC_CHECK(std::same_as<fr::MpLazyIf<false>::Type<int, char>, char>);
 }
 
 TEST_CASE("c_mp_value", "[u][engine][core][meta]") {
@@ -313,6 +207,11 @@ TEST_CASE("c_mp_typelist", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::c_mp_type_list<std::integral_constant<int, 4>>);
 }
 
+TEST_CASE("MpIf", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<fr::MpLazyIf<true>::Type<int, char>, int>);
+	STATIC_CHECK(std::same_as<fr::MpLazyIf<false>::Type<int, char>, char>);
+}
+
 TEST_CASE("c_specialization", "[u][engine][core][meta]") {
 	STATIC_CHECK(fr::c_specialization<MyTemplate<>, MyTemplate>);
 	STATIC_CHECK(fr::c_specialization<MyTemplate<int>, MyTemplate>);
@@ -323,32 +222,68 @@ TEST_CASE("c_specialization", "[u][engine][core][meta]") {
 	STATIC_CHECK_FALSE(fr::c_specialization<std::string, std::basic_string_view>);
 }
 
-FR_DIAGNOSTIC_PUSH
-FR_DIAGNOSTIC_DISABLE_SFINAE_INCOMPLETE
+TEST_CASE("is_detected", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::is_detected<HasFoo, ClassWithFoo>);
+	STATIC_CHECK_FALSE(fr::is_detected<HasFoo, A>);
 
-namespace {
+	STATIC_CHECK(std::same_as<fr::IsDetected<HasFoo, ClassWithFoo>, fr::TrueC>);
+	STATIC_CHECK(std::same_as<fr::IsDetected<HasFoo, A>, fr::FalseC>);
 
-struct Complete { };
-struct Incomplete;
-
-} // namespace
-
-TEST_CASE("is_complete.1", "[u][engine][core][meta]") {
-	STATIC_CHECK(fr::is_complete<Complete>);
-	STATIC_CHECK_FALSE(fr::is_complete<Incomplete>);
+	STATIC_CHECK(fr::c_detected<HasFoo, ClassWithFoo>);
+	STATIC_CHECK_FALSE(fr::c_detected<HasFoo, A>);
 }
 
-namespace {
-
-struct Incomplete { };
-
-} // namespace
-
-TEST_CASE("is_complete.2", "[u][engine][core][meta]") {
-	STATIC_CHECK(fr::is_complete<Incomplete>);
+TEST_CASE("DetectedType", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<fr::DetectedType<HasFoo, ClassWithFoo>, HasFoo<ClassWithFoo>>);
+	STATIC_CHECK(std::same_as<fr::DetectedType<HasFoo, A>, fr::NoneSuch>);
 }
 
-FR_DIAGNOSTIC_POP
+TEST_CASE("DetectedTypeOr", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<fr::DetectedTypeOr<int, HasFoo, ClassWithFoo>, HasFoo<ClassWithFoo>>);
+	STATIC_CHECK(std::same_as<fr::DetectedTypeOr<int, HasFoo, A>, int>);
+}
+
+TEST_CASE("CopyConst", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, char>, long>);
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, const char>, const long>);
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, const volatile char>, const long>);
+
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, char&>, long>);
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, const char&>, const long>);
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, const volatile char&>, const long>);
+
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, char&&>, long>);
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, const char&&>, const long>);
+	STATIC_CHECK(std::same_as<fr::CopyConst<long, const volatile char&&>, const long>);
+}
+
+TEST_CASE("CopyCv", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, char>, long>);
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, const char>, const long>);
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, const volatile char>, const volatile long>);
+
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, char&>, long>);
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, const char&>, const long>);
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, const volatile char&>, const volatile long>);
+
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, char&&>, long>);
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, const char&&>, const long>);
+	STATIC_CHECK(std::same_as<fr::CopyCv<long, const volatile char&&>, const volatile long>);
+}
+
+TEST_CASE("CopyCvRef", "[u][engine][core][meta]") {
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, char>, long>);
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const char>, const long>);
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const volatile char>, const volatile long>);
+
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, char&>, long&>);
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const char&>, const long&>);
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const volatile char&>, const volatile long&>);
+
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, char&&>, long&&>);
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const char&&>, const long&&>);
+	STATIC_CHECK(std::same_as<fr::CopyCvRef<long, const volatile char&&>, const volatile long&&>);
+}
 
 // meta.hpp tests
 // --------------

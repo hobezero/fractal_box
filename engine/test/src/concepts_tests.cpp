@@ -23,6 +23,7 @@
 
 namespace {
 
+struct A { };
 struct Dummy { };
 
 template<class T1, class T2>
@@ -52,6 +53,72 @@ struct OpConvert {
 
 // concepts.hpp
 // ============
+
+TEST_CASE("cv_or_ref", "[u][engine][core][meta]") {
+	STATIC_CHECK_FALSE(fr::c_cv_or_ref<int>);
+
+	STATIC_CHECK_FALSE(fr::c_cv_or_ref<int*>);
+	STATIC_CHECK_FALSE(fr::c_cv_or_ref<const int*>);
+	STATIC_CHECK_FALSE(fr::c_cv_or_ref<volatile int*>);
+	STATIC_CHECK_FALSE(fr::c_cv_or_ref<const volatile int*>);
+
+	STATIC_CHECK(fr::c_cv_or_ref<const int>);
+	STATIC_CHECK(fr::c_cv_or_ref<volatile int>);
+	STATIC_CHECK(fr::c_cv_or_ref<const volatile int>);
+
+	STATIC_CHECK(fr::c_cv_or_ref<int&>);
+	STATIC_CHECK(fr::c_cv_or_ref<const int&>);
+	STATIC_CHECK(fr::c_cv_or_ref<volatile int&>);
+	STATIC_CHECK(fr::c_cv_or_ref<const volatile int&>);
+
+	STATIC_CHECK(fr::c_cv_or_ref<int&&>);
+	STATIC_CHECK(fr::c_cv_or_ref<const int&&>);
+	STATIC_CHECK(fr::c_cv_or_ref<volatile int&&>);
+	STATIC_CHECK(fr::c_cv_or_ref<const volatile int&&>);
+
+	STATIC_CHECK(fr::c_cv_or_ref<const int* const>);
+	STATIC_CHECK(fr::c_cv_or_ref<volatile int* const>);
+	STATIC_CHECK(fr::c_cv_or_ref<const volatile int* const>);
+
+	STATIC_CHECK(fr::c_cv_or_ref<int*&>);
+	STATIC_CHECK(fr::c_cv_or_ref<const int*&>);
+	STATIC_CHECK(fr::c_cv_or_ref<volatile int*&>);
+	STATIC_CHECK(fr::c_cv_or_ref<const volatile int*&>);
+
+	STATIC_CHECK(fr::c_cv_or_ref<int*&&>);
+	STATIC_CHECK(fr::c_cv_or_ref<const int*&&>);
+	STATIC_CHECK(fr::c_cv_or_ref<volatile int*&&>);
+	STATIC_CHECK(fr::c_cv_or_ref<const volatile int*&&>);
+}
+
+TEST_CASE("c_pure_object", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::c_pure_object<int>);
+	STATIC_CHECK(fr::c_pure_object<A>);
+
+	STATIC_CHECK_FALSE(fr::c_pure_object<void>);
+
+	STATIC_CHECK_FALSE(fr::c_pure_object<const int*>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<volatile int*>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<const volatile int*>);
+
+	STATIC_CHECK_FALSE(fr::c_pure_object<const int>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<volatile int>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<const volatile int>);
+
+	STATIC_CHECK_FALSE(fr::c_pure_object<int&>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<const int&>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<volatile int&>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<const volatile int&>);
+
+	STATIC_CHECK_FALSE(fr::c_pure_object<int&&>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<const int&&>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<volatile int&&>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<const volatile int&&>);
+
+	STATIC_CHECK_FALSE(fr::c_pure_object<int[]>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<int[5]>);
+	STATIC_CHECK_FALSE(fr::c_pure_object<void (int, char)>);
+}
 
 TEST_CASE("c_explicitly_convertible_to", "[u][engine][core][concepts]") {
 	SECTION("operator conversion") {
@@ -121,6 +188,33 @@ TEST_CASE("c_function_pointer", "[u][engine][core][concepts]") {
 	STATIC_CHECK_FALSE(fr::c_function_pointer<int (*&)(char)>);
 	STATIC_CHECK_FALSE(fr::c_function_pointer<int (**)(char)>);
 }
+
+FR_DIAGNOSTIC_PUSH
+FR_DIAGNOSTIC_DISABLE_SFINAE_INCOMPLETE
+
+namespace {
+
+struct Complete { };
+struct Incomplete;
+
+} // namespace
+
+TEST_CASE("is_complete.1", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::is_complete<Complete>);
+	STATIC_CHECK_FALSE(fr::is_complete<Incomplete>);
+}
+
+namespace {
+
+struct Incomplete { };
+
+} // namespace
+
+TEST_CASE("is_complete.2", "[u][engine][core][meta]") {
+	STATIC_CHECK(fr::is_complete<Incomplete>);
+}
+
+FR_DIAGNOSTIC_POP
 
 // range_concepts.hpp
 // ==================

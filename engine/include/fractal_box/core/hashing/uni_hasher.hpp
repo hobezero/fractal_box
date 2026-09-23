@@ -19,6 +19,7 @@
 #include "fractal_box/core/meta/reflection.hpp"
 
 /// ## Idea
+///
 /// `UniHasher` is a fast, general-purpose, non-cryptographic hasher that can be fine-tuned to a
 /// specific use case via `UniHasherOpts`. `UniHasher` aims to generate a somewhat optimal hashing
 /// strategy for each specific list of paramaters by examining the object structure at compile time.
@@ -35,10 +36,12 @@
 /// `Micro`/`Full` at the cost of lower throughput on large data (especially strings and vectors).
 ///
 /// ## Terminology
+///
 /// - Lens: a unique path, a list of integers that describes how to reach a specific subobject
 ///   given the hasher arguments. For example, with `struct S { std::string x, y; }` and a list of
 ///   arguments `int a, S s`, `a` object would have the path (0), `s.x` would have (1, 1) and `s.y`
 ///   would have (1, 1). Lensing is the mechanism which enables batching optimizations.
+///   See https://www.boost.org/doc/libs/latest/libs/mp11/doc/html/simple_cxx11_metaprogramming.html#the_infamous_tuple_cat_challenge
 /// - Transparent objects: lensed objects that follow the pull model.
 ///   All of the numeric values that participate in hashing of a transparent object can be
 ///   retrieved independently in any order at any time at any level of nesting - hence "pulled"
@@ -53,6 +56,7 @@
 ///   Categories: customized classes, most wrappers, containers, optionals, strings.
 ///
 /// ## Hashing algorithm
+///
 /// 1. Deconstruct the hashing tree into a list of lenses.
 /// 2. Sort the lenses: transparents in descending order by alignment, then opaques.
 /// 3. If all transparent objects fit into the algorithm's short limit, pack them together into a

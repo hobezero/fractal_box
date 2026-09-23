@@ -341,14 +341,6 @@ using IsMpValueList = BoolC<is_mp_value_list<T>>;
 template<class T>
 concept c_mp_value_list = is_mp_value_list<T>;
 
-// is_complete
-// ^^^^^^^^^^^
-
-/// @note Can't be a concept because concepts are cached
-/// @note Default argument is necessary to force instantiation at every usage
-template<class T, bool Value = requires(T) { sizeof(T); }>
-inline constexpr auto is_complete = Value;
-
 // Control flow
 // ------------
 
@@ -388,6 +380,79 @@ inline constexpr auto always_false = false;
 /// @brief A small utility that provides a compile-time `true` constant dependent on `T` parameter
 template<class T>
 inline constexpr auto always_true = true;
+
+// is_specialization
+// ^^^^^^^^^^^^^^^^^
+
+template<class T, template<class...> class U>
+inline constexpr auto is_specialization = false;
+
+template<template<class...> class U, class... Args>
+inline constexpr auto is_specialization<U<Args...>, U> = true;
+
+template<class T, template<class...> class U>
+using IsSpecialization = BoolC<is_specialization<T, U>>;
+
+template<class T, template<class...> class U>
+concept c_specialization = is_specialization<T, U>;
+
+template<class T, template<auto...> class U>
+inline constexpr auto is_specialization_nttp = false;
+
+template<template<auto...> class U, auto... Args>
+inline constexpr auto is_specialization_nttp<U<Args...>, U> = true;
+
+template<class T, template<auto...> class U>
+using IsSpecializationNttp = BoolC<is_specialization_nttp<T, U>>;
+
+template<class T, template<auto...> class U>
+concept c_specialization_nttp = is_specialization_nttp<T, U>;
+
+// is_detected
+// ^^^^^^^^^^^
+
+struct NoneSuch {
+	~NoneSuch() = delete;
+
+	NoneSuch(const NoneSuch&) = delete;
+	void operator=(const NoneSuch&) = delete;
+
+	NoneSuch(NoneSuch&&) = delete;
+	void operator=(NoneSuch&&) = delete;
+};
+
+namespace detail {
+
+template<class Default, class Enabler, template<class...> class Trait, class... Args>
+struct IsDetectedImpl {
+	static constexpr auto value = false;
+	using Type = Default;
+};
+
+template<class Default, template<class...> class Trait, class... Args>
+struct IsDetectedImpl<Default, std::void_t<Trait<Args...>>, Trait, Args...> {
+	static constexpr auto value = true;
+	using Type = Trait<Args...>;
+};
+
+} // namespace detail
+
+/// @see https://en.cppreference.com/cpp/experimental/is_detected
+template<template<class...> class Op, class... Args>
+inline constexpr auto is_detected = detail::IsDetectedImpl<NoneSuch, void, Op, Args...>::value;
+
+template<template<class...> class Op, class... Args>
+using IsDetected = BoolC<is_detected<Op, Args...>>;
+
+/// @brief Checks if `Op<Args...>` is well-formed
+template<template<class...> class Op, class... Args>
+concept c_detected = is_detected<Op, Args...>;
+
+template<template<class...> class Op, class... Args>
+using DetectedType = typename detail::IsDetectedImpl<NoneSuch, void, Op, Args...>::Type;
+
+template<class Default, template<class...> class Op, class... Args>
+using DetectedTypeOr = typename detail::IsDetectedImpl<Default, void, Op, Args...>::Type;
 
 // Basic metafunctions
 // -------------------
@@ -621,58 +686,6 @@ inline constexpr
 auto declval() noexcept -> std::add_rvalue_reference_t<T> {
 	static_assert(false, "declval not allowed in an evaluated context");
 }
-
-// Detection of class template instantiations
-// ------------------------------------------
-
-template<class T, template<class...> class U>
-inline constexpr auto is_specialization = false;
-
-template<template<class...> class U, class... Args>
-inline constexpr auto is_specialization<U<Args...>, U> = true;
-
-template<class T, template<class...> class U>
-using IsSpecialization = BoolC<is_specialization<T, U>>;
-
-template<class T, template<class...> class U>
-concept c_specialization = is_specialization<T, U>;
-
-template<class T, template<auto...> class U>
-inline constexpr auto is_specialization_nttp = false;
-
-template<template<auto...> class U, auto... Args>
-inline constexpr auto is_specialization_nttp<U<Args...>, U> = true;
-
-template<class T, template<auto...> class U>
-using IsSpecializationNttp = BoolC<is_specialization_nttp<T, U>>;
-
-template<class T, template<auto...> class U>
-concept c_specialization_nttp = is_specialization_nttp<T, U>;
-
-// IsDetected
-// ----------
-
-namespace detail {
-
-template<class Enabler, template<class...> class Trait, class... Args>
-struct IsDetectedImpl {
-	using Type = FalseC;
-	using Applied = void;
-};
-
-template<template<class...> class Trait, class... Args>
-struct IsDetectedImpl<std::void_t<Trait<Args...>>, Trait, Args...> {
-	using Type = TrueC;
-	using Applied = Trait<Args...>;
-};
-
-} // namespace detail
-
-template<template<class...> class Op, class... Args>
-using IsDetected = typename detail::IsDetectedImpl<void, Op, Args...>::Type;
-
-template<template<class...> class Op, class... Args>
-inline constexpr auto is_detected = IsDetected<Op, Args...>{}();
 
 // Additioonal helpers
 // -------------------

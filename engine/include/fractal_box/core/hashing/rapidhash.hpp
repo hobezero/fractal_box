@@ -65,8 +65,6 @@ constexpr uint64_t rapidhash_secret[8] = {
 };
 
 /// @brief 64*64 -> 128bit multiply function.
-/// @param A  Address of 64-bit number.
-/// @param B  Address of 64-bit number.
 /// @details Calculates 128-bit C = *A * *B.
 /// When `IsProtected == false`:
 ///   Overwrites A contents with C's low 64 bits.
@@ -90,8 +88,6 @@ void rapidhash_mum(uint64_t* a, uint64_t* b) noexcept {
 }
 
 ///  @brief Multiply and xor mix function
-///  @param A  64-bit number.
-///  @param B  64-bit number.
 ///  @details Calculates 128-bit C = A * B. Returns 64-bit xor between high and low 64 bits of C.
 template<bool IsProtected>
 FR_FORCE_INLINE constexpr
@@ -127,7 +123,7 @@ auto rapidhash_0_16(
 		}
 	} else if constexpr (len > 0) {
 		a = (static_cast<uint64_t>(p[0]) << 45) | p[len - 1];
-		b = p[len>>1];
+		b = p[len >> 1];
 	} else {
 		a = b = 0;
 	}

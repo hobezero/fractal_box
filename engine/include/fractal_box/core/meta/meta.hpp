@@ -11,36 +11,6 @@
 
 namespace fr {
 
-// SFINAE helpers
-// --------------
-
-// mp_valid
-// ^^^^^^^^
-
-namespace detail {
-
-template<class Enabler, template<class...> class Trait, class... Args>
-struct MpValidImpl {
-	using Type = FalseC;
-};
-
-template<template<class...> class Trait, class... Args>
-struct MpValidImpl<std::void_t<Trait<Args...>>, Trait, Args...> {
-	using Type = TrueC;
-};
-
-} // namespace detail
-
-/// @brief Checks if `Op<Args...>` is well-formed
-template<template<class...> class Op, class... Args>
-using MpValid = typename detail::MpValidImpl<void, Op, Args...>::Type;
-
-template<template<class...> class Op, class... Args>
-inline constexpr auto mp_valid = MpValid<Op, Args...>{}();
-
-template<template<class...> class Op, class... Args>
-concept c_mp_valid = mp_valid<Op, Args...>;
-
 // Generic metafunctions
 // ---------------------
 
