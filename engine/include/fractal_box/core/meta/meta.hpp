@@ -335,18 +335,34 @@ template<size_t Idx, class... Ts>
 requires (Idx < sizeof...(Ts))
 using MpPackAt = typename detail::MpPackAtImpl<Ts...>::template Type<Idx>;
 
-template<size_t Idx, class... Args>
+namespace detail {
+
+template<size_t>
+struct IndexedIgnore {
+	FR_FORCE_INLINE constexpr
+	IndexedIgnore(auto&&...) noexcept { }
+};
+
+template<size_t... Is, class First, class... Rest>
 FR_FORCE_INLINE constexpr
-auto mp_pack_at(Args&&... args) noexcept -> MpPackAt<Idx, Args...>&& {
-	using Ret = MpPackAt<Idx, Args...>&&;
-	return [&]<size_t... Ns>(std::index_sequence<Ns...>) FR_FORCE_INLINE_L -> Ret {
-		return [](
-			// TODO: Add a fallback implementation in case `sizeof(size_t) != sizeof(void*)`
-			decltype(reinterpret_cast<const void*>(Ns))..., auto* nth, auto* ...
-		) FR_FORCE_INLINE_L -> Ret {
-			return static_cast<Ret>(*nth);
-		}(std::addressof(args)...);
-	}(std::make_index_sequence<Idx>{});
+auto mp_pack_take(IndexedIgnore<Is>..., First&& x, Rest&&...) noexcept -> First&& {
+	// A faster std::forward
+	return static_cast<First&&>(x);
+}
+
+template<size_t... Is, class... Ts>
+FR_FORCE_INLINE constexpr
+auto mp_pack_dispatch(std::index_sequence<Is...>, Ts&&... args) noexcept -> decltype(auto) {
+	return mp_pack_take<Is...>(static_cast<Ts&&>(args)...);
+}
+
+} // namespace detail
+
+template<size_t Idx, class... Args>
+requires (Idx < sizeof...(Args))
+FR_FORCE_INLINE constexpr
+auto mp_pack_at(Args&&... args) noexcept -> decltype(auto) {
+	return detail::mp_pack_dispatch(std::make_index_sequence<Idx>{}, static_cast<Args&&>(args)...);
 }
 
 // mp_find

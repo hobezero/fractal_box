@@ -464,15 +464,24 @@ TEST_CASE("MpPackAt", "[u][engine][core][meta]") {
 }
 
 TEST_CASE("mp_pack_at", "[u][engine][core][meta]") {
-	frt::double_test([] {
+	frt::double_test("constexpr-friendly arguments", [] {
 		auto c = 'c';
 		const auto i = 34;
-		FRT_CHECK(fr::mp_pack_at<0>(i, 23.f, c) == i);
-		FRT_CHECK(fr::mp_pack_at<1>(i, 23.f, c) == 23.f);
-		FRT_CHECK(fr::mp_pack_at<2>(i, 23.f, c) == c);
+		volatile auto u = 45u;
+		FRT_CHECK(fr::mp_pack_at<0>(i, 23.f, c, u) == i);
+		FRT_CHECK(fr::mp_pack_at<1>(i, 23.f, c, u) == 23.f);
+		FRT_CHECK(fr::mp_pack_at<2>(i, 23.f, c, u) == c);
 		FRT_CHECK(std::same_as<decltype(fr::mp_pack_at<0>(i, 23.f, c)), const int&>);
 		FRT_CHECK(std::same_as<decltype(fr::mp_pack_at<2>(i, 23.f, c)), char&>);
 		FRT_CHECK(std::same_as<decltype(fr::mp_pack_at<2>(i, 23.f, std::move(c))), char&&>);
+	});
+	frt::double_test<false>("constexpr-unfriendly arguments", [] {
+		auto c = 'c';
+		const auto i = 34;
+		volatile auto u = 45u;
+		const volatile auto d = 2.4;
+		FRT_CHECK(fr::mp_pack_at<3>(i, 23.f, c, u, d) == u);
+		FRT_CHECK(fr::mp_pack_at<4>(i, 23.f, c, u, d) == d);
 	});
 }
 
