@@ -20,9 +20,10 @@ many important features that were deliberately omitted from here.
 Currently tested targets:
  - x86_64 Linux GCC X11 OpenGL
  - x86_64 Linux Clang X11 OpenGL
+ - x86_64 Linux GCC Wayland OpenGL
+ - x86_64 Linux Clang Wayland OpenGL
 
-Prospective targets: Vulkan, Wayland, Windows, web (WASM + WebGPU + Emscripten), Android, AArch64,
-and MSVC.
+Prospective targets: Vulkan, Windows, web (WASM + WebGPU + Emscripten), Android, AArch64, and MSVC.
 
 FractalBox aims to support widely used targets that don't actively impede developers from doing so.
 Desktop Linux with GCC/Clang toolchains is the current focus, as it is the platform on which the
@@ -101,7 +102,7 @@ FR_OVERRIDE_ASSERT_LEVEL       | Force a specific FR_ASSERT_LEVEL              |
 FR_OVERRIDE_LOG_LEVEL          | Force a specific FR_LOG_LEVEL                 | AUTO/NONE/FATAL/ERROR/WARN/INFO/DEBUG/TRACE/MAX | AUTO
 FR_ENABLE_COVERAGE             | Enable coverage instrumentation               | ON/OFF                                          | OFF
 FR_ENABLE_GPROF                | Enable gprof instrumentation support          | ON/OFF                                          | OFF
-FR_ENABLE_COLORED_OUTPUT       | Force compiler to produce ANSI-colored output | ON/OFF                                          | OFF
+FR_FORCE_COLORED_OUTPUT        | Force compiler to produce ANSI-colored output | ON/OFF                                          | OFF
 FR_ENABLE_SANITIZER_ADDRESS    | Enable address sanitizer                      | ON/OFF                                          | OFF
 FR_ENABLE_SANITIZER_LEAK       | Enable leak sanitizer                         | ON/OFF                                          | OFF
 FR_ENABLE_SANITIZER_MEMORY     | Enable memory sanitizer                       | ON/OFF                                          | OFF

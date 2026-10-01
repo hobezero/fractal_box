@@ -1,7 +1,7 @@
 from conan import ConanFile
 from conan.tools.cmake import CMakeToolchain, CMakeDeps, CMake
 
-class KeplerWarsConan(ConanFile):
+class FractalBoxConan(ConanFile):
     settings = "os", "arch", "compiler", "build_type"
 
     default_options = {
