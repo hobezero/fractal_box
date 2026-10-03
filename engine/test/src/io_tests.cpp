@@ -139,8 +139,8 @@ TEST_CASE("SpanReader", "[u][engine][core][io]") {
 			CHECK(chunk == padded_str<buf_size>("abcde"));
 		}
 		{
-			auto chunk = std::array<char, buf_size>{};
-			const auto res = reader.read_exact(std::span(chunk.data(), 50));
+			auto chunk = std::array<char, 100>{};
+			const auto res = reader.read_exact(std::span(chunk));
 			CHECK(res.has_error<fr::BufferOverrun>());
 		}
 	}

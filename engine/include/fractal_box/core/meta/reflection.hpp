@@ -421,7 +421,7 @@ public:
 				Property::setter(obj, value);
 			};
 		}
-	};
+	}
 
 	using Attributes = typename MpLazyIf<mp_is_empty<AttributeList>>::template Type<MpValues<>,
 		AttributeList>;

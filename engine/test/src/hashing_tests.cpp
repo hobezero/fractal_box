@@ -482,12 +482,12 @@ struct UnhashableAggregate {
 	std::string s;
 };
 
-static constexpr
+[[maybe_unused]] static constexpr
 auto simple_view() {
 	return std::views::iota(1) | std::views::take(5);
 }
 
-static constexpr
+[[maybe_unused]] static constexpr
 auto unhashable_view() {
 	return std::views::single(UnhashableAggregate{});
 }

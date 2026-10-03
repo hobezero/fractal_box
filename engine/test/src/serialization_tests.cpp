@@ -1168,7 +1168,7 @@ TEST_CASE("SbsDataFormat.maps", "[u][engine][core][serialization]") {
 				{{"abcdef", 22}, {frt::lorem_text, 44}, {{}, 66}, {"123", 88}}
 			);
 		};
-		constexpr auto values_size = serialized_size(fr::as_span(make_values()));
+		static constexpr auto values_size = serialized_size(fr::as_span(make_values()));
 		test_common_serde_scenarios<false>(
 			"std::map",
 			[] static { return std::map<std::string, int>(std::from_range, make_values()); },

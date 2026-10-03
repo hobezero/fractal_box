@@ -566,7 +566,7 @@ private:
 	template<class Reader, class T>
 	static constexpr
 	auto decode_string(Reader& reader, T& obj) -> DecodeResult<Reader> {
-		size_t size_value;
+		size_t size_value {};
 		auto size_res = decode_primitive(reader, size_value);
 		if (!size_res)
 			return size_res;
@@ -824,7 +824,7 @@ private:
 	template<class Reader, class T>
 	static constexpr
 	auto decode_map(Reader& reader, T& obj) -> DecodeResult<Reader> {
-		size_t size_value;
+		size_t size_value {};
 		auto ret = decode_primitive(reader, size_value);
 
 		// For the ordered containers, `emplace_hint` makes insertion time amortized O(1).
@@ -909,7 +909,7 @@ private:
 	template<class Reader, class T>
 	static constexpr
 	auto decode_set(Reader& reader, T& obj) -> DecodeResult<Reader> {
-		size_t size_value;
+		size_t size_value {};
 		auto ret = decode_primitive(reader, size_value);
 
 		if constexpr (c_result<DecodeResult<Reader>>) {
@@ -980,7 +980,7 @@ private:
 	static constexpr
 	auto decode_variant(Reader& reader, T& obj) -> DecodeResult<Reader> {
 		using Index = VariantIndexType<T>;
-		Index index_value;
+		Index index_value {};
 		auto ret = decode_primitive(reader, index_value);
 		if constexpr (c_result<DecodeResult<Reader>>) {
 			 if (!ret)
