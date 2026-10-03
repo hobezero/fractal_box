@@ -36,6 +36,7 @@
 #include <memory>
 #include <new>
 
+#include "fractal_box/core/assert.hpp"
 #include "fractal_box/core/byte_utils.hpp"
 #include "fractal_box/core/containers/simple_array.hpp"
 #include "fractal_box/core/int128.hpp"
@@ -140,7 +141,7 @@ auto rapidhash_0_16(
 
 /// @brief rapidhash main function, returns a 64-bit hash
 /// @param key Buffer to be hashed
-/// @param len @key length, in bytes
+/// @param size @key length, in bytes
 /// @param seed 64-bit seed used to alter the hash result predictably
 /// @param secret Triplet of 64-bit secrets used to alter hash result predictably
 template<bool IsAvalanching, bool IsProtected, bool IsCompact>
@@ -309,7 +310,7 @@ auto rapidhash_internal(
 
 /// @brief rapidhashMicro main function. Returns a 64-bit hash
 /// @param key Buffer to be hashed
-/// @param len @key length, in bytes
+/// @param size @key length, in bytes
 /// @param seed 64-bit seed used to alter the hash result predictably
 /// @param secret Triplet of 64-bit secrets used to alter hash result predictably
 template<bool IsAvalanching, bool IsProtected>
@@ -404,7 +405,7 @@ auto rapidhash_micro_internal(
 
 ///  @brief rapidhashNano main function. Returns a 64-bit hash
 ///  @param key Buffer to be hashed
-///  @param len @key length, in bytes
+///  @param size @key length, in bytes
 ///  @param seed 64-bit seed used to alter the hash result predictably
 ///  @param secret Triplet of 64-bit secrets used to alter hash result predictably
 template<bool IsAvalanching, bool IsProtected>
@@ -573,7 +574,7 @@ private:
 	/// @brief rapidhash seeded hash function. Returns a 64-bit hash
 	/// @details Calls rapidhash_internal using provided parameters and default secrets
 	/// @param key Buffer to be hashed
-	/// @param len @key length, in bytes
+	/// @param size @key length, in bytes
 	/// @param seed 64-bit seed used to alter the hash result predictably
 	static FR_FORCE_INLINE constexpr
 	auto hash_bytes_seeded_impl(
@@ -608,7 +609,7 @@ private:
 	/// Clang-18+ compiles it to ~140 instructions without stack usage, both on x86-64 and aarch64.
 	/// Faster for sizes up to 512 bytes, just 15%-20% slower for inputs above 1kb
 	/// @param key Buffer to be hashed
-	/// @param len  @key length, in bytes
+	/// @param size  @key length, in bytes
 	/// @param seed 64-bit seed used to alter the hash result predictably
 	static FR_FORCE_INLINE constexpr
 	auto hash_bytes_seeded_impl(
@@ -644,7 +645,7 @@ private:
 	/// x86-64 and aarch64. The fastest for sizes up to 48 bytes, but may be considerably slower
 	/// for larger inputs.
 	/// @param key Buffer to be hashed
-	/// @param len @key length, in bytes
+	/// @param size @key length, in bytes
 	/// @param seed 64-bit seed used to alter the hash result predictably
 	static FR_FORCE_INLINE constexpr
 	auto hash_bytes_seeded_impl(
@@ -668,9 +669,10 @@ public:
 
 	FR_FORCE_INLINE constexpr
 	auto absorb_words(const uint64_t* words, size_t count) noexcept -> uint64_t {
+		FR_ASSERT_AUDIT(count >= max_short_size_bytes / sizeof(Word));
 		const auto* p = words;
 		auto remaining = count;
-		if (remaining > block_size_words) {
+		if (count > block_size_words) {
 			auto see1 = _seed;
 			auto see2 = _seed;
 			auto see3 = _seed;
@@ -691,7 +693,7 @@ public:
 				} while (remaining > block_size_words);
 			}
 			else {
-				do {
+				while (remaining > 2zu * block_size_words) {
 					_seed = detail::rapidhash_mix<IsProtected>(p[0] ^ _secret[0], p[1] ^ _seed);
 					see1 = detail::rapidhash_mix<IsProtected>(p[2] ^ _secret[1], p[3] ^ see1);
 					see2 = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[2], p[5] ^ see2);
@@ -710,8 +712,7 @@ public:
 
 					p += 2zu * block_size_words;
 					remaining -= 2zu * block_size_words;
-				} while (remaining > 2zu * block_size_words);
-
+				}
 				if (remaining > block_size_words) {
 					_seed = detail::rapidhash_mix<IsProtected>(p[0] ^ _secret[0], p[1] ^ _seed);
 					see1 = detail::rapidhash_mix<IsProtected>(p[2] ^ _secret[1], p[3] ^ see1);
@@ -735,17 +736,17 @@ public:
 		}
 		if (remaining > 2zu) {
 			_seed = detail::rapidhash_mix<IsProtected>(p[0] ^ _secret[2], p[1] ^ _seed);
-			if (count > 4zu) {
+			if (remaining > 4zu) {
 				_seed = detail::rapidhash_mix<IsProtected>(p[2] ^ _secret[2], p[3] ^ _seed);
-				if (count > 6zu) {
+				if (remaining > 6zu) {
 					_seed = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[1], p[5] ^ _seed);
-					if (count > 8zu) {
+					if (remaining > 8zu) {
 						_seed = detail::rapidhash_mix<IsProtected>(p[6] ^ _secret[1],
 							p[7] ^ _seed);
-						if (count > 10zu) {
+						if (remaining > 10zu) {
 							_seed = detail::rapidhash_mix<IsProtected>(p[8] ^ _secret[2],
 								p[9] ^ _seed);
-							if (count > 12zu) {
+							if (remaining > 12zu) {
 								_seed = detail::rapidhash_mix<IsProtected>(p[10] ^ _secret[1],
 									p[11] ^ _seed);
 							}
@@ -782,6 +783,7 @@ public:
 
 	FR_FORCE_INLINE constexpr
 	auto absorb_words(const uint64_t* words, size_t count) noexcept -> uint64_t {
+		FR_ASSERT_AUDIT(count >= max_short_size_bytes / sizeof(Word));
 		const auto* p = words;
 		auto remaining = count;
 		if (remaining > block_size_words) {
@@ -806,11 +808,11 @@ public:
 		}
 		if (remaining > 2zu) {
 			_seed = detail::rapidhash_mix<IsProtected>(p[0] ^ _secret[2], p[1] ^ _seed);
-			if (count > 4zu) {
+			if (remaining > 4zu) {
 				_seed = detail::rapidhash_mix<IsProtected>(p[2] ^ _secret[2], p[3] ^ _seed);
-				if (count > 6zu) {
+				if (remaining > 6zu) {
 					_seed = detail::rapidhash_mix<IsProtected>(p[4] ^ _secret[1], p[5] ^ _seed);
-					if (count > 8zu) {
+					if (remaining > 8zu) {
 						_seed = detail::rapidhash_mix<IsProtected>(p[6] ^ _secret[1], p[7] ^ _seed);
 					}
 				}
@@ -844,6 +846,7 @@ public:
 
 	FR_FORCE_INLINE constexpr
 	auto absorb_words(const uint64_t* words, size_t count) noexcept -> uint64_t {
+		FR_ASSERT_AUDIT(count >= max_short_size_bytes / sizeof(Word));
 		const auto* p = words;
 		auto remaining = count;
 		if (remaining > block_size_words) {
@@ -862,7 +865,7 @@ public:
 		}
 		if (remaining > 2zu) {
 			_seed = detail::rapidhash_mix<IsProtected>(p[0] ^ _secret[2], p[1] ^ _seed);
-			if (count > 4zu) {
+			if (remaining > 4zu) {
 				_seed = detail::rapidhash_mix<IsProtected>(p[2] ^ _secret[2], p[3] ^ _seed);
 			}
 		}
@@ -894,16 +897,21 @@ namespace detail {
 
 template<RapidhashAlgo Algo, bool IsAvalanching, bool IsProtected>
 auto get_rapidhash_algo_type() noexcept {
-	if constexpr (Algo == RapidhashAlgo::FullCompact)
+	if constexpr (Algo == RapidhashAlgo::FullCompact) {
 		return Rapidhash<IsAvalanching, IsProtected, true>{};
-	else if constexpr (Algo == RapidhashAlgo::FullNonCompact)
+	}
+	else if constexpr (Algo == RapidhashAlgo::FullNonCompact) {
 		return Rapidhash<IsAvalanching, IsProtected, false>{};
-	else if constexpr (Algo == RapidhashAlgo::Micro)
+	}
+	else if constexpr (Algo == RapidhashAlgo::Micro) {
 		return RapidhashMicro<IsAvalanching, IsProtected>{};
-	else if constexpr (Algo == RapidhashAlgo::Nano)
+	}
+	else if constexpr (Algo == RapidhashAlgo::Nano) {
 		return RapidhashNano<IsAvalanching, IsProtected>{};
-	else
+	}
+	else {
 		static_assert(false);
+	}
 }
 
 } // namespace detail

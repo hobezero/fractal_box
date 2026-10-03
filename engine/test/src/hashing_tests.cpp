@@ -142,6 +142,30 @@ TEST_CASE("rapidhash.values", "[u][engine][core][hashing]") {
 	});
 }
 
+TEST_CASE("Rapidhash::Stream.bounds", "[u][engine][core][hashing]") {
+	const auto do_test = []<class Algo> {
+		for (auto count = 3zu; count < 64zu; ++count) {
+			INFO(count);
+
+			auto a = std::vector<uint64_t>(count + 1zu);
+			auto b = std::vector<uint64_t>(count + 1zu);
+			for (auto i = 0zu; i < count; ++i) {
+				a[i] = b[i] = (i + 1zu);
+			}
+			// two different "garbage" values past the end
+			a[count] = 0x1111111111111111ull;
+			b[count] = 0xEEEEEEEEEEEEEEEEull;
+			auto s1 = typename Algo::Stream{0zu};
+			auto s2 = typename Algo::Stream{0zu};
+			CHECK(s1.absorb_words(a.data(), count) == s2.absorb_words(b.data(), count));
+		}
+	};
+	frt::typed_section<fr::Rapidhash<true, false, false>>(do_test);
+	frt::typed_section<fr::Rapidhash<true, false, true>>(do_test);
+	frt::typed_section<fr::RapidhashMicro<true, false>>(do_test);
+	frt::typed_section<fr::RapidhashNano<true, false>>(do_test);
+}
+
 TEST_CASE("hash_mix_commutative") {
 	frt::double_test([] {
 		FRT_CHECK(fr::hash_mix_commutative(0x1020_digest16, 0x1020_digest16)
