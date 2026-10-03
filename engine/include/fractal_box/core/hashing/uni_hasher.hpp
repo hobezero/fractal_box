@@ -581,7 +581,6 @@ public:
 		template<c_byte_like B, class SizeType>
 		FR_FORCE_INLINE constexpr
 		void absorb_bytes(const B* data, SizeType size) noexcept {
-			absorb_fundamental(size);
 			_result = RapidAlgo::hash_bytes_seeded(data, static_cast<size_t>(size), _result);
 		}
 
@@ -789,6 +788,7 @@ public:
 		template<class B, class SizeType>
 		FR_FORCE_INLINE constexpr
 		void absorb_wrapper(Bytes<B, SizeType> bytes) const noexcept {
+			_state.absorb_fundamental(bytes.size);
 			_state.absorb_bytes(bytes.data, bytes.size);
 		}
 
@@ -801,6 +801,7 @@ public:
 		template<class Char, class SizeType>
 		FR_FORCE_INLINE constexpr
 		auto absorb_wrapper(String<Char, SizeType> str) const noexcept {
+			_state.absorb_fundamental(str.size);
 			if constexpr (c_byte_like<Char>) {
 				_state.absorb_bytes(str.data, str.size);
 			}
